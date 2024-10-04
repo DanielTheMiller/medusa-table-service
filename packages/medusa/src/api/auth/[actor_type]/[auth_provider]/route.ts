@@ -2,14 +2,14 @@ import {
   AuthenticationInput,
   ConfigModule,
   IAuthModuleService,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   MedusaError,
-  ModuleRegistrationName,
-  generateJwtToken,
-} from "@medusajs/utils"
-import { MedusaRequest, MedusaResponse } from "../../../../types/routing"
+  Modules,
+} from "@medusajs/framework/utils"
+import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { generateJwtTokenForAuthIdentity } from "../../utils/generate-jwt-token"
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { actor_type, auth_provider } = req.params
@@ -17,21 +17,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     ContainerRegistrationKeys.CONFIG_MODULE
   )
 
-  const authMethodsPerActor =
-    config.projectConfig?.http?.authMethodsPerActor ?? {}
-  // Not having the config defined would allow for all auth providers for the particular actor.
-  if (authMethodsPerActor[actor_type]) {
-    if (!authMethodsPerActor[actor_type].includes(auth_provider)) {
-      throw new MedusaError(
-        MedusaError.Types.NOT_ALLOWED,
-        `The actor type ${actor_type} is not allowed to use the auth provider ${auth_provider}`
-      )
-    }
-  }
-
-  const service: IAuthModuleService = req.scope.resolve(
-    ModuleRegistrationName.AUTH
-  )
+  const service: IAuthModuleService = req.scope.resolve(Modules.AUTH)
 
   const authData = {
     url: req.url,
@@ -47,35 +33,20 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   )
 
   if (location) {
-    res.redirect(location)
-    return
+    return res.status(200).json({ location })
   }
 
-  if (success) {
-    const { http } = req.scope.resolve(
-      ContainerRegistrationKeys.CONFIG_MODULE
-    ).projectConfig
+  if (success && authIdentity) {
+    const { http } = config.projectConfig
 
-    const entityIdKey = `${actor_type}_id`
-    const entityId = authIdentity?.app_metadata?.[entityIdKey] as
-      | string
-      | undefined
-    const { jwtSecret, jwtExpiresIn } = http
-
-    const token = generateJwtToken(
+    const token = generateJwtTokenForAuthIdentity(
       {
-        actor_id: entityId ?? "",
-        actor_type,
-        auth_identity_id: authIdentity?.id ?? "",
-        app_metadata: {
-          [entityIdKey]: entityId,
-        },
+        authIdentity,
+        actorType: actor_type,
       },
       {
-        // @ts-expect-error
-        secret: jwtSecret,
-        // @ts-expect-error
-        expiresIn: jwtExpiresIn,
+        secret: http.jwtSecret,
+        expiresIn: http.jwtExpiresIn,
       }
     )
 

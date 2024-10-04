@@ -1,4 +1,4 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   createPsqlIndexStatementHelper,
   DALUtils,
@@ -6,7 +6,7 @@ import {
   PriceListStatus,
   PriceListType,
   Searchable,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -27,7 +27,7 @@ import PriceListRule from "./price-list-rule"
 type OptionalFields =
   | "starts_at"
   | "ends_at"
-  | DAL.SoftDeletableEntityDateColumns
+  | DAL.SoftDeletableModelDateColumns
 
 const tableName = "price_list"
 const PriceListDeletedAtIndex = createPsqlIndexStatementHelper({

@@ -8,8 +8,19 @@ import { baseOptions } from "./base-options.js"
 import path from "path"
 import { rootPathPrefix } from "./general.js"
 import { modules } from "./references.js"
+import { getCoreFlowNamespaces } from "../utils/get-namespaces.js"
 
 const customOptions: Record<string, Partial<TypeDocOptions>> = {
+  "core-flows": getOptions({
+    entryPointPath: "packages/core/core-flows/src/index.ts",
+    tsConfigName: "core-flows.json",
+    name: "core-flows",
+    plugin: ["typedoc-plugin-workflows"],
+    enableWorkflowsPlugins: true,
+    enablePathNamespaceGenerator: true,
+    // @ts-expect-error there's a typing issue in typedoc
+    generatePathNamespaces: getCoreFlowNamespaces(),
+  }),
   "auth-provider": getOptions({
     entryPointPath: "packages/core/utils/src/auth/abstract-auth-provider.ts",
     tsConfigName: "utils.json",
@@ -24,7 +35,7 @@ const customOptions: Record<string, Partial<TypeDocOptions>> = {
     ],
     tsConfigName: "utils.json",
     name: "dml",
-    generateNamespaces: true,
+    generateCustomNamespaces: true,
   }),
   file: getOptions({
     entryPointPath: "packages/core/utils/src/file/abstract-file-provider.ts",
@@ -38,9 +49,21 @@ const customOptions: Record<string, Partial<TypeDocOptions>> = {
     name: "fulfillment-provider",
     parentIgnore: true,
   }),
+  "helper-steps": getOptions({
+    entryPointPath: "packages/core/core-flows/src/common/index.ts",
+    tsConfigName: "core-flows.json",
+    name: "helper-steps",
+    exclude: [
+      ...(baseOptions.exclude || []),
+      path.join(
+        rootPathPrefix,
+        "packages/core/core-flows/src/common/workflows/**.ts"
+      ),
+    ],
+  }),
   "medusa-config": getOptions({
-    entryPointPath: "packages/core/types/src/common/config-module.ts",
-    tsConfigName: "types.json",
+    entryPointPath: "packages/frameworksrc/config/types.ts",
+    tsConfigName: "framework.json",
     name: "medusa-config",
   }),
   medusa: getOptions({
@@ -101,8 +124,13 @@ const customOptions: Record<string, Partial<TypeDocOptions>> = {
     enableInternalResolve: true,
     exclude: [
       ...(baseOptions.exclude || []),
-      ...modules.map((moduleName) => `**/${moduleName}/**/*.ts`),
+      ...modules.map((moduleName) => `**/${moduleName}/**/!(workflows).ts`),
     ],
+  }),
+  "modules-sdk": getOptions({
+    entryPointPath: "packages/core/modules-sdk/src/index.ts",
+    tsConfigName: "modules-sdk.json",
+    name: "modules-sdk",
   }),
   utils: getOptions({
     entryPointPath: "packages/core/utils/src/index.ts",

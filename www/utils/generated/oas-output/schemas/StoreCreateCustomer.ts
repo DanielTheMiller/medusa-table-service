@@ -1,14 +1,10 @@
 /**
  * @schema StoreCreateCustomer
  * type: object
- * description: SUMMARY
+ * description: The details of the customer to create.
  * x-schemaName: StoreCreateCustomer
  * required:
  *   - email
- *   - company_name
- *   - first_name
- *   - last_name
- *   - phone
  * properties:
  *   email:
  *     type: string
@@ -31,6 +27,9 @@
  *     type: string
  *     title: phone
  *     description: The customer's phone.
+ *   metadata:
+ *     type: object
+ *     description: The customer's metadata, can hold custom key-value pairs.
  * 
 */
 

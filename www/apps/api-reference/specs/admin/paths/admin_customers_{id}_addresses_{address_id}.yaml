@@ -2,8 +2,8 @@ get:
   operationId: GetCustomersIdAddressesAddress_id
   summary: List Addresses
   description: >-
-    Retrieve a list of addresses in a customer. The addresses can be filtered by
-    fields like FILTER FIELDS. The addresses can also be paginated.
+    Retrieve a list of a customer's addresses. The addresses can be filtered by
+    fields like `company`. The addresses can also be paginated.
   x-authenticated: true
   parameters:
     - name: id
@@ -44,35 +44,8 @@ get:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
-    - name: offset
-      in: query
-      description: The number of items to skip when retrieving a list.
-      required: false
-      schema:
-        type: number
-        title: offset
-        description: The number of items to skip when retrieving a list.
-    - name: limit
-      in: query
-      description: Limit the number of items returned in the list.
-      required: false
-      schema:
-        type: number
-        title: limit
-        description: Limit the number of items returned in the list.
-    - name: order
-      in: query
-      description: >-
-        The field to sort the data by. By default, the sort order is ascending.
-        To change the order to descending, prefix the field name with `-`.
-      required: false
-      schema:
-        type: string
-        title: order
-        description: >-
-          The field to sort the data by. By default, the sort order is
-          ascending. To change the order to descending, prefix the field name
-          with `-`.
+        externalDocs:
+          url: '#select-fields-and-relations'
   security:
     - api_token: []
     - cookie_auth: []
@@ -86,6 +59,12 @@ get:
   tags:
     - Customers
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminCustomerAddressResponse.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':
@@ -100,8 +79,9 @@ get:
       $ref: ../components/responses/500_error.yaml
 post:
   operationId: PostCustomersIdAddressesAddress_id
-  summary: Add Addresses to Customer
-  description: Add a list of addresses to a customer.
+  summary: Update a Customer's Address
+  x-sidebar-summary: Update Address
+  description: Update a customer address's details.
   x-authenticated: true
   parameters:
     - name: id
@@ -142,35 +122,8 @@ post:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
-    - name: offset
-      in: query
-      description: The number of items to skip when retrieving a list.
-      required: false
-      schema:
-        type: number
-        title: offset
-        description: The number of items to skip when retrieving a list.
-    - name: limit
-      in: query
-      description: Limit the number of items returned in the list.
-      required: false
-      schema:
-        type: number
-        title: limit
-        description: Limit the number of items returned in the list.
-    - name: order
-      in: query
-      description: >-
-        The field to sort the data by. By default, the sort order is ascending.
-        To change the order to descending, prefix the field name with `-`.
-      required: false
-      schema:
-        type: string
-        title: order
-        description: >-
-          The field to sort the data by. By default, the sort order is
-          ascending. To change the order to descending, prefix the field name
-          with `-`.
+        externalDocs:
+          url: '#select-fields-and-relations'
   security:
     - api_token: []
     - cookie_auth: []
@@ -179,7 +132,92 @@ post:
     content:
       application/json:
         schema:
-          $ref: ../components/schemas/AdminCreateCustomerAddress.yaml
+          allOf:
+            - type: object
+              description: The address's details.
+              required:
+                - address_name
+                - company
+                - first_name
+                - last_name
+                - address_1
+                - address_2
+                - city
+                - country_code
+                - province
+                - postal_code
+                - phone
+                - metadata
+              properties:
+                address_name:
+                  type: string
+                  title: address_name
+                  description: The name of the address.
+                is_default_shipping:
+                  type: boolean
+                  title: is_default_shipping
+                  description: >-
+                    Whether this address is used by default for shipping when
+                    placing an order.
+                is_default_billing:
+                  type: boolean
+                  title: is_default_billing
+                  description: >-
+                    Whether this address is used by default for billing when
+                    placing an order.
+                company:
+                  type: string
+                  title: company
+                  description: The address's company.
+                first_name:
+                  type: string
+                  title: first_name
+                  description: The address's first name.
+                last_name:
+                  type: string
+                  title: last_name
+                  description: The address's last name.
+                address_1:
+                  type: string
+                  title: address_1
+                  description: The address's first line
+                address_2:
+                  type: string
+                  title: address_2
+                  description: The address's second line
+                city:
+                  type: string
+                  title: city
+                  description: The address's city.
+                country_code:
+                  type: string
+                  title: country_code
+                  description: The address's country code.
+                province:
+                  type: string
+                  title: province
+                  description: The address's province.
+                postal_code:
+                  type: string
+                  title: postal_code
+                  description: The address's postal code.
+                phone:
+                  type: string
+                  title: phone
+                  description: The address's phone.
+                metadata:
+                  type: object
+                  description: The address's metadata.
+            - type: object
+              description: The address's details.
+              properties:
+                additional_data:
+                  type: object
+                  description: >-
+                    Pass additional custom data to the API route. This data is
+                    passed to the underlying workflow under the
+                    `additional_data` parameter.
+          description: The address's details.
   x-codeSamples:
     - lang: Shell
       label: cURL
@@ -189,6 +227,12 @@ post:
   tags:
     - Customers
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminCustomerResponse.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':
@@ -201,12 +245,11 @@ post:
       $ref: ../components/responses/invalid_request_error.yaml
     '500':
       $ref: ../components/responses/500_error.yaml
+  x-workflow: updateCustomerAddressesWorkflow
 delete:
   operationId: DeleteCustomersIdAddressesAddress_id
-  summary: Remove Addresses from Customer
-  description: >-
-    Remove a list of addresses from a customer. This doesn't delete the Address,
-    only the association between the Address and the customer.
+  summary: Remove an Address from Customer
+  description: Remove a customer's address.
   x-authenticated: true
   parameters:
     - name: id
@@ -217,7 +260,7 @@ delete:
         type: string
     - name: address_id
       in: path
-      description: The customer's address id.
+      description: The customer address's ID.
       required: true
       schema:
         type: string
@@ -247,35 +290,8 @@ delete:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
-    - name: offset
-      in: query
-      description: The number of items to skip when retrieving a list.
-      required: false
-      schema:
-        type: number
-        title: offset
-        description: The number of items to skip when retrieving a list.
-    - name: limit
-      in: query
-      description: Limit the number of items returned in the list.
-      required: false
-      schema:
-        type: number
-        title: limit
-        description: Limit the number of items returned in the list.
-    - name: order
-      in: query
-      description: >-
-        The field to sort the data by. By default, the sort order is ascending.
-        To change the order to descending, prefix the field name with `-`.
-      required: false
-      schema:
-        type: string
-        title: order
-        description: >-
-          The field to sort the data by. By default, the sort order is
-          ascending. To change the order to descending, prefix the field name
-          with `-`.
+        externalDocs:
+          url: '#select-fields-and-relations'
   security:
     - api_token: []
     - cookie_auth: []
@@ -289,6 +305,37 @@ delete:
   tags:
     - Customers
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - type: object
+                description: The deletion's details.
+                required:
+                  - id
+                  - object
+                  - deleted
+                properties:
+                  id:
+                    type: string
+                    title: id
+                    description: The customer's ID.
+                  object:
+                    type: string
+                    title: object
+                    description: The name of the deleted object.
+                  deleted:
+                    type: boolean
+                    title: deleted
+                    description: Whether the Customer was deleted.
+              - type: object
+                description: The deletion's details.
+                properties:
+                  parent:
+                    $ref: ../components/schemas/AdminCustomer.yaml
+            description: The deletion's details.
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':
@@ -301,3 +348,4 @@ delete:
       $ref: ../components/responses/invalid_request_error.yaml
     '500':
       $ref: ../components/responses/500_error.yaml
+  x-workflow: deleteCustomerAddressesWorkflow

@@ -1,15 +1,16 @@
 import { createLinksWorkflow } from "@medusajs/core-flows"
-import { Modules } from "@medusajs/utils"
+import { Modules } from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchVariant } from "../../../../helpers"
 import { AdminCreateVariantInventoryItemType } from "../../../../validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminCreateVariantInventoryItemType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminProductVariantResponse>
 ) => {
   const variantId = req.params.variant_id
 

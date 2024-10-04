@@ -1,5 +1,5 @@
-import { IUserModuleService } from "@medusajs/types/dist/user"
-import { Modules, UserEvents } from "@medusajs/utils"
+import { IUserModuleService } from "@medusajs/framework/types/dist/user"
+import { Modules, UserEvents } from "@medusajs/framework/utils"
 import {
   MockEventBusService,
   moduleIntegrationTestRunner,
@@ -31,7 +31,7 @@ moduleIntegrationTestRunner<IUserModuleService>({
     jwt_secret: "test",
   },
   injectedDependencies: {
-    eventBusModuleService: new MockEventBusService(),
+    [Modules.EVENT_BUS]: new MockEventBusService(),
   },
   testSuite: ({ service }) => {
     describe("UserModuleService - Invite", () => {
@@ -172,12 +172,17 @@ moduleIntegrationTestRunner<IUserModuleService>({
           ])
 
           expect(eventBusSpy).toHaveBeenCalledTimes(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            expect.objectContaining({
-              data: { id: "1" },
-              eventName: UserEvents.INVITE_UPDATED,
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              expect.objectContaining({
+                data: { id: "1" },
+                name: UserEvents.INVITE_UPDATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
       })
 
@@ -189,12 +194,17 @@ moduleIntegrationTestRunner<IUserModuleService>({
           await service.refreshInviteTokens(["1"])
 
           expect(eventBusSpy).toHaveBeenCalledTimes(2)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            expect.objectContaining({
-              data: { id: "1" },
-              eventName: UserEvents.INVITE_TOKEN_GENERATED,
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              expect.objectContaining({
+                data: { id: "1" },
+                name: UserEvents.INVITE_TOKEN_GENERATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
       })
       describe("createInvitie", () => {
@@ -213,29 +223,57 @@ moduleIntegrationTestRunner<IUserModuleService>({
           )
         })
 
+        it("should throw if there is an existing user with the invite email", async () => {
+          let error
+          await service.createUsers([
+            {
+              email: "existing@email.com",
+            },
+          ])
+
+          try {
+            await service.createInvites([
+              {
+                email: "existing@email.com",
+              },
+            ])
+          } catch (e) {
+            error = e
+          }
+
+          expect(error.message).toBe(
+            `User account for following email(s) already exist: existing@email.com`
+          )
+        })
+
         it("should emit invite created events", async () => {
           const eventBusSpy = jest.spyOn(MockEventBusService.prototype, "emit")
           await service.createInvites(defaultInviteData)
 
           expect(eventBusSpy).toHaveBeenCalledTimes(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            expect.objectContaining({
-              data: { id: "1" },
-              eventName: UserEvents.INVITE_CREATED,
-            }),
-            expect.objectContaining({
-              data: { id: "2" },
-              eventName: UserEvents.INVITE_CREATED,
-            }),
-            expect.objectContaining({
-              data: { id: "1" },
-              eventName: UserEvents.INVITE_TOKEN_GENERATED,
-            }),
-            expect.objectContaining({
-              data: { id: "2" },
-              eventName: UserEvents.INVITE_TOKEN_GENERATED,
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              expect.objectContaining({
+                data: { id: "1" },
+                name: UserEvents.INVITE_CREATED,
+              }),
+              expect.objectContaining({
+                data: { id: "2" },
+                name: UserEvents.INVITE_CREATED,
+              }),
+              expect.objectContaining({
+                data: { id: "1" },
+                name: UserEvents.INVITE_TOKEN_GENERATED,
+              }),
+              expect.objectContaining({
+                data: { id: "2" },
+                name: UserEvents.INVITE_TOKEN_GENERATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
       })
     })

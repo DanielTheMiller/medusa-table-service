@@ -1,4 +1,4 @@
-import { BigNumberInput } from "@medusajs/types"
+import { BigNumberInput } from "@medusajs/framework/types"
 
 export type VirtualOrder = {
   id: string
@@ -20,9 +20,11 @@ export type VirtualOrder = {
       claim_id?: string
       exchange_id?: string
 
+      item_id?: string
       quantity: BigNumberInput
       shipped_quantity: BigNumberInput
       fulfilled_quantity: BigNumberInput
+      delivered_quantity: BigNumberInput
       return_requested_quantity: BigNumberInput
       return_received_quantity: BigNumberInput
       return_dismissed_quantity: BigNumberInput
@@ -46,7 +48,7 @@ export type VirtualOrder = {
       exchange_id?: string
     }
 
-    price: BigNumberInput
+    amount: BigNumberInput
   }[]
 
   total: BigNumberInput
@@ -57,7 +59,6 @@ export type VirtualOrder = {
 
 export enum EVENT_STATUS {
   PENDING = "pending",
-  VOIDED = "voided",
   DONE = "done",
 }
 
@@ -65,10 +66,7 @@ export interface OrderSummaryCalculated {
   current_order_total: BigNumberInput
   original_order_total: BigNumberInput
   transaction_total: BigNumberInput
-  future_difference: BigNumberInput
   pending_difference: BigNumberInput
-  future_temporary_difference: BigNumberInput
-  temporary_difference: BigNumberInput
   difference_sum: BigNumberInput
   paid_total: BigNumberInput
   refunded_total: BigNumberInput
@@ -91,15 +89,7 @@ export interface OrderChangeEvent {
 
   change_id?: string
 
-  evaluationOnly?: boolean
-
   details?: any
-
-  resolve?: {
-    change_id?: string
-    reference_id?: string
-    amount?: BigNumberInput
-  }
 }
 
 export type InternalOrderChangeEvent = OrderChangeEvent & {
@@ -115,16 +105,15 @@ export type OrderReferences = {
   transactions: OrderTransaction[]
   type: ActionTypeDefinition
   actions: InternalOrderChangeEvent[]
+  options?: {
+    addActionReferenceToObject?: boolean
+    [key: string]: unknown
+  }
 }
 
 export interface ActionTypeDefinition {
   isDeduction?: boolean
-  awaitRequired?: boolean
-  versioning?: boolean
-  void?: boolean
-  commitsAction?: string
   operation?: (obj: OrderReferences) => BigNumberInput | void
-  revert?: (obj: OrderReferences) => BigNumberInput | void
   validate?: (obj: OrderReferences) => void
   [key: string]: unknown
 }

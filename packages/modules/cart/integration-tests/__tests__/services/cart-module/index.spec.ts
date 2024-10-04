@@ -1,8 +1,8 @@
-import { ICartModuleService } from "@medusajs/types"
-import { BigNumber, Module, Modules } from "@medusajs/utils"
+import { ICartModuleService } from "@medusajs/framework/types"
+import { BigNumber, Module, Modules } from "@medusajs/framework/utils"
 import { CheckConstraintViolationException } from "@mikro-orm/core"
-import { moduleIntegrationTestRunner } from "medusa-test-utils"
 import { CartModuleService } from "@services"
+import { moduleIntegrationTestRunner } from "medusa-test-utils"
 
 jest.setTimeout(50000)
 
@@ -16,16 +16,14 @@ moduleIntegrationTestRunner<ICartModuleService>({
         }).linkable
 
         expect(Object.keys(linkable)).toEqual([
-          "address",
-          "adjustmentLine",
           "cart",
+          "address",
+          "lineItem",
           "lineItemAdjustment",
           "lineItemTaxLine",
-          "lineItem",
+          "shippingMethod",
           "shippingMethodAdjustment",
           "shippingMethodTaxLine",
-          "shippingMethod",
-          "taxLine",
         ])
 
         Object.keys(linkable).forEach((key) => {
@@ -33,84 +31,76 @@ moduleIntegrationTestRunner<ICartModuleService>({
         })
 
         expect(linkable).toEqual({
-          address: {
-            id: {
-              linkable: "address_id",
-              primaryKey: "id",
-              serviceName: "cart",
-              field: "address",
-            },
-          },
-          adjustmentLine: {
-            id: {
-              linkable: "adjustment_line_id",
-              primaryKey: "id",
-              serviceName: "cart",
-              field: "adjustmentLine",
-            },
-          },
           cart: {
             id: {
               linkable: "cart_id",
+              entity: "Cart",
               primaryKey: "id",
-              serviceName: "cart",
+              serviceName: "Cart",
               field: "cart",
+            },
+          },
+          address: {
+            id: {
+              linkable: "address_id",
+              entity: "Address",
+              primaryKey: "id",
+              serviceName: "Cart",
+              field: "address",
+            },
+          },
+          lineItem: {
+            id: {
+              linkable: "line_item_id",
+              entity: "LineItem",
+              primaryKey: "id",
+              serviceName: "Cart",
+              field: "lineItem",
             },
           },
           lineItemAdjustment: {
             id: {
               linkable: "line_item_adjustment_id",
+              entity: "LineItemAdjustment",
               primaryKey: "id",
-              serviceName: "cart",
+              serviceName: "Cart",
               field: "lineItemAdjustment",
             },
           },
           lineItemTaxLine: {
             id: {
               linkable: "line_item_tax_line_id",
+              entity: "LineItemTaxLine",
               primaryKey: "id",
-              serviceName: "cart",
+              serviceName: "Cart",
               field: "lineItemTaxLine",
             },
           },
-          lineItem: {
+          shippingMethod: {
             id: {
-              linkable: "line_item_id",
+              linkable: "shipping_method_id",
+              entity: "ShippingMethod",
               primaryKey: "id",
-              serviceName: "cart",
-              field: "lineItem",
+              serviceName: "Cart",
+              field: "shippingMethod",
             },
           },
           shippingMethodAdjustment: {
             id: {
               linkable: "shipping_method_adjustment_id",
+              entity: "ShippingMethodAdjustment",
               primaryKey: "id",
-              serviceName: "cart",
+              serviceName: "Cart",
               field: "shippingMethodAdjustment",
             },
           },
           shippingMethodTaxLine: {
             id: {
               linkable: "shipping_method_tax_line_id",
+              entity: "ShippingMethodTaxLine",
               primaryKey: "id",
-              serviceName: "cart",
+              serviceName: "Cart",
               field: "shippingMethodTaxLine",
-            },
-          },
-          shippingMethod: {
-            id: {
-              linkable: "shipping_method_id",
-              primaryKey: "id",
-              serviceName: "cart",
-              field: "shippingMethod",
-            },
-          },
-          taxLine: {
-            id: {
-              linkable: "tax_line_id",
-              primaryKey: "id",
-              serviceName: "cart",
-              field: "taxLine",
             },
           },
         })
@@ -2566,6 +2556,7 @@ moduleIntegrationTestRunner<ICartModuleService>({
             total: 0,
             original_total: 100,
             discount_total: 100,
+            discount_subtotal: 100,
             discount_tax_total: 0,
             tax_total: 0,
             original_tax_total: 0,
@@ -2582,6 +2573,10 @@ moduleIntegrationTestRunner<ICartModuleService>({
               precision: 20,
             },
             raw_discount_total: {
+              value: "100",
+              precision: 20,
+            },
+            raw_discount_subtotal: {
               value: "100",
               precision: 20,
             },
@@ -2665,6 +2660,7 @@ moduleIntegrationTestRunner<ICartModuleService>({
             total: 200,
             original_total: 400,
             discount_total: 200,
+            discount_subtotal: 200,
             discount_tax_total: 0,
             tax_total: 0,
             original_tax_total: 0,
@@ -2681,6 +2677,10 @@ moduleIntegrationTestRunner<ICartModuleService>({
               precision: 20,
             },
             raw_discount_total: {
+              value: "200",
+              precision: 20,
+            },
+            raw_discount_subtotal: {
               value: "200",
               precision: 20,
             },
@@ -2722,6 +2722,7 @@ moduleIntegrationTestRunner<ICartModuleService>({
             total: 10,
             original_total: 10,
             discount_total: 0,
+            discount_subtotal: 0,
             discount_tax_total: 0,
             tax_total: 0,
             original_tax_total: 0,
@@ -2741,6 +2742,10 @@ moduleIntegrationTestRunner<ICartModuleService>({
               value: "0",
               precision: 20,
             },
+            raw_discount_subtotal: {
+              value: "0",
+              precision: 20,
+            },
             raw_discount_tax_total: {
               value: "0",
               precision: 20,
@@ -2756,11 +2761,12 @@ moduleIntegrationTestRunner<ICartModuleService>({
           },
         ],
         total: 210,
-        subtotal: 500,
+        subtotal: 510,
         tax_total: 0,
         discount_total: 300,
+        discount_subtotal: 300,
         discount_tax_total: 0,
-        original_total: 210,
+        original_total: 510,
         original_tax_total: 0,
         item_total: 200,
         item_subtotal: 500,
@@ -2772,14 +2778,14 @@ moduleIntegrationTestRunner<ICartModuleService>({
         shipping_subtotal: 10,
         shipping_tax_total: 0,
         original_shipping_tax_total: 0,
-        original_shipping_tax_subtotal: 10,
+        original_shipping_subtotal: 10,
         original_shipping_total: 10,
         raw_total: {
           value: "210",
           precision: 20,
         },
         raw_subtotal: {
-          value: "500",
+          value: "510",
           precision: 20,
         },
         raw_tax_total: {
@@ -2790,12 +2796,16 @@ moduleIntegrationTestRunner<ICartModuleService>({
           value: "300",
           precision: 20,
         },
+        raw_discount_subtotal: {
+          value: "300",
+          precision: 20,
+        },
         raw_discount_tax_total: {
           value: "0",
           precision: 20,
         },
         raw_original_total: {
-          value: "210",
+          value: "510",
           precision: 20,
         },
         raw_original_tax_total: {
@@ -2842,7 +2852,7 @@ moduleIntegrationTestRunner<ICartModuleService>({
           value: "0",
           precision: 20,
         },
-        raw_original_shipping_tax_subtotal: {
+        raw_original_shipping_subtotal: {
           value: "10",
           precision: 20,
         },

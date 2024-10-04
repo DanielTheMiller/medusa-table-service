@@ -3,9 +3,9 @@ import {
   DALUtils,
   generateEntityId,
   GeoZoneType,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   BeforeCreate,
   Entity,
@@ -20,7 +20,7 @@ import {
 } from "@mikro-orm/core"
 import ServiceZone from "./service-zone"
 
-type GeoZoneOptionalProps = DAL.SoftDeletableEntityDateColumns
+type GeoZoneOptionalProps = DAL.SoftDeletableModelDateColumns
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
   tableName: "geo_zone",

@@ -1,12 +1,12 @@
-import { MikroORMOptions } from "@mikro-orm/core/utils/Configuration"
 import { DmlEntity, toMikroOrmEntities } from "../dml"
-import { TSMigrationGenerator } from "../dal"
+import { CustomTsMigrationGenerator } from "../dal"
 import type {
   AnyEntity,
   EntityClass,
+  EntitySchema,
+  MikroORMOptions,
   EntityClassGroup,
-} from "@mikro-orm/core/typings"
-import type { EntitySchema } from "@mikro-orm/core/metadata/EntitySchema"
+} from "@mikro-orm/core"
 import { kebabCase } from "../common"
 
 type Options = Partial<Omit<MikroORMOptions, "entities" | "entitiesTs">> & {
@@ -17,12 +17,10 @@ type Options = Partial<Omit<MikroORMOptions, "entities" | "entitiesTs">> & {
     | EntitySchema
     | DmlEntity<any, any>
   )[]
-  databaseName?: string
 }
 
 type ReturnedOptions = Partial<MikroORMOptions> & {
   entities: MikroORMOptions["entities"]
-  clientUrl: string
   type: MikroORMOptions["type"]
   migrations: MikroORMOptions["migrations"]
 }
@@ -53,21 +51,18 @@ export function defineMikroOrmCliConfig(
   ) as MikroORMOptions["entities"]
 
   const normalizedModuleName = kebabCase(moduleName.replace("Service", ""))
-  let databaseName = `medusa-${normalizedModuleName}`
-
-  if (options.databaseName) {
-    databaseName = options.databaseName
-    // @ts-ignore
-    delete options.databaseName
-  }
+  const databaseName = `medusa-${normalizedModuleName}`
 
   return {
-    clientUrl: `postgres://postgres@localhost/${databaseName}`,
     type: "postgresql",
+    dbName: databaseName,
+    host: "127.0.0.1",
+    user: "postgres",
+    password: "",
     ...options,
     entities,
     migrations: {
-      generator: TSMigrationGenerator,
+      generator: CustomTsMigrationGenerator,
       ...options.migrations,
     },
   }

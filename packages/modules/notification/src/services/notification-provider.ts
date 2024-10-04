@@ -1,5 +1,9 @@
-import { DAL, InferEntityType, NotificationTypes } from "@medusajs/types"
-import { MedusaError, ModulesSdkUtils } from "@medusajs/utils"
+import {
+  DAL,
+  InferEntityType,
+  NotificationTypes,
+} from "@medusajs/framework/types"
+import { MedusaError, ModulesSdkUtils } from "@medusajs/framework/utils"
 import { NotificationProvider } from "@models"
 import { NotificationProviderRegistrationPrefix } from "@types"
 
@@ -11,6 +15,8 @@ type InjectedDependencies = {
     key: `${typeof NotificationProviderRegistrationPrefix}${string}`
   ]: NotificationTypes.INotificationProvider
 }
+
+type Provider = InferEntityType<typeof NotificationProvider>
 
 export default class NotificationProviderService extends ModulesSdkUtils.MedusaInternalService<
   InjectedDependencies,
@@ -46,13 +52,13 @@ export default class NotificationProviderService extends ModulesSdkUtils.MedusaI
     }
   }
 
-  async getProviderForChannel(
-    channel: string
-  ): Promise<InferEntityType<typeof NotificationProvider> | undefined> {
+  async getProviderForChannels<
+    TChannel = string | string[],
+    TOutput = TChannel extends string[] ? Provider[] : Provider | undefined
+  >(channels: TChannel): Promise<TOutput> {
     if (!this.providersCache) {
       const providers = await this.notificationProviderRepository_.find()
 
-      type name = (typeof NotificationProvider)["name"]
       this.providersCache = new Map(
         providers.flatMap((provider) =>
           provider.channels.map((c) => [c, provider])
@@ -60,7 +66,12 @@ export default class NotificationProviderService extends ModulesSdkUtils.MedusaI
       )
     }
 
-    return this.providersCache.get(channel)
+    const normalizedChannels = Array.isArray(channels) ? channels : [channels]
+    const results = normalizedChannels
+      .map((channel) => this.providersCache.get(channel))
+      .filter(Boolean)
+
+    return (Array.isArray(channels) ? results : results[0]) as TOutput
   }
 
   async send(

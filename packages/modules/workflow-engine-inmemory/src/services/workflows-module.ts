@@ -2,18 +2,19 @@ import {
   Context,
   DAL,
   InternalModuleDeclaration,
+  MedusaContainer,
   ModulesSdkTypes,
   WorkflowsSdkTypes,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   InjectSharedContext,
   MedusaContext,
   ModulesSdkUtils,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import type {
   ReturnWorkflow,
   UnwrapWorkflowInputDataType,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 import { WorkflowExecution } from "@models"
 import { WorkflowOrchestratorService } from "@services"
 
@@ -31,6 +32,7 @@ export class WorkflowsModuleService<
   protected baseRepository_: DAL.RepositoryService
   protected workflowExecutionService_: ModulesSdkTypes.IMedusaInternalService<TWorkflowExecution>
   protected workflowOrchestratorService_: WorkflowOrchestratorService
+  protected container_: MedusaContainer
 
   constructor(
     {

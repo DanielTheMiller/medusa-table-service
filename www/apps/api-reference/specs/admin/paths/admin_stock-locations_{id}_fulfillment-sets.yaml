@@ -1,7 +1,8 @@
 post:
   operationId: PostStockLocationsIdFulfillmentSets
-  summary: Add Fulfillment Sets to Stock Location
-  description: Add a list of fulfillment sets to a stock location.
+  summary: Add Fulfillment Set to Stock Location
+  x-sidebar-summary: Add Fulfillment Set
+  description: Create and add a fulfillment set to a stock location.
   x-authenticated: true
   parameters:
     - name: id
@@ -36,35 +37,8 @@ post:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
-    - name: offset
-      in: query
-      description: The number of items to skip when retrieving a list.
-      required: false
-      schema:
-        type: number
-        title: offset
-        description: The number of items to skip when retrieving a list.
-    - name: limit
-      in: query
-      description: Limit the number of items returned in the list.
-      required: false
-      schema:
-        type: number
-        title: limit
-        description: Limit the number of items returned in the list.
-    - name: order
-      in: query
-      description: >-
-        The field to sort the data by. By default, the sort order is ascending.
-        To change the order to descending, prefix the field name with `-`.
-      required: false
-      schema:
-        type: string
-        title: order
-        description: >-
-          The field to sort the data by. By default, the sort order is
-          ascending. To change the order to descending, prefix the field name
-          with `-`.
+        externalDocs:
+          url: '#select-fields-and-relations'
   security:
     - api_token: []
     - cookie_auth: []
@@ -74,19 +48,19 @@ post:
       application/json:
         schema:
           type: object
-          description: SUMMARY
+          description: The fulfillment set to create.
           required:
-            - name
             - type
+            - name
           properties:
             name:
               type: string
               title: name
-              description: The stock location's name.
+              description: The fulfillment set's name.
             type:
               type: string
               title: type
-              description: The stock location's type.
+              description: The fulfillment set's type.
   x-codeSamples:
     - lang: Shell
       label: cURL
@@ -96,6 +70,12 @@ post:
   tags:
     - Stock Locations
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminStockLocationResponse.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':
@@ -108,3 +88,4 @@ post:
       $ref: ../components/responses/invalid_request_error.yaml
     '500':
       $ref: ../components/responses/500_error.yaml
+  x-workflow: createLocationFulfillmentSetWorkflow

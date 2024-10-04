@@ -1,9 +1,9 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
@@ -14,9 +14,9 @@ import {
   Property,
 } from "@mikro-orm/core"
 import Exchange from "./exchange"
-import LineItem from "./line-item"
+import OrderLineItem from "./line-item"
 
-type OptionalLineItemProps = DAL.EntityDateColumns
+type OptionalLineItemProps = DAL.ModelDateColumns
 
 const ExchangeIdIndex = createPsqlIndexStatementHelper({
   tableName: "order_exchange_item",
@@ -64,7 +64,7 @@ export default class OrderExchangeItem {
   exchange: Exchange
 
   @ManyToOne({
-    entity: () => LineItem,
+    entity: () => OrderLineItem,
     fieldName: "item_id",
     mapToPk: true,
     columnType: "text",
@@ -72,10 +72,10 @@ export default class OrderExchangeItem {
   @ItemIdIndex.MikroORMIndex()
   item_id: string
 
-  @ManyToOne(() => LineItem, {
+  @ManyToOne(() => OrderLineItem, {
     persist: false,
   })
-  item: LineItem
+  item: OrderLineItem
 
   @Property({ columnType: "text", nullable: true })
   note: string
@@ -105,12 +105,12 @@ export default class OrderExchangeItem {
   @BeforeCreate()
   onCreate() {
     this.id = generateEntityId(this.id, "oexcitem")
-    this.exchange_id = this.exchange?.id
+    this.exchange_id ??= this.exchange?.id
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "oexcitem")
-    this.exchange_id = this.exchange?.id
+    this.exchange_id ??= this.exchange?.id
   }
 }

@@ -2,17 +2,17 @@ import {
   Context,
   CreateOrderChangeActionDTO,
   OrderTypes,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
+  ChangeActionType,
+  OrderChangeType,
   ReturnStatus,
   getShippingMethodsTotals,
   isDefined,
   isString,
   promiseAll,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { Return, ReturnItem } from "@models"
-import { OrderChangeType } from "@types"
-import { ChangeActionType } from "../../utils"
 
 function createReturnReference(em, data, order) {
   return em.create(Return, {
@@ -34,7 +34,6 @@ function createReturnItems(em, data, returnRef, actions) {
       reference_id: returnRef.id,
       details: {
         reference_id: item.id,
-        return_id: returnRef.id,
         quantity: item.quantity,
         metadata: item.metadata,
       },
@@ -65,7 +64,7 @@ async function processShippingMethod(
   }
 
   if (!isString(data.shipping_method)) {
-    const methods = await service.createShippingMethods(
+    const methods = await service.createOrderShippingMethods(
       [
         {
           ...data.shipping_method,
@@ -80,7 +79,7 @@ async function processShippingMethod(
     shippingMethodId = data.shipping_method
   }
 
-  const method = await service.retrieveShippingMethod(
+  const method = await service.retrieveOrderShippingMethod(
     shippingMethodId,
     { relations: ["tax_lines", "adjustments"] },
     sharedContext
@@ -115,7 +114,7 @@ async function createOrderChange(
     {
       order_id: data.order_id,
       return_id: returnRef.id,
-      change_type: OrderChangeType.RETURN,
+      change_type: OrderChangeType.RETURN_REQUEST,
       reference: "return",
       reference_id: returnRef.id,
       description: data.description,

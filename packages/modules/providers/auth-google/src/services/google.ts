@@ -1,11 +1,14 @@
 import {
-  Logger,
-  GoogleAuthProviderOptions,
-  AuthenticationResponse,
   AuthenticationInput,
+  AuthenticationResponse,
   AuthIdentityProviderService,
-} from "@medusajs/types"
-import { AbstractAuthModuleProvider, MedusaError } from "@medusajs/utils"
+  GoogleAuthProviderOptions,
+  Logger,
+} from "@medusajs/framework/types"
+import {
+  AbstractAuthModuleProvider,
+  MedusaError,
+} from "@medusajs/framework/utils"
 import jwt, { JwtPayload } from "jsonwebtoken"
 
 type InjectedDependencies = {
@@ -19,14 +22,34 @@ export class GoogleAuthService extends AbstractAuthModuleProvider {
   protected config_: LocalServiceConfig
   protected logger_: Logger
 
+  static validateOptions(options: GoogleAuthProviderOptions) {
+    if (!options.clientId) {
+      throw new Error("Google clientId is required")
+    }
+
+    if (!options.clientSecret) {
+      throw new Error("Google clientSecret is required")
+    }
+
+    if (!options.callbackUrl) {
+      throw new Error("Google callbackUrl is required")
+    }
+  }
+
   constructor(
     { logger }: InjectedDependencies,
     options: GoogleAuthProviderOptions
   ) {
     super({}, { provider: "google", displayName: "Google Authentication" })
-    this.validateConfig(options)
     this.config_ = options
     this.logger_ = logger
+  }
+
+  async register(_): Promise<AuthenticationResponse> {
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      "Google does not support registration. Use method `authenticate` instead."
+    )
   }
 
   async authenticate(
@@ -58,10 +81,10 @@ export class GoogleAuthService extends AbstractAuthModuleProvider {
       return { success: false, error: "No code provided" }
     }
 
-    const params = `client_id=${this.config_.clientID}&client_secret=${
+    const params = `client_id=${this.config_.clientId}&client_secret=${
       this.config_.clientSecret
     }&code=${code}&redirect_uri=${encodeURIComponent(
-      this.config_.callbackURL
+      this.config_.callbackUrl
     )}&grant_type=authorization_code`
     const exchangeTokenUrl = new URL(
       `https://oauth2.googleapis.com/token?${params}`
@@ -89,7 +112,6 @@ export class GoogleAuthService extends AbstractAuthModuleProvider {
       return {
         success,
         authIdentity,
-        successRedirectUrl: this.config_.successRedirectUrl,
       }
     } catch (error) {
       return { success: false, error: error.message }
@@ -149,9 +171,9 @@ export class GoogleAuthService extends AbstractAuthModuleProvider {
     }
   }
 
-  private getRedirect({ clientID, callbackURL }: LocalServiceConfig) {
-    const redirectUrlParam = `redirect_uri=${encodeURIComponent(callbackURL)}`
-    const clientIdParam = `client_id=${clientID}`
+  private getRedirect({ clientId, callbackUrl }: LocalServiceConfig) {
+    const redirectUrlParam = `redirect_uri=${encodeURIComponent(callbackUrl)}`
+    const clientIdParam = `client_id=${clientId}`
     const responseTypeParam = "response_type=code"
     const scopeParam = "scope=email+profile+openid"
 
@@ -165,19 +187,5 @@ export class GoogleAuthService extends AbstractAuthModuleProvider {
     )
 
     return { success: true, location: authUrl.toString() }
-  }
-
-  private validateConfig(config: LocalServiceConfig) {
-    if (!config.clientID) {
-      throw new Error("Google clientID is required")
-    }
-
-    if (!config.clientSecret) {
-      throw new Error("Google clientSecret is required")
-    }
-
-    if (!config.callbackURL) {
-      throw new Error("Google callbackUrl is required")
-    }
   }
 }

@@ -1,8 +1,9 @@
 /**
  * @oas [post] /admin/fulfillment-sets/{id}/service-zones/{zone_id}
  * operationId: PostFulfillmentSetsIdServiceZonesZone_id
- * summary: Add Service Zones to Fulfillment Set
- * description: Add a list of service zones to a fulfillment set.
+ * summary: Update the Service Zone of a Fulfillment Set
+ * x-sidebar-summary: Update Service Zone
+ * description: Update the details of a service zone in a fulfillment set.
  * x-authenticated: true
  * parameters:
  *   - name: id
@@ -13,7 +14,7 @@
  *       type: string
  *   - name: zone_id
  *     in: path
- *     description: The fulfillment set's zone id.
+ *     description: The service zone's ID.
  *     required: true
  *     schema:
  *       type: string
@@ -27,46 +28,16 @@
  *       description: Comma-separated relations that should be expanded in the returned data.
  *   - name: fields
  *     in: query
- *     description: >-
- *       Comma-separated fields that should be included in the returned data.
- *        * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *        * without prefix it will replace the entire default fields.
+ *     description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *       fields. without prefix it will replace the entire default fields.
  *     required: false
  *     schema:
  *       type: string
  *       title: fields
- *       description: >-
- *         Comma-separated fields that should be included in the returned data.
- *          * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *          * without prefix it will replace the entire default fields.
- *   - name: offset
- *     in: query
- *     description: The number of items to skip when retrieving a list.
- *     required: false
- *     schema:
- *       type: number
- *       title: offset
- *       description: The number of items to skip when retrieving a list.
- *   - name: limit
- *     in: query
- *     description: Limit the number of items returned in the list.
- *     required: false
- *     schema:
- *       type: number
- *       title: limit
- *       description: Limit the number of items returned in the list.
- *   - name: order
- *     in: query
- *     description: The field to sort the data by. By default, the sort order is
- *       ascending. To change the order to descending, prefix the field name with
- *       `-`.
- *     required: false
- *     schema:
- *       type: string
- *       title: order
- *       description: The field to sort the data by. By default, the sort order is
- *         ascending. To change the order to descending, prefix the field name with
- *         `-`.
+ *       description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *         fields. without prefix it will replace the entire default fields.
+ *       externalDocs:
+ *         url: "#select-fields-and-relations"
  * security:
  *   - api_token: []
  *   - cookie_auth: []
@@ -76,21 +47,19 @@
  *     application/json:
  *       schema:
  *         type: object
- *         description: SUMMARY
- *         required:
- *           - name
+ *         description: The service zone's details.
  *         properties:
  *           name:
  *             type: string
  *             title: name
- *             description: The fulfillment set's name.
+ *             description: The service zone's name.
  *           geo_zones:
  *             type: array
- *             description: The fulfillment set's geo zones.
+ *             description: The service zone's associated geo zones.
  *             items:
  *               oneOf:
  *                 - type: object
- *                   description: The geo zone's geo zones.
+ *                   description: A country geo zone.
  *                   required:
  *                     - type
  *                     - metadata
@@ -100,6 +69,7 @@
  *                       type: string
  *                       title: type
  *                       description: The geo zone's type.
+ *                       default: country
  *                     metadata:
  *                       type: object
  *                       description: The geo zone's metadata.
@@ -110,9 +80,9 @@
  *                     id:
  *                       type: string
  *                       title: id
- *                       description: The geo zone's ID.
+ *                       description: The ID of an existing geo zone.
  *                 - type: object
- *                   description: The geo zone's geo zones.
+ *                   description: A province geo zone.
  *                   required:
  *                     - type
  *                     - metadata
@@ -123,6 +93,7 @@
  *                       type: string
  *                       title: type
  *                       description: The geo zone's type.
+ *                       default: province
  *                     metadata:
  *                       type: object
  *                       description: The geo zone's metadata.
@@ -137,9 +108,9 @@
  *                     id:
  *                       type: string
  *                       title: id
- *                       description: The geo zone's ID.
+ *                       description: The ID of an existing geo zone.
  *                 - type: object
- *                   description: The geo zone's geo zones.
+ *                   description: A city geo zone
  *                   required:
  *                     - type
  *                     - metadata
@@ -151,6 +122,7 @@
  *                       type: string
  *                       title: type
  *                       description: The geo zone's type.
+ *                       default: city
  *                     metadata:
  *                       type: object
  *                       description: The geo zone's metadata.
@@ -169,9 +141,9 @@
  *                     id:
  *                       type: string
  *                       title: id
- *                       description: The geo zone's ID.
+ *                       description: The ID of an existing geo zone.
  *                 - type: object
- *                   description: The geo zone's geo zones.
+ *                   description: A ZIP geo zone.
  *                   required:
  *                     - type
  *                     - metadata
@@ -184,6 +156,7 @@
  *                       type: string
  *                       title: type
  *                       description: The geo zone's type.
+ *                       default: zip
  *                     metadata:
  *                       type: object
  *                       description: The geo zone's metadata.
@@ -201,22 +174,18 @@
  *                       description: The geo zone's province code.
  *                     postal_expression:
  *                       type: object
- *                       description: The geo zone's postal expression.
+ *                       description: The geo zone's postal expression or ZIP code.
  *                     id:
  *                       type: string
  *                       title: id
- *                       description: The geo zone's ID.
+ *                       description: The ID of an existing geo zone.
  * x-codeSamples:
  *   - lang: Shell
  *     label: cURL
- *     source: >-
- *       curl -X POST
- *       '{backend_url}/admin/fulfillment-sets/{id}/service-zones/{zone_id}' \
- * 
- *       -H 'x-medusa-access-token: {api_token}' \
- * 
+ *     source: |-
+ *       curl -X POST '{backend_url}/admin/fulfillment-sets/{id}/service-zones/{zone_id}' \
+ *       -H 'Authorization: Bearer {access_token}' \
  *       -H 'Content-Type: application/json' \
- * 
  *       --data-raw '{
  *         "name": "Elvis"
  *       }'
@@ -241,6 +210,7 @@
  *     $ref: "#/components/responses/invalid_request_error"
  *   "500":
  *     $ref: "#/components/responses/500_error"
+ * x-workflow: updateServiceZonesWorkflow
  * 
 */
 

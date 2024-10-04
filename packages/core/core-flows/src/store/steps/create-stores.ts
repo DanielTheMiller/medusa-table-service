@@ -1,20 +1,17 @@
-import { CreateStoreDTO, IStoreModuleService } from "@medusajs/types"
-import { ModuleRegistrationName } from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
-
-type CreateStoresStepInput = {
-  stores: CreateStoreDTO[]
-}
+import { CreateStoreDTO, IStoreModuleService } from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
 export const createStoresStepId = "create-stores"
+/**
+ * This step creates one or more stores.
+ */
 export const createStoresStep = createStep(
   createStoresStepId,
-  async (data: CreateStoresStepInput, { container }) => {
-    const service = container.resolve<IStoreModuleService>(
-      ModuleRegistrationName.STORE
-    )
+  async (data: CreateStoreDTO[], { container }) => {
+    const service = container.resolve<IStoreModuleService>(Modules.STORE)
 
-    const created = await service.createStores(data.stores)
+    const created = await service.createStores(data)
     return new StepResponse(
       created,
       created.map((store) => store.id)
@@ -25,9 +22,7 @@ export const createStoresStep = createStep(
       return
     }
 
-    const service = container.resolve<IStoreModuleService>(
-      ModuleRegistrationName.STORE
-    )
+    const service = container.resolve<IStoreModuleService>(Modules.STORE)
 
     await service.deleteStores(createdIds)
   }

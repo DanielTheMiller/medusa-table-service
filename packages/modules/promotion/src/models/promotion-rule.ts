@@ -1,5 +1,9 @@
-import { DAL, PromotionRuleOperatorValues } from "@medusajs/types"
-import { DALUtils, PromotionUtils, generateEntityId } from "@medusajs/utils"
+import { DAL, PromotionRuleOperatorValues } from "@medusajs/framework/types"
+import {
+  DALUtils,
+  PromotionUtils,
+  generateEntityId,
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -20,7 +24,7 @@ import ApplicationMethod from "./application-method"
 import Promotion from "./promotion"
 import PromotionRuleValue from "./promotion-rule-value"
 
-type OptionalFields = "description" | DAL.SoftDeletableEntityDateColumns
+type OptionalFields = "description" | DAL.SoftDeletableModelDateColumns
 type OptionalRelations = "values" | "promotions"
 
 @Entity({ tableName: "promotion_rule" })

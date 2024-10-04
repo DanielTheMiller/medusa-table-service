@@ -1,18 +1,21 @@
 import {
   AddPromotionRulesWorkflowDTO,
   IPromotionModuleService,
-} from "@medusajs/types"
-import { ModuleRegistrationName, RuleType } from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/types"
+import { Modules, RuleType } from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
 export const addRulesToPromotionsStepId = "add-rules-to-promotions"
+/**
+ * This step adds rules to a promotion.
+ */
 export const addRulesToPromotionsStep = createStep(
   addRulesToPromotionsStepId,
   async (input: AddPromotionRulesWorkflowDTO, { container }) => {
     const { data, rule_type: ruleType } = input
 
     const promotionModule = container.resolve<IPromotionModuleService>(
-      ModuleRegistrationName.PROMOTION
+      Modules.PROMOTION
     )
 
     const createdPromotionRules =
@@ -56,7 +59,7 @@ export const addRulesToPromotionsStep = createStep(
     } = data
 
     const promotionModule = container.resolve<IPromotionModuleService>(
-      ModuleRegistrationName.PROMOTION
+      Modules.PROMOTION
     )
 
     promotionRuleIds.length &&

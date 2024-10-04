@@ -1,8 +1,8 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
@@ -17,54 +17,55 @@ import Claim from "./claim"
 import Exchange from "./exchange"
 import Order from "./order"
 import Return from "./return"
-import ShippingMethod from "./shipping-method"
+import OrderShippingMethod from "./shipping-method"
 
-type OptionalShippingMethodProps = DAL.EntityDateColumns
+type OptionalShippingMethodProps = DAL.ModelDateColumns
 
+const tableName = "order_shipping"
 const OrderIdIndex = createPsqlIndexStatementHelper({
-  tableName: "order_shipping",
+  tableName,
   columns: ["order_id"],
   where: "deleted_at IS NOT NULL",
 })
 
 const ReturnIdIndex = createPsqlIndexStatementHelper({
-  tableName: "order_shipping",
+  tableName,
   columns: "return_id",
   where: "return_id IS NOT NULL AND deleted_at IS NOT NULL",
 })
 
 const ExchangeIdIndex = createPsqlIndexStatementHelper({
-  tableName: "order_shipping",
+  tableName,
   columns: ["exchange_id"],
   where: "exchange_id IS NOT NULL AND deleted_at IS NOT NULL",
 })
 
 const ClaimIdIndex = createPsqlIndexStatementHelper({
-  tableName: "order_shipping",
+  tableName,
   columns: ["claim_id"],
   where: "claim_id IS NOT NULL AND deleted_at IS NOT NULL",
 })
 
 const OrderVersionIndex = createPsqlIndexStatementHelper({
-  tableName: "order_shipping",
+  tableName,
   columns: ["version"],
   where: "deleted_at IS NOT NULL",
 })
 
 const ItemIdIndex = createPsqlIndexStatementHelper({
-  tableName: "order_shipping",
+  tableName,
   columns: ["shipping_method_id"],
   where: "deleted_at IS NOT NULL",
 })
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
-  tableName: "order",
+  tableName,
   columns: "deleted_at",
   where: "deleted_at IS NOT NULL",
 })
 
-@Entity({ tableName: "order_shipping" })
-export default class OrderShippingMethod {
+@Entity({ tableName })
+export default class OrderShipping {
   [OptionalProps]?: OptionalShippingMethodProps
 
   @PrimaryKey({ columnType: "text" })
@@ -96,6 +97,7 @@ export default class OrderShippingMethod {
 
   @ManyToOne(() => Return, {
     persist: false,
+    nullable: true,
   })
   return: Rel<Return>
 
@@ -111,6 +113,7 @@ export default class OrderShippingMethod {
 
   @ManyToOne(() => Exchange, {
     persist: false,
+    nullable: true,
   })
   exchange: Rel<Exchange>
 
@@ -126,6 +129,7 @@ export default class OrderShippingMethod {
 
   @ManyToOne(() => Claim, {
     persist: false,
+    nullable: true,
   })
   claim: Rel<Claim>
 
@@ -134,7 +138,7 @@ export default class OrderShippingMethod {
   version: number
 
   @ManyToOne({
-    entity: () => ShippingMethod,
+    entity: () => OrderShippingMethod,
     fieldName: "shipping_method_id",
     mapToPk: true,
     columnType: "text",
@@ -142,10 +146,10 @@ export default class OrderShippingMethod {
   @ItemIdIndex.MikroORMIndex()
   shipping_method_id: string
 
-  @ManyToOne(() => ShippingMethod, {
+  @ManyToOne(() => OrderShippingMethod, {
     persist: false,
   })
-  shipping_method: Rel<ShippingMethod>
+  shipping_method: Rel<OrderShippingMethod>
 
   @Property({
     onCreate: () => new Date(),

@@ -1,4 +1,4 @@
-export type DeleteResponse<TObject extends string, TParent = {}> = {
+export type DeleteResponse<TObject extends string> = {
   /**
    * The ID of the item that was deleted.
    */
@@ -13,7 +13,12 @@ export type DeleteResponse<TObject extends string, TParent = {}> = {
    * Whether the item was deleted successfully.
    */
   deleted: boolean
+}
 
+export type DeleteResponseWithParent<
+  TObject extends string,
+  TParent = {}
+> = DeleteResponse<TObject> & {
   /**
    * The parent resource of the item that was deleted, if applicable.
    */
@@ -25,3 +30,13 @@ export type PaginatedResponse<T> = {
   offset: number
   count: number
 } & T
+
+export type BatchResponse<T> = {
+  created: T[]
+  updated: T[]
+  deleted: {
+    ids: string[]
+    object: string
+    deleted: boolean
+  }
+}

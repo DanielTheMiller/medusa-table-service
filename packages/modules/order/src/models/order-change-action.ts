@@ -1,13 +1,15 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
+  DALUtils,
   MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
+  Filter,
   ManyToOne,
   OnInit,
   OptionalProps,
@@ -21,7 +23,7 @@ import Order from "./order"
 import OrderChange from "./order-change"
 import Return from "./return"
 
-type OptionalLineItemProps = DAL.EntityDateColumns
+type OptionalLineItemProps = DAL.ModelDateColumns
 
 const OrderChangeIdIndex = createPsqlIndexStatementHelper({
   tableName: "order_change_action",
@@ -66,6 +68,7 @@ const ActionOrderingIndex = createPsqlIndexStatementHelper({
 })
 
 @Entity({ tableName: "order_change_action" })
+@Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
 export default class OrderChangeAction {
   [OptionalProps]?: OptionalLineItemProps
 
@@ -105,6 +108,7 @@ export default class OrderChangeAction {
 
   @ManyToOne(() => Return, {
     persist: false,
+    nullable: true,
   })
   return: Return
 
@@ -120,6 +124,7 @@ export default class OrderChangeAction {
 
   @ManyToOne(() => OrderClaim, {
     persist: false,
+    nullable: true,
   })
   claim: OrderClaim
 
@@ -135,6 +140,7 @@ export default class OrderChangeAction {
 
   @ManyToOne(() => OrderExchange, {
     persist: false,
+    nullable: true,
   })
   exchange: OrderExchange
 
@@ -217,23 +223,29 @@ export default class OrderChangeAction {
   onCreate() {
     this.id = generateEntityId(this.id, "ordchact")
     this.order_id ??= this.order?.id ?? this.order_change?.order_id ?? null
-    this.return_id ??= this.return?.id ?? this.order_change?.return_id ?? null
     this.claim_id ??= this.claim?.id ?? this.order_change?.claim_id ?? null
     this.exchange_id ??=
       this.exchange?.id ?? this.order_change?.exchange_id ?? null
     this.order_change_id ??= this.order_change?.id ?? null
     this.version ??= this.order_change?.version ?? null
+
+    if (!this.claim_id && !this.exchange_id) {
+      this.return_id ??= this.return?.id ?? this.order_change?.return_id ?? null
+    }
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "ordchact")
     this.order_id ??= this.order?.id ?? this.order_change?.order_id ?? null
-    this.return_id ??= this.return?.id ?? this.order_change?.return_id ?? null
     this.claim_id ??= this.claim?.id ?? this.order_change?.claim_id ?? null
     this.exchange_id ??=
       this.exchange?.id ?? this.order_change?.exchange_id ?? null
     this.order_change_id ??= this.order_change?.id ?? null
     this.version ??= this.order_change?.version ?? null
+
+    if (!this.claim_id && !this.exchange_id) {
+      this.return_id ??= this.return?.id ?? this.order_change?.return_id ?? null
+    }
   }
 }

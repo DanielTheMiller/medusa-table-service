@@ -1,7 +1,7 @@
 /**
  * @schema AdminProductDeleteResponse
  * type: object
- * description: SUMMARY
+ * description: The details of the product deletion.
  * x-schemaName: AdminProductDeleteResponse
  * required:
  *   - id
@@ -15,15 +15,12 @@
  *   object:
  *     type: string
  *     title: object
- *     description: The product's object.
+ *     description: The name of the deleted object.
  *     default: product
  *   deleted:
  *     type: boolean
  *     title: deleted
- *     description: The product's deleted.
- *   parent:
- *     type: object
- *     description: The product's parent.
+ *     description: Whether the product was deleted.
  * 
 */
 

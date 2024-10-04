@@ -1,14 +1,19 @@
 import {
   DistributedTransaction,
+  DistributedTransactionType,
   IDistributedSchedulerStorage,
   IDistributedTransactionStorage,
   SchedulerOptions,
   TransactionCheckpoint,
   TransactionOptions,
   TransactionStep,
-} from "@medusajs/orchestration"
-import { Logger, ModulesSdkTypes } from "@medusajs/types"
-import { MedusaError, TransactionState, promiseAll } from "@medusajs/utils"
+} from "@medusajs/framework/orchestration"
+import { Logger, ModulesSdkTypes } from "@medusajs/framework/types"
+import {
+  MedusaError,
+  promiseAll,
+  TransactionState,
+} from "@medusajs/framework/utils"
 import { WorkflowOrchestratorService } from "@services"
 import { Queue, Worker } from "bullmq"
 import Redis from "ioredis"
@@ -29,6 +34,8 @@ export class RedisDistributedTransactionStorage
   private workflowOrchestratorService_: WorkflowOrchestratorService
 
   private redisClient: Redis
+  private redisWorkerConnection: Redis
+  private queueName: string
   private queue: Queue
   private worker: Worker
 
@@ -47,20 +54,32 @@ export class RedisDistributedTransactionStorage
   }) {
     this.workflowExecutionService_ = workflowExecutionService
     this.logger_ = logger
-
     this.redisClient = redisConnection
-
+    this.redisWorkerConnection = redisWorkerConnection
+    this.queueName = redisQueueName
     this.queue = new Queue(redisQueueName, { connection: this.redisClient })
-    this.worker = new Worker(
-      redisQueueName,
-      async (job) => {
-        const allJobs = [
-          JobType.RETRY,
-          JobType.STEP_TIMEOUT,
-          JobType.TRANSACTION_TIMEOUT,
-        ]
+  }
 
-        if (allJobs.includes(job.name as JobType)) {
+  async onApplicationPrepareShutdown() {
+    // Close worker gracefully, i.e. wait for the current jobs to finish
+    await this.worker?.close()
+  }
+
+  async onApplicationShutdown() {
+    await this.queue?.close()
+  }
+
+  async onApplicationStart() {
+    const allowedJobs = [
+      JobType.RETRY,
+      JobType.STEP_TIMEOUT,
+      JobType.TRANSACTION_TIMEOUT,
+    ]
+
+    this.worker = new Worker(
+      this.queueName,
+      async (job) => {
+        if (allowedJobs.includes(job.name as JobType)) {
           await this.executeTransaction(
             job.data.workflowId,
             job.data.transactionId
@@ -75,17 +94,8 @@ export class RedisDistributedTransactionStorage
           )
         }
       },
-      { connection: redisWorkerConnection }
+      { connection: this.redisWorkerConnection }
     )
-  }
-
-  async onApplicationPrepareShutdown() {
-    // Close worker gracefully, i.e. wait for the current jobs to finish
-    await this.worker.close()
-  }
-
-  async onApplicationShutdown() {
-    await this.queue.close()
   }
 
   setWorkflowOrchestratorService(workflowOrchestratorService) {
@@ -119,6 +129,7 @@ export class RedisDistributedTransactionStorage
   private async executeTransaction(workflowId: string, transactionId: string) {
     return await this.workflowOrchestratorService_.run(workflowId, {
       transactionId,
+      logOnError: true,
       throwOnError: false,
     })
   }
@@ -131,6 +142,7 @@ export class RedisDistributedTransactionStorage
       // TODO: In the case of concurrency being forbidden, we want to generate a predictable transaction ID and rely on the idempotency
       // of the transaction to ensure that the transaction is only executed once.
       return await this.workflowOrchestratorService_.run(jobId, {
+        logOnError: true,
         throwOnError: false,
       })
     } catch (e) {
@@ -251,7 +263,7 @@ export class RedisDistributedTransactionStorage
   }
 
   async scheduleRetry(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep,
     timestamp: number,
     interval: number
@@ -272,15 +284,15 @@ export class RedisDistributedTransactionStorage
   }
 
   async clearRetry(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep
   ): Promise<void> {
     await this.removeJob(JobType.RETRY, transaction, step)
   }
 
   async scheduleTransactionTimeout(
-    transaction: DistributedTransaction,
-    timestamp: number,
+    transaction: DistributedTransactionType,
+    _: number,
     interval: number
   ): Promise<void> {
     await this.queue.add(
@@ -298,13 +310,13 @@ export class RedisDistributedTransactionStorage
   }
 
   async clearTransactionTimeout(
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
   ): Promise<void> {
     await this.removeJob(JobType.TRANSACTION_TIMEOUT, transaction)
   }
 
   async scheduleStepTimeout(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep,
     timestamp: number,
     interval: number
@@ -325,7 +337,7 @@ export class RedisDistributedTransactionStorage
   }
 
   async clearStepTimeout(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep
   ): Promise<void> {
     await this.removeJob(JobType.STEP_TIMEOUT, transaction, step)
@@ -333,7 +345,7 @@ export class RedisDistributedTransactionStorage
 
   private getJobId(
     type: JobType,
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step?: TransactionStep
   ) {
     const key = [type, transaction.modelId, transaction.transactionId]
@@ -350,7 +362,7 @@ export class RedisDistributedTransactionStorage
 
   private async removeJob(
     type: JobType,
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step?: TransactionStep
   ) {
     const jobId = this.getJobId(type, transaction, step)
@@ -369,10 +381,7 @@ export class RedisDistributedTransactionStorage
     const jobId =
       typeof jobDefinition === "string" ? jobDefinition : jobDefinition.jobId
 
-    // In order to ensure that the schedule configuration is always up to date, we first cancel an existing job, if there was one
-    // any only then we add the new one.
-    await this.remove(jobId)
-
+    // If it is the same key (eg. the same workflow name), the old one will get overridden.
     await this.queue.add(
       JobType.SCHEDULE,
       {
@@ -383,8 +392,16 @@ export class RedisDistributedTransactionStorage
         repeat: {
           pattern: schedulerOptions.cron,
           limit: schedulerOptions.numberOfExecutions,
+          key: `${JobType.SCHEDULE}_${jobId}`,
         },
-        jobId: `${JobType.SCHEDULE}_${jobId}`,
+        removeOnComplete: {
+          age: 86400,
+          count: 1000,
+        },
+        removeOnFail: {
+          age: 604800,
+          count: 5000,
+        },
       }
     )
   }

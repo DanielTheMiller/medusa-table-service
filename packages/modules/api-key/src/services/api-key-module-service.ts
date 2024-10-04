@@ -1,5 +1,3 @@
-import crypto from "crypto"
-import util from "util"
 import {
   ApiKeyTypes,
   Context,
@@ -8,8 +6,21 @@ import {
   FindConfig,
   IApiKeyModuleService,
   InternalModuleDeclaration,
+  ModuleJoinerConfig,
   ModulesSdkTypes,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
+import {
+  ApiKeyType,
+  InjectManager,
+  InjectTransactionManager,
+  isObject,
+  isPresent,
+  isString,
+  MedusaContext,
+  MedusaError,
+  MedusaService,
+  promiseAll,
+} from "@medusajs/framework/utils"
 import { ApiKey } from "@models"
 import {
   CreateApiKeyDTO,
@@ -17,17 +28,9 @@ import {
   TokenDTO,
   UpdateApiKeyInput,
 } from "@types"
-import {
-  ApiKeyType,
-  InjectManager,
-  InjectTransactionManager,
-  isObject,
-  isString,
-  MedusaContext,
-  MedusaError,
-  MedusaService,
-  promiseAll,
-} from "@medusajs/utils"
+import crypto from "crypto"
+import util from "util"
+import { joinerConfig } from "../joiner-config"
 
 const scrypt = util.promisify(crypto.scrypt)
 
@@ -55,6 +58,44 @@ export class ApiKeyModuleService
     this.apiKeyService_ = apiKeyService
   }
 
+  __joinerConfig(): ModuleJoinerConfig {
+    return joinerConfig
+  }
+
+  @InjectTransactionManager()
+  // @ts-expect-error
+  async deleteApiKeys(
+    ids: string | string[],
+    @MedusaContext() sharedContext: Context = {}
+  ) {
+    const apiKeyIds = Array.isArray(ids) ? ids : [ids]
+
+    const unrevokedApiKeys = (
+      await this.apiKeyService_.list(
+        {
+          id: ids,
+          $or: [
+            { revoked_at: { $eq: null } },
+            { revoked_at: { $gt: new Date() } },
+          ],
+        },
+        { select: ["id"] },
+        sharedContext
+      )
+    ).map((apiKey) => apiKey.id)
+
+    if (isPresent(unrevokedApiKeys)) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        `Cannot delete api keys that are not revoked - ${unrevokedApiKeys.join(
+          ", "
+        )}`
+      )
+    }
+
+    return await super.deleteApiKeys(apiKeyIds, sharedContext)
+  }
+
   //@ts-expect-error
   createApiKeys(
     data: ApiKeyTypes.CreateApiKeyDTO[],
@@ -65,7 +106,7 @@ export class ApiKeyModuleService
     sharedContext?: Context
   ): Promise<ApiKeyTypes.ApiKeyDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createApiKeys(
     data: ApiKeyTypes.CreateApiKeyDTO | ApiKeyTypes.CreateApiKeyDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -93,7 +134,7 @@ export class ApiKeyModuleService
     return Array.isArray(data) ? responseWithRawToken : responseWithRawToken[0]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async createApiKeys_(
     data: ApiKeyTypes.CreateApiKeyDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -136,7 +177,7 @@ export class ApiKeyModuleService
     sharedContext?: Context
   ): Promise<ApiKeyTypes.ApiKeyDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async upsertApiKeys(
     data: ApiKeyTypes.UpsertApiKeyDTO | ApiKeyTypes.UpsertApiKeyDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -205,7 +246,7 @@ export class ApiKeyModuleService
     sharedContext?: Context
   ): Promise<ApiKeyTypes.ApiKeyDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateApiKeys(
     idOrSelector: string | FilterableApiKeyProps,
     data: ApiKeyTypes.UpdateApiKeyDTO,
@@ -231,7 +272,7 @@ export class ApiKeyModuleService
     return isString(idOrSelector) ? serializedResponse[0] : serializedResponse
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateApiKeys_(
     normalizedInput: UpdateApiKeyInput[],
     @MedusaContext() sharedContext: Context = {}
@@ -248,7 +289,7 @@ export class ApiKeyModuleService
     return updatedApiKeys
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   // @ts-expect-error
   async retrieveApiKey(
     id: string,
@@ -265,7 +306,7 @@ export class ApiKeyModuleService
     )
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   //@ts-expect-error
   async listApiKeys(
     filters?: ApiKeyTypes.FilterableApiKeyProps,
@@ -286,7 +327,7 @@ export class ApiKeyModuleService
     )
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   //@ts-expect-error
   async listAndCountApiKeys(
     filters?: ApiKeyTypes.FilterableApiKeyProps,
@@ -320,7 +361,7 @@ export class ApiKeyModuleService
     data: ApiKeyTypes.RevokeApiKeyDTO,
     sharedContext?: Context
   ): Promise<ApiKeyTypes.ApiKeyDTO[]>
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async revoke(
     idOrSelector: string | FilterableApiKeyProps,
     data: ApiKeyTypes.RevokeApiKeyDTO,
@@ -342,7 +383,7 @@ export class ApiKeyModuleService
     return isString(idOrSelector) ? serializedResponse[0] : serializedResponse
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async revoke_(
     normalizedInput: RevokeApiKeyInput[],
     @MedusaContext() sharedContext: Context = {}
@@ -370,7 +411,7 @@ export class ApiKeyModuleService
     return revokedApiKeys
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async authenticate(
     token: string,
     @MedusaContext() sharedContext: Context = {}
@@ -388,7 +429,7 @@ export class ApiKeyModuleService
     return serialized
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async authenticate_(
     token: string,
     @MedusaContext() sharedContext: Context = {}
@@ -404,7 +445,7 @@ export class ApiKeyModuleService
           { revoked_at: { $gt: new Date() } },
         ],
       },
-      { take: null },
+      {},
       sharedContext
     )
 
@@ -459,7 +500,7 @@ export class ApiKeyModuleService
           { revoked_at: { $gt: new Date() } },
         ],
       },
-      { take: null },
+      {},
       sharedContext
     )
 

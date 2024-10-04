@@ -1,14 +1,14 @@
 import { batchLinkProductsToCollectionWorkflow } from "@medusajs/core-flows"
-import { LinkMethodRequest } from "@medusajs/types"
+import { HttpTypes, LinkMethodRequest } from "@medusajs/framework/types"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchCollection } from "../../helpers"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<LinkMethodRequest>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminCollectionResponse>
 ) => {
   const id = req.params.id
   const { add = [], remove = [] } = req.validatedBody

@@ -1,13 +1,11 @@
 /**
  * @schema AdminCreatePriceList
  * type: object
- * description: SUMMARY
+ * description: The price list's details.
  * x-schemaName: AdminCreatePriceList
  * required:
  *   - title
  *   - description
- *   - starts_at
- *   - ends_at
  * properties:
  *   title:
  *     type: string
@@ -20,36 +18,40 @@
  *   starts_at:
  *     type: string
  *     title: starts_at
- *     description: The price list's starts at.
+ *     description: The date and time the price list starts at.
+ *     format: date-time
  *   ends_at:
  *     type: string
  *     title: ends_at
- *     description: The price list's ends at.
+ *     description: The date and time the price list ends at.
+ *     format: date-time
  *   status:
  *     type: string
+ *     description: The price list's status.
  *     enum:
  *       - active
  *       - draft
  *   type:
  *     type: string
+ *     description: The price list's type.
  *     enum:
  *       - sale
  *       - override
  *   rules:
  *     type: object
  *     description: The price list's rules.
+ *     example:
+ *       product_category_id: pcat_123
  *   prices:
  *     type: array
  *     description: The price list's prices.
  *     items:
  *       type: object
- *       description: The price's prices.
+ *       description: A price's details.
  *       required:
  *         - currency_code
- *         - amount
  *         - variant_id
- *         - min_quantity
- *         - max_quantity
+ *         - amount
  *       properties:
  *         currency_code:
  *           type: string
@@ -62,18 +64,20 @@
  *         variant_id:
  *           type: string
  *           title: variant_id
- *           description: The price's variant id.
+ *           description: The ID of the product variant this price is for.
  *         min_quantity:
  *           type: number
  *           title: min_quantity
- *           description: The price's min quantity.
+ *           description: The minimum quantity required in the cart for this price to be applied.
  *         max_quantity:
  *           type: number
  *           title: max_quantity
- *           description: The price's max quantity.
+ *           description: The maximum quantity in the cart that shouldn't be crossed for this price to be applied.
  *         rules:
  *           type: object
  *           description: The price's rules.
+ *           example:
+ *             region_id: reg_123
  * 
 */
 

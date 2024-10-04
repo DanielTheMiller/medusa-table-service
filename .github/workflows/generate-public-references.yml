@@ -6,8 +6,9 @@ on:
         description: "Reference to Generate. Use either `all` to generate all references, `api` to generate the API reference, or `ui` to generate UI reference."
         required: false
         default: "all"
-  release:
-    types: [published]
+  # Disable this action until v2 is out of RC
+  # release:
+  #   types: [published]
 
 jobs:
   api-v2:
@@ -56,7 +57,9 @@ jobs:
           base: "develop"
           title: "chore(docs): Updated API Reference (v2)"
           labels: "type: chore"
-          add-paths: www/apps/api-reference/specs
+          add-paths: |
+            www/apps/api-reference/specs
+            www/utils/generated/oas-output
           branch: "docs/generate-api-ref"
           branch-suffix: "timestamp"
   ui:

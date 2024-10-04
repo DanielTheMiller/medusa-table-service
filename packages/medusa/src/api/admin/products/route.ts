@@ -1,10 +1,11 @@
 import { createProductsWorkflow } from "@medusajs/core-flows"
-import { HttpTypes } from "@medusajs/types"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
-import { refetchEntities, refetchEntity } from "../../utils/refetch-entity"
+  refetchEntities,
+  refetchEntity,
+} from "@medusajs/framework/http"
 import { remapKeysForProduct, remapProductResponse } from "./helpers"
 
 export const GET = async (
@@ -30,11 +31,15 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<HttpTypes.AdminCreateProduct>,
+  req: AuthenticatedMedusaRequest<
+    HttpTypes.AdminCreateProduct & AdditionalData
+  >,
   res: MedusaResponse<HttpTypes.AdminProductResponse>
 ) => {
+  const { additional_data, ...products } = req.validatedBody
+
   const { result } = await createProductsWorkflow(req.scope).run({
-    input: { products: [req.validatedBody] },
+    input: { products: [products], additional_data },
   })
 
   const product = await refetchEntity(

@@ -1,6 +1,6 @@
-import { CreateOrderDTO, IOrderModuleService } from "@medusajs/types"
-import { moduleIntegrationTestRunner, SuiteOptions } from "medusa-test-utils"
-import { Modules } from "@medusajs/utils"
+import { CreateOrderDTO, IOrderModuleService } from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
+import { SuiteOptions, moduleIntegrationTestRunner } from "medusa-test-utils"
 
 jest.setTimeout(100000)
 
@@ -104,6 +104,9 @@ moduleIntegrationTestRunner({
 
       it("should exchange an item and add two new items to the order", async function () {
         const createdOrder = await service.createOrders(input)
+        createdOrder.items = createdOrder.items!.sort((a, b) =>
+          a.title.localeCompare(b.title)
+        )
 
         // Fullfilment
         await service.registerFulfillment({
@@ -211,7 +214,7 @@ moduleIntegrationTestRunner({
                 }),
               }),
             ]),
-            shipping_methods: [
+            shipping_methods: expect.arrayContaining([
               expect.objectContaining({
                 name: "return shipping method",
                 amount: 10,
@@ -220,7 +223,7 @@ moduleIntegrationTestRunner({
                 name: "Exchange method",
                 amount: 35,
               }),
-            ],
+            ]),
             difference_due: 14,
           })
         )

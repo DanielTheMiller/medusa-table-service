@@ -1,8 +1,9 @@
 /**
  * @oas [post] /admin/products/{id}/variants/inventory-items/batch
  * operationId: PostProductsIdVariantsInventoryItemsBatch
- * summary: Add Inventory Items to Product
- * description: Add a list of inventory items to a product.
+ * summary: Manage Variants Inventory in a Product
+ * x-sidebar-summary: Manage Variants Inventory
+ * description: Manage a product's variant's inventoris to associate them with inventory items, update their inventory items, or delete their association with inventory items.
  * x-authenticated: true
  * parameters:
  *   - name: id
@@ -11,56 +12,6 @@
  *     required: true
  *     schema:
  *       type: string
- *   - name: expand
- *     in: query
- *     description: Comma-separated relations that should be expanded in the returned data.
- *     required: false
- *     schema:
- *       type: string
- *       title: expand
- *       description: Comma-separated relations that should be expanded in the returned data.
- *   - name: fields
- *     in: query
- *     description: >-
- *       Comma-separated fields that should be included in the returned data.
- *        * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *        * without prefix it will replace the entire default fields.
- *     required: false
- *     schema:
- *       type: string
- *       title: fields
- *       description: >-
- *         Comma-separated fields that should be included in the returned data.
- *          * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *          * without prefix it will replace the entire default fields.
- *   - name: offset
- *     in: query
- *     description: The number of items to skip when retrieving a list.
- *     required: false
- *     schema:
- *       type: number
- *       title: offset
- *       description: The number of items to skip when retrieving a list.
- *   - name: limit
- *     in: query
- *     description: Limit the number of items returned in the list.
- *     required: false
- *     schema:
- *       type: number
- *       title: limit
- *       description: Limit the number of items returned in the list.
- *   - name: order
- *     in: query
- *     description: The field to sort the data by. By default, the sort order is
- *       ascending. To change the order to descending, prefix the field name with
- *       `-`.
- *     required: false
- *     schema:
- *       type: string
- *       title: order
- *       description: The field to sort the data by. By default, the sort order is
- *         ascending. To change the order to descending, prefix the field name with
- *         `-`.
  * security:
  *   - api_token: []
  *   - cookie_auth: []
@@ -70,85 +21,87 @@
  *     application/json:
  *       schema:
  *         type: object
- *         description: SUMMARY
+ *         description: The product variant inventories to manage.
  *         properties:
  *           create:
  *             type: array
- *             description: The product's create.
+ *             description: The The associations to create between product variants and inventory items.
  *             items:
  *               type: object
- *               description: The create's details.
+ *               description: The associations to create between a product variant and an inventory item.
  *               required:
- *                 - required_quantity
- *                 - inventory_item_id
  *                 - variant_id
+ *                 - inventory_item_id
+ *                 - required_quantity
  *               properties:
  *                 required_quantity:
  *                   type: number
  *                   title: required_quantity
- *                   description: The create's required quantity.
+ *                   description: The variant's quantity.
  *                 inventory_item_id:
  *                   type: string
  *                   title: inventory_item_id
- *                   description: The create's inventory item id.
+ *                   description: The ID of the inventory item to associate the variant with.
  *                 variant_id:
  *                   type: string
  *                   title: variant_id
- *                   description: The create's variant id.
+ *                   description: The ID of the variant.
  *           update:
  *             type: array
- *             description: The product's update.
+ *             description: The product variants to update their association with inventory items.
  *             items:
  *               type: object
- *               description: The update's details.
+ *               description: Update a product variant's association with an inventory item.
  *               required:
- *                 - required_quantity
- *                 - inventory_item_id
  *                 - variant_id
+ *                 - inventory_item_id
+ *                 - required_quantity
  *               properties:
  *                 required_quantity:
  *                   type: number
  *                   title: required_quantity
- *                   description: The update's required quantity.
+ *                   description: The variant's quantity.
  *                 inventory_item_id:
  *                   type: string
  *                   title: inventory_item_id
- *                   description: The update's inventory item id.
+ *                   description: The ID of the inventory item the variant is associated with.
  *                 variant_id:
  *                   type: string
  *                   title: variant_id
- *                   description: The update's variant id.
+ *                   description: The ID of the variant.
  *           delete:
  *             type: array
- *             description: The product's delete.
+ *             description: The product variants to delete their association with inventory items.
  *             items:
  *               type: object
- *               description: The delete's details.
+ *               description: Delete a product variant's association with an inventory item.
  *               required:
- *                 - inventory_item_id
  *                 - variant_id
+ *                 - inventory_item_id
  *               properties:
  *                 inventory_item_id:
  *                   type: string
  *                   title: inventory_item_id
- *                   description: The delete's inventory item id.
+ *                   description: The ID of the inventory item associated with the variant.
  *                 variant_id:
  *                   type: string
  *                   title: variant_id
- *                   description: The delete's variant id.
+ *                   description: The ID of the variant.
  * x-codeSamples:
  *   - lang: Shell
  *     label: cURL
- *     source: >-
- *       curl -X POST
- *       '{backend_url}/admin/products/{id}/variants/inventory-items/batch' \
- * 
- *       -H 'x-medusa-access-token: {api_token}'
+ *     source: |-
+ *       curl -X POST '{backend_url}/admin/products/{id}/variants/inventory-items/batch' \
+ *       -H 'Authorization: Bearer {access_token}'
  * tags:
  *   - Products
  * responses:
  *   "200":
  *     description: OK
+ *     content:
+ *       application/json:
+ *         schema:
+ *           $ref: "#/components/schemas/AdminProductVariantInventoryBatchResponse"
  *   "400":
  *     $ref: "#/components/responses/400_error"
  *   "401":
@@ -161,6 +114,7 @@
  *     $ref: "#/components/responses/invalid_request_error"
  *   "500":
  *     $ref: "#/components/responses/500_error"
+ * x-workflow: batchLinksWorkflow
  * 
 */
 

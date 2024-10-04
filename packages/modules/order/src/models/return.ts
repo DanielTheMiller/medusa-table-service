@@ -1,17 +1,19 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
+  DALUtils,
   MikroOrmBigNumberProperty,
   ReturnStatus,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
   Collection,
   Entity,
   Enum,
+  Filter,
   ManyToOne,
   OnInit,
   OneToMany,
@@ -21,13 +23,13 @@ import {
   Property,
   Rel,
 } from "@mikro-orm/core"
-import { ReturnItem, Transaction } from "@models"
+import { OrderTransaction, ReturnItem } from "@models"
 import Claim from "./claim"
 import Exchange from "./exchange"
 import Order from "./order"
-import OrderShippingMethod from "./order-shipping-method"
+import OrderShipping from "./order-shipping-method"
 
-type OptionalReturnProps = DAL.EntityDateColumns
+type OptionalReturnProps = DAL.ModelDateColumns
 
 const DisplayIdIndex = createPsqlIndexStatementHelper({
   tableName: "return",
@@ -60,6 +62,7 @@ const ClaimIdIndex = createPsqlIndexStatementHelper({
 })
 
 @Entity({ tableName: "return" })
+@Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
 export default class Return {
   [OptionalProps]?: OptionalReturnProps
 
@@ -82,7 +85,6 @@ export default class Return {
 
   @OneToOne({
     entity: () => Exchange,
-    cascade: ["soft-remove"] as any,
     fieldName: "exchange_id",
     nullable: true,
   })
@@ -94,7 +96,6 @@ export default class Return {
 
   @OneToOne({
     entity: () => Claim,
-    cascade: ["soft-remove"] as any,
     fieldName: "claim_id",
     nullable: true,
   })
@@ -113,8 +114,11 @@ export default class Return {
   @DisplayIdIndex.MikroORMIndex()
   display_id: number
 
-  @Enum({ items: () => ReturnStatus, default: ReturnStatus.REQUESTED })
-  status: ReturnStatus = ReturnStatus.REQUESTED
+  @Enum({ items: () => ReturnStatus, default: ReturnStatus.OPEN })
+  status: ReturnStatus = ReturnStatus.OPEN
+
+  @Property({ columnType: "text", nullable: true })
+  location_id: string | null = null
 
   @Property({ columnType: "boolean", nullable: true })
   no_notification: boolean | null = null
@@ -132,19 +136,18 @@ export default class Return {
   })
   items = new Collection<Rel<ReturnItem>>(this)
 
-  @OneToMany(
-    () => OrderShippingMethod,
-    (shippingMethod) => shippingMethod.return,
-    {
-      cascade: [Cascade.PERSIST],
-    }
-  )
-  shipping_methods = new Collection<OrderShippingMethod>(this)
-
-  @OneToMany(() => Transaction, (transaction) => transaction.return, {
+  @OneToMany(() => OrderShipping, (shippingMethod) => shippingMethod.return, {
     cascade: [Cascade.PERSIST],
   })
-  transactions = new Collection<Transaction>(this)
+  shipping_methods = new Collection<OrderShipping>(this)
+
+  @OneToMany(() => OrderTransaction, (transaction) => transaction.return, {
+    cascade: [Cascade.PERSIST],
+  })
+  transactions = new Collection<OrderTransaction>(this)
+
+  @Property({ columnType: "text", nullable: true })
+  created_by: string | null = null
 
   @Property({ columnType: "jsonb", nullable: true })
   metadata: Record<string, unknown> | null = null
@@ -167,6 +170,9 @@ export default class Return {
   @Property({ columnType: "timestamptz", nullable: true })
   @ReturnDeletedAtIndex.MikroORMIndex()
   deleted_at: Date | null = null
+
+  @Property({ columnType: "timestamptz", nullable: true })
+  requested_at: Date | null = null
 
   @Property({ columnType: "timestamptz", nullable: true })
   received_at: Date | null = null

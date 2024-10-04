@@ -1,10 +1,10 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   DALUtils,
   Searchable,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Collection,
@@ -26,7 +26,7 @@ type OptionalFields =
   | "description"
   | "starts_at"
   | "ends_at"
-  | DAL.SoftDeletableEntityDateColumns
+  | DAL.SoftDeletableModelDateColumns
 
 const tableName = "promotion_campaign"
 const CampaignUniqueCampaignIdentifier = createPsqlIndexStatementHelper({

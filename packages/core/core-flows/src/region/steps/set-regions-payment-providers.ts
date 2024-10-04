@@ -1,16 +1,17 @@
-import { RemoteLink } from "@medusajs/modules-sdk"
-import { IPaymentModuleService, RemoteQueryFunction } from "@medusajs/types"
+import { RemoteLink } from "@medusajs/framework/modules-sdk"
+import {
+  IPaymentModuleService,
+  RemoteQueryFunction,
+} from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   LINKS,
   MedusaError,
-  ModuleRegistrationName,
   Modules,
   arrayDifference,
   promiseAll,
-  remoteQueryObjectFromString,
-} from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
 export interface SetRegionsPaymentProvidersStepInput {
   input: {
@@ -64,16 +65,13 @@ async function getCurrentRegionPaymentProvidersLinks(
     [Modules.PAYMENT]: { payment_provider_id: string }
   }[]
 > {
-  const query = remoteQueryObjectFromString({
+  const regionProviderLinks = (await remoteQuery({
     service: LINKS.RegionPaymentProvider,
     variables: {
       filters: { region_id: regionIds },
-      take: null,
     },
     fields: ["region_id", "payment_provider_id"],
-  })
-
-  const regionProviderLinks = (await remoteQuery(query)) as {
+  } as any)) as {
     region_id: string
     payment_provider_id: string
   }[]
@@ -92,6 +90,9 @@ async function getCurrentRegionPaymentProvidersLinks(
 
 export const setRegionsPaymentProvidersStepId =
   "add-region-payment-providers-step"
+/**
+ * This step sets the payment providers in regions.
+ */
 export const setRegionsPaymentProvidersStep = createStep(
   setRegionsPaymentProvidersStepId,
   async (data: SetRegionsPaymentProvidersStepInput, { container }) => {
@@ -104,7 +105,7 @@ export const setRegionsPaymentProvidersStep = createStep(
     }
 
     const paymentService = container.resolve<IPaymentModuleService>(
-      ModuleRegistrationName.PAYMENT
+      Modules.PAYMENT
     )
     const remoteLink = container.resolve<RemoteLink>(
       ContainerRegistrationKeys.REMOTE_LINK

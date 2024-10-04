@@ -1,11 +1,12 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
   DALUtils,
   MikroOrmBigNumberProperty,
   Searchable,
+  createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -26,9 +27,15 @@ import PaymentCollection from "./payment-collection"
 import PaymentSession from "./payment-session"
 import Refund from "./refund"
 
-type OptionalPaymentProps = DAL.EntityDateColumns
+type OptionalPaymentProps = DAL.ModelDateColumns
 
-@Entity({ tableName: "payment" })
+const tableName = "payment"
+const ProviderIdIndex = createPsqlIndexStatementHelper({
+  tableName,
+  columns: "provider_id",
+})
+
+@Entity({ tableName })
 @Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
 export default class Payment {
   [OptionalProps]?: OptionalPaymentProps
@@ -46,6 +53,7 @@ export default class Payment {
   currency_code: string
 
   @Property({ columnType: "text" })
+  @ProviderIdIndex.MikroORMIndex()
   provider_id: string
 
   @Searchable()
@@ -136,10 +144,14 @@ export default class Payment {
   @BeforeCreate()
   onCreate() {
     this.id = generateEntityId(this.id, "pay")
+    this.payment_collection_id ??=
+      this.payment_collection_id ?? this.payment_collection?.id
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "pay")
+    this.payment_collection_id ??=
+      this.payment_collection_id ?? this.payment_collection?.id
   }
 }

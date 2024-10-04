@@ -21,12 +21,15 @@ export const modules = [
 
 const allReferences = [
   ...modules,
+  "core-flows",
   "auth-provider",
   "dml",
   "file",
   "fulfillment-provider",
+  "helper-steps",
   "medusa-config",
   "medusa",
+  "modules-sdk",
   "notification",
   "payment-provider",
   "search",

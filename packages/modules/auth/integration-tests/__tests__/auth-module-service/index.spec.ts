@@ -1,8 +1,8 @@
-import { IAuthModuleService } from "@medusajs/types"
+import { IAuthModuleService } from "@medusajs/framework/types"
+import { Module, Modules } from "@medusajs/framework/utils"
+import { AuthModuleService } from "@services"
 import { moduleIntegrationTestRunner, SuiteOptions } from "medusa-test-utils"
 import { resolve } from "path"
-import { Module, Modules } from "@medusajs/utils"
-import { AuthModuleService } from "@services"
 
 let moduleOptions = {
   providers: [
@@ -42,16 +42,32 @@ moduleIntegrationTestRunner({
           service: AuthModuleService,
         }).linkable
 
-        expect(Object.keys(linkable)).toEqual(["authIdentity"])
+        expect(Object.keys(linkable)).toEqual([
+          "authIdentity",
+          "providerIdentity",
+        ])
 
         linkable.authIdentity.toJSON = undefined
 
         expect(linkable.authIdentity).toEqual({
           id: {
             linkable: "auth_identity_id",
+            entity: "AuthIdentity",
             primaryKey: "id",
-            serviceName: "auth",
+            serviceName: "Auth",
             field: "authIdentity",
+          },
+        })
+
+        linkable.providerIdentity.toJSON = undefined
+
+        expect(linkable.providerIdentity).toEqual({
+          id: {
+            linkable: "provider_identity_id",
+            entity: "ProviderIdentity",
+            primaryKey: "id",
+            serviceName: "Auth",
+            field: "providerIdentity",
           },
         })
       })

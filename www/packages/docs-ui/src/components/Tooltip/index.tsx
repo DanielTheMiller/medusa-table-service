@@ -11,6 +11,7 @@ export type TooltipProps = {
   tooltipClassName?: string
   html?: string
   tooltipChildren?: React.ReactNode
+  innerClassName?: string
 } & React.HTMLAttributes<HTMLSpanElement> &
   ITooltip
 
@@ -21,18 +22,19 @@ export const Tooltip = ({
   html = "",
   tooltipChildren,
   className,
+  innerClassName,
   ...tooltipProps
 }: TooltipProps) => {
   const elementId = useId()
 
   return (
-    <>
+    <span className={clsx(className, "notranslate")} translate="no">
       <span
         id={elementId}
         data-tooltip-content={text}
         data-tooltip-html={html}
         data-tooltip-id={elementId}
-        className={className}
+        className={innerClassName}
       >
         {children}
       </span>
@@ -54,6 +56,6 @@ export const Tooltip = ({
       >
         {tooltipChildren}
       </ReactTooltip>
-    </>
+    </span>
   )
 }

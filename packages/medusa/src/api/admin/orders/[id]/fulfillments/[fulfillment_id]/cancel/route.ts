@@ -1,17 +1,20 @@
 import { cancelOrderFulfillmentWorkflow } from "@medusajs/core-flows"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../../../types/routing"
+} from "@medusajs/framework/http"
 import { AdminOrderCancelFulfillmentType } from "../../../../validators"
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminOrderCancelFulfillmentType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<
+    AdminOrderCancelFulfillmentType & AdditionalData
+  >,
+  res: MedusaResponse<HttpTypes.AdminOrderResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -21,6 +24,7 @@ export const POST = async (
     ...req.validatedBody,
     order_id: req.params.id,
     fulfillment_id: req.params.fulfillment_id,
+    canceled_by: req.auth_context.actor_id,
   }
 
   await cancelOrderFulfillmentWorkflow(req.scope).run({

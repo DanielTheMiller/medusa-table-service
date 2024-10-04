@@ -36,7 +36,7 @@ export const AdminCreateTaxRateRule = z.object({
 export type AdminCreateTaxRateType = z.infer<typeof AdminCreateTaxRate>
 export const AdminCreateTaxRate = z.object({
   rate: z.number().optional(),
-  code: z.string().optional(),
+  code: z.string(),
   rules: z.array(AdminCreateTaxRateRule).optional(),
   name: z.string(),
   is_default: z.boolean().optional(),

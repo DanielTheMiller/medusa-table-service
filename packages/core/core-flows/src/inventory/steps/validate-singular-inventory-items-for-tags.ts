@@ -2,11 +2,14 @@ import {
   ContainerRegistrationKeys,
   MedusaError,
   Modules,
-} from "@medusajs/utils"
-import { createStep, StepResponse } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/utils"
+import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 
 export const validateInventoryItemsForCreateStepId =
   "validate-inventory-items-for-create-step"
+/**
+ * This step checks whether a variant already has an inventory item.
+ */
 export const validateInventoryItemsForCreate = createStep(
   validateInventoryItemsForCreateStepId,
   async (

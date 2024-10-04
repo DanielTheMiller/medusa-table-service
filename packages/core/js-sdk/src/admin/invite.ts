@@ -1,5 +1,4 @@
 import {
-  DeleteResponse,
   FindParams,
   HttpTypes,
   PaginatedResponse,
@@ -70,13 +69,14 @@ export class Invite {
     return await this.client.fetch<{ invite: HttpTypes.AdminInviteResponse }>(
       `/admin/invites/${id}/resend`,
       {
+        method: "POST",
         headers,
       }
     )
   }
 
   async delete(id: string, headers?: ClientHeaders) {
-    return await this.client.fetch<DeleteResponse<"invite">>(
+    return await this.client.fetch<HttpTypes.AdminInviteDeleteResponse>(
       `/admin/invites/${id}`,
       {
         method: "DELETE",

@@ -5,10 +5,10 @@ import {
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../../types/routing"
+} from "@medusajs/framework/http"
 
-import { HttpTypes } from "@medusajs/types"
-import { refetchEntity } from "../../../../../utils/refetch-entity"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
+import { refetchEntity } from "@medusajs/framework/http"
 import {
   remapKeysForProduct,
   remapKeysForVariant,
@@ -35,16 +35,20 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<HttpTypes.AdminUpdateProductVariant>,
+  req: AuthenticatedMedusaRequest<
+    HttpTypes.AdminUpdateProductVariant & AdditionalData
+  >,
   res: MedusaResponse<HttpTypes.AdminProductResponse>
 ) => {
   const productId = req.params.id
   const variantId = req.params.variant_id
+  const { additional_data, ...update } = req.validatedBody
 
   await updateProductVariantsWorkflow(req.scope).run({
     input: {
       selector: { id: variantId, product_id: productId },
-      update: req.validatedBody,
+      update: update,
+      additional_data,
     },
   })
 

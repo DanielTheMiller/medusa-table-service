@@ -1,12 +1,12 @@
-import { IPricingModuleService, PricingTypes } from "@medusajs/types"
+import { IPricingModuleService, PricingTypes } from "@medusajs/framework/types"
 import {
   MedusaError,
-  ModuleRegistrationName,
+  Modules,
   getSelectsAndRelationsFromObjectArray,
-} from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
-type UpdatePriceSetsStepInput =
+export type UpdatePriceSetsStepInput =
   | {
       selector?: PricingTypes.FilterablePriceSetProps
       update?: PricingTypes.UpdatePriceSetDTO
@@ -16,11 +16,14 @@ type UpdatePriceSetsStepInput =
     }
 
 export const updatePriceSetsStepId = "update-price-sets"
+/**
+ * This step updates price sets.
+ */
 export const updatePriceSetsStep = createStep(
   updatePriceSetsStepId,
   async (data: UpdatePriceSetsStepInput, { container }) => {
     const pricingModule = container.resolve<IPricingModuleService>(
-      ModuleRegistrationName.PRICING
+      Modules.PRICING
     )
 
     if ("price_sets" in data) {
@@ -62,7 +65,7 @@ export const updatePriceSetsStep = createStep(
   },
   async (revertInput, { container }) => {
     const pricingModule = container.resolve<IPricingModuleService>(
-      ModuleRegistrationName.PRICING
+      Modules.PRICING
     )
 
     if (!revertInput) {

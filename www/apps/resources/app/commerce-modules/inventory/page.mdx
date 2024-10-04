@@ -6,7 +6,74 @@ export const metadata = {
 
 # {metadata.title}
 
-The Inventory Module is the `@medusajs/inventory-next` NPM package that provides inventory-related features in your Medusa and Node.js applications.
+The Inventory Module is the `@medusajs/medusa/inventory-next` NPM package that provides inventory-related features in your Medusa and Node.js applications.
+
+## How to Use Inventory Module's Service
+
+You can use the Inventory Module's main service by resolving from the Medusa container the resource `Modules.INVENTORY` imported from `@medusajs/framework/utils`.
+
+For example:
+
+<CodeTabs groupId="resource-type">
+  <CodeTab label="API Route" value="api-route">
+
+  ```ts title="src/api/store/custom/route.ts"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IInventoryService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
+
+export async function GET(
+  request: MedusaRequest,
+  res: MedusaResponse
+): Promise<void> {
+  const inventoryModuleService: IInventoryService = request.scope.resolve(
+    Modules.INVENTORY
+  )
+
+  res.json({
+    inventory_items: await inventoryModuleService.listInventoryItems({}),
+  })
+}
+```
+
+  </CodeTab>
+  <CodeTab label="Subscriber" value="subscribers">
+
+  ```ts title="src/subscribers/custom-handler.ts"
+  import { SubscriberArgs } from "@medusajs/framework"
+  import { IInventoryService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
+
+export default async function subscriberHandler({ container }: SubscriberArgs) {
+  const inventoryModuleService: IInventoryService = container.resolve(
+    Modules.INVENTORY
+  )
+
+  const inventoryItems = await inventoryModuleService.listInventoryItems({})
+}
+```
+
+  </CodeTab>
+  <CodeTab label="Workflow Step" value="workflow-step">
+
+  ```ts title="src/workflows/hello-world/step1.ts"
+  import { createStep } from "@medusajs/framework/workflows-sdk"
+  import { IInventoryService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
+
+const step1 = createStep("step-1", async (_, { container }) => {
+  const inventoryModuleService: IInventoryService = container.resolve(
+    Modules.INVENTORY
+  )
+
+  const inventoryItems = await inventoryModuleService.listInventoryItems({})
+})
+```
+
+  </CodeTab>
+</CodeTabs>
+
+---
 
 ## Features
 
@@ -63,70 +130,3 @@ const isAvailable = await inventoryModuleService.confirmInventory(
   neededQuantity
 )
 ```
-
----
-
-## How to Use Inventory Module's Service
-
-You can use the Inventory Module's main service by resolving from the Medusa container the resource `ModuleRegistrationName.INVENTORY` imported from `@medusajs/modules-sdk`.
-
-For example:
-
-<CodeTabs groupId="resource-type">
-  <CodeTab label="API Route" value="api-route">
-
-  ```ts title="src/api/store/custom/route.ts"
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IInventoryService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
-
-export async function GET(
-  request: MedusaRequest,
-  res: MedusaResponse
-): Promise<void> {
-  const inventoryModuleService: IInventoryService = request.scope.resolve(
-    ModuleRegistrationName.INVENTORY
-  )
-
-  res.json({
-    inventory_items: await inventoryModuleService.listInventoryItems({}),
-  })
-}
-```
-
-  </CodeTab>
-  <CodeTab label="Subscriber" value="subscribers">
-
-  ```ts title="src/subscribers/custom-handler.ts"
-  import { SubscriberArgs } from "@medusajs/medusa"
-  import { IInventoryService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
-
-export default async function subscriberHandler({ container }: SubscriberArgs) {
-  const inventoryModuleService: IInventoryService = container.resolve(
-    ModuleRegistrationName.INVENTORY
-  )
-
-  const inventoryItems = await inventoryModuleService.listInventoryItems({})
-}
-```
-
-  </CodeTab>
-  <CodeTab label="Workflow Step" value="workflow-step">
-
-  ```ts title="src/workflows/hello-world/step1.ts"
-  import { createStep } from "@medusajs/workflows-sdk"
-  import { IInventoryService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
-
-const step1 = createStep("step-1", async (_, { container }) => {
-  const inventoryModuleService: IInventoryService = container.resolve(
-    ModuleRegistrationName.INVENTORY
-  )
-
-  const inventoryItems = await inventoryModuleService.listInventoryItems({})
-})
-```
-
-  </CodeTab>
-</CodeTabs>

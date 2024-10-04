@@ -1,8 +1,9 @@
 /**
  * @oas [post] /admin/price-lists/{id}/prices/batch
  * operationId: PostPriceListsIdPricesBatch
- * summary: Add Prices to Price List
- * description: Add a list of prices to a price list.
+ * summary: Manage Prices in Price List
+ * x-sidebar-summary: Manage Prices
+ * description: Manage the prices of a price list to create, update, or delete them.
  * x-authenticated: true
  * parameters:
  *   - name: id
@@ -11,56 +12,6 @@
  *     required: true
  *     schema:
  *       type: string
- *   - name: expand
- *     in: query
- *     description: Comma-separated relations that should be expanded in the returned data.
- *     required: false
- *     schema:
- *       type: string
- *       title: expand
- *       description: Comma-separated relations that should be expanded in the returned data.
- *   - name: fields
- *     in: query
- *     description: >-
- *       Comma-separated fields that should be included in the returned data.
- *        * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *        * without prefix it will replace the entire default fields.
- *     required: false
- *     schema:
- *       type: string
- *       title: fields
- *       description: >-
- *         Comma-separated fields that should be included in the returned data.
- *          * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *          * without prefix it will replace the entire default fields.
- *   - name: offset
- *     in: query
- *     description: The number of items to skip when retrieving a list.
- *     required: false
- *     schema:
- *       type: number
- *       title: offset
- *       description: The number of items to skip when retrieving a list.
- *   - name: limit
- *     in: query
- *     description: Limit the number of items returned in the list.
- *     required: false
- *     schema:
- *       type: number
- *       title: limit
- *       description: Limit the number of items returned in the list.
- *   - name: order
- *     in: query
- *     description: The field to sort the data by. By default, the sort order is
- *       ascending. To change the order to descending, prefix the field name with
- *       `-`.
- *     required: false
- *     schema:
- *       type: string
- *       title: order
- *       description: The field to sort the data by. By default, the sort order is
- *         ascending. To change the order to descending, prefix the field name with
- *         `-`.
  * security:
  *   - api_token: []
  *   - cookie_auth: []
@@ -70,101 +21,105 @@
  *     application/json:
  *       schema:
  *         type: object
- *         description: SUMMARY
+ *         description: The prices to create, update, or delete.
  *         properties:
  *           create:
  *             type: array
- *             description: The price list's create.
+ *             description: The prices to create.
  *             items:
  *               type: object
- *               description: The create's details.
+ *               description: A price's details.
  *               required:
  *                 - currency_code
- *                 - amount
  *                 - variant_id
- *                 - min_quantity
- *                 - max_quantity
+ *                 - amount
  *               properties:
  *                 currency_code:
  *                   type: string
  *                   title: currency_code
- *                   description: The create's currency code.
+ *                   description: The price's currency code.
  *                 amount:
  *                   type: number
  *                   title: amount
- *                   description: The create's amount.
+ *                   description: The price's amount.
  *                 variant_id:
  *                   type: string
  *                   title: variant_id
- *                   description: The create's variant id.
+ *                   description: The ID of the variant this price is for.
  *                 min_quantity:
  *                   type: number
  *                   title: min_quantity
- *                   description: The create's min quantity.
+ *                   description: The minimum quantity that must be available of the associated variant in the cart for this price to apply.
  *                 max_quantity:
  *                   type: number
  *                   title: max_quantity
- *                   description: The create's max quantity.
+ *                   description: The maximum quantity that must be available of the associated variant in the cart for this price list to apply.
  *                 rules:
  *                   type: object
- *                   description: The create's rules.
+ *                   description: Key-value pair rules to apply on the price.
+ *                   example:
+ *                     region_id: 123
  *           update:
  *             type: array
- *             description: The price list's update.
+ *             description: The prices to update.
  *             items:
  *               type: object
- *               description: The update's details.
+ *               description: The properties to update in a price.
  *               required:
  *                 - id
  *                 - variant_id
- *                 - min_quantity
- *                 - max_quantity
  *               properties:
  *                 id:
  *                   type: string
  *                   title: id
- *                   description: The update's ID.
+ *                   description: The price's ID.
  *                 currency_code:
  *                   type: string
  *                   title: currency_code
- *                   description: The update's currency code.
+ *                   description: The price's currency code.
  *                 amount:
  *                   type: number
  *                   title: amount
- *                   description: The update's amount.
+ *                   description: The price's amount.
  *                 variant_id:
  *                   type: string
  *                   title: variant_id
- *                   description: The update's variant id.
+ *                   description: The ID of the variant this price is for.
  *                 min_quantity:
  *                   type: number
  *                   title: min_quantity
- *                   description: The update's min quantity.
+ *                   description: The minimum quantity that must be available of the associated variant in the cart for this price to apply.
  *                 max_quantity:
  *                   type: number
  *                   title: max_quantity
- *                   description: The update's max quantity.
+ *                   description: The maximum quantity that must be available of the associated variant in the cart for this price list to apply.
  *                 rules:
  *                   type: object
- *                   description: The update's rules.
+ *                   description: Key-value pair rules to apply on the price.
+ *                   example:
+ *                     region_id: 123
  *           delete:
  *             type: array
- *             description: The price list's delete.
+ *             description: The prices to delete.
  *             items:
  *               type: string
  *               title: delete
- *               description: The delete's details.
+ *               description: A price's ID.
  * x-codeSamples:
  *   - lang: Shell
  *     label: cURL
  *     source: |-
  *       curl -X POST '{backend_url}/admin/price-lists/{id}/prices/batch' \
- *       -H 'x-medusa-access-token: {api_token}'
+ *       -H 'Authorization: Bearer {access_token}'
  * tags:
  *   - Price Lists
  * responses:
  *   "200":
  *     description: OK
+ *     content:
+ *       application/json:
+ *         schema:
+ *           $ref: "#/components/schemas/AdminPriceListBatchResponse"
  *   "400":
  *     $ref: "#/components/responses/400_error"
  *   "401":
@@ -177,6 +132,7 @@
  *     $ref: "#/components/responses/invalid_request_error"
  *   "500":
  *     $ref: "#/components/responses/500_error"
+ * x-workflow: batchPriceListPricesWorkflow
  * 
 */
 

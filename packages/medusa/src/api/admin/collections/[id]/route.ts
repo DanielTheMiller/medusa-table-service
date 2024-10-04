@@ -1,7 +1,7 @@
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import {
   deleteCollectionsWorkflow,
   updateCollectionsWorkflow,
@@ -9,10 +9,12 @@ import {
 
 import { AdminUpdateCollectionType } from "../validators"
 import { refetchCollection } from "../helpers"
+import { HttpTypes } from "@medusajs/framework/types"
+import { MedusaError } from "@medusajs/framework/utils"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminCollectionResponse>
 ) => {
   const collection = await refetchCollection(
     req.params.id,
@@ -25,8 +27,18 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminUpdateCollectionType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminCollectionResponse>
 ) => {
+  const existingCollection = await refetchCollection(req.params.id, req.scope, [
+    "id",
+  ])
+  if (!existingCollection) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Collection with id "${req.params.id}" not found`
+    )
+  }
+
   await updateCollectionsWorkflow(req.scope).run({
     input: {
       selector: { id: req.params.id },
@@ -45,7 +57,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminCollectionDeleteResponse>
 ) => {
   const id = req.params.id
 

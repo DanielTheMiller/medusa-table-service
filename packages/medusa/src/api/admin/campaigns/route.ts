@@ -1,18 +1,19 @@
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
-import {createCampaignsWorkflow} from "@medusajs/core-flows"
+} from "@medusajs/framework/http"
+import { createCampaignsWorkflow } from "@medusajs/core-flows"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
-import {AdminCreateCampaignType} from "./validators"
-import {refetchCampaign} from "./helpers"
+} from "@medusajs/framework/utils"
+import { AdminCreateCampaignType } from "./validators"
+import { refetchCampaign } from "./helpers"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminGetCampaignParams>,
+  res: MedusaResponse<HttpTypes.AdminCampaignListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -36,14 +37,15 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminCreateCampaignType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<AdminCreateCampaignType & AdditionalData>,
+  res: MedusaResponse<HttpTypes.AdminCampaignResponse>
 ) => {
+  const { additional_data, ...rest } = req.validatedBody
   const createCampaigns = createCampaignsWorkflow(req.scope)
-  const campaignsData = [req.validatedBody]
+  const campaignsData = [rest]
 
   const { result } = await createCampaigns.run({
-    input: { campaignsData },
+    input: { campaignsData, additional_data },
     context: {
       requestId: req.requestId,
     },

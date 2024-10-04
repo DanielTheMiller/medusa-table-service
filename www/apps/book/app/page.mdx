@@ -1,5 +1,6 @@
 import { CheckCircleSolid, BuildingStorefront, BuildingsSolid, ComputerDesktop, FlyingBox } from "@medusajs/icons"
 import { config } from "@/config"
+import { Prerequisites } from "docs-ui"
 
 export const metadata = {
   title: `${pageNumber} Introduction - ${config.titleSuffix}`,
@@ -20,19 +21,25 @@ With these tools, you save time you would spend with other platforms on maintain
 
 ## Get started
 
-
-<Note type="check">
-
-- [Node.js v20+](https://nodejs.org/en/download)
-- [Git CLI tool](https://git-scm.com/downloads)
-- [PostgreSQL](https://www.postgresql.org/download/)
-
-</Note>
+<Prerequisites items={[
+  {
+    text: "Node.js v20+",
+    link: "https://nodejs.org/en/download"
+  },
+  {
+    text: "Git CLI tool",
+    link: "https://git-scm.com/downloads"
+  },
+  {
+    text: "PostgreSQL",
+    link: "https://www.postgresql.org/download/"
+  }
+]} />
 
 Create your first Medusa store by running the following command:
 
 ```bash
-npx create-medusa-app@preview
+npx create-medusa-app@rc
 ```
 
 ---
@@ -50,50 +57,52 @@ Medusa is for ambitious businesses and developers that are limited by traditiona
     title: "Use Case: D2C",
     text: "How Matt Sleeps built a unique D2C experience with Medusa",
     href: "https://medusajs.com/blog/matt-sleeps/",
-    startIcon: <FlyingBox />,
-    isExternal: true
+    icon: FlyingBox,
   },
   {
     title: "Use Case: OMS",
     text: "How Makro Pro Built an OMS with Medusa",
     href: "https://medusajs.com/blog/makro-pro/",
-    startIcon: <CheckCircleSolid />,
-    isExternal: true
+    icon: CheckCircleSolid,
   },
   {
     title: "Use Case: Marketplace",
     text: "How Foraged built a custom marketplace with Medusa",
     href: "https://medusajs.com/blog/foraged/",
-    startIcon: <BuildingStorefront />,
-    isExternal: true
+    icon: BuildingStorefront,
   },
   {
     title: "Use Case: POS",
     text: "How Tekla built a global webshop and a POS system with Medusa",
     href: "https://medusajs.com/blog/tekla-pos/",
-    startIcon: <ComputerDesktop />,
-    isExternal: true
+    icon: ComputerDesktop,
   },
   {
     title: "Use Case: B2B",
     text: "How Visionary built B2B commerce with Medusa",
     href: "https://medusajs.com/blog/visionary/",
-    startIcon: <BuildingsSolid />,
-    isExternal: true
+    icon: BuildingsSolid,
   },
   {
     title: "Use Case: Platform",
     text: "How Catalog built a B2B platform for SMBs with Medusa",
     href: "https://medusajs.com/blog/catalog/",
-    startIcon: <BuildingsSolid />,
-    isExternal: true
+    icon: BuildingsSolid,
   }
 ]} itemsPerRow={2} />
 
 ---
 
-## Who is this book for
+## Who is this documentation for
 
-This book is for TypeScript or JavaScript developers looking to master Medusa and build their commerce applications. By following this book, you’ll learn about Medusa’s concept, from basic to advanced, with easy-to-follow examples to assist you along the way.
+This documentation is for TypeScript or JavaScript developers looking to master Medusa and build their commerce applications. By following this documentation, you’ll learn about Medusa’s concepts, from basic to advanced, with easy-to-follow examples to assist you along the way.
 
-By the end of this book, you’ll be an expert Medusa developer, leading teams using Medusa from the development till production.
+By the end of this documentation, you’ll be an expert Medusa developer, leading teams using Medusa from the development till production.
+
+### How to use the documentation
+
+The documentation for Medusa v2 is split into the following sections:
+
+1. The main documentation, which is the one you're currently viewing. It's highly recommended to follow all the chapters in this documentation before jumping into other documentation sections.
+2. The [Development Resources documentation](!resources!) provides guides and resources useful during your development, such as tools, API references, recipes, step-by-step guides and examples, and more.
+3. The [Store](!api!/store) and [Admin](!api!/admin) API references provide a reference to the Medusa application's endpoints and instructions related to authentication, parameter types, and more.

@@ -1,6 +1,10 @@
-import { DALUtils, Searchable, generateEntityId } from "@medusajs/utils"
+import {
+  DALUtils,
+  Searchable,
+  generateEntityId,
+} from "@medusajs/framework/utils"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   BeforeCreate,
   Entity,
@@ -12,7 +16,7 @@ import {
   Property,
 } from "@mikro-orm/core"
 
-type SalesChannelOptionalProps = "is_disabled" | DAL.EntityDateColumns
+type SalesChannelOptionalProps = "is_disabled" | DAL.ModelDateColumns
 
 @Entity()
 @Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)

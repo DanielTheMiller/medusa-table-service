@@ -2,15 +2,16 @@ import {
   ApplicationMethodAllocationValues,
   BigNumberInput,
   PromotionTypes,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   ApplicationMethodAllocation,
+  ApplicationMethodTargetType,
   ComputedActions,
   MathBN,
   MedusaError,
   ApplicationMethodTargetType as TargetType,
   calculateAdjustmentAmountFromPromotion,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { areRulesValidForContext } from "../validations"
 import { computeActionForBudgetExceeded } from "./usage"
 
@@ -172,7 +173,8 @@ function getValidItemsForPromotion(
       const isQuantityPresent = "quantity" in item
       const isPromotionApplicableToItem = areRulesValidForContext(
         promotion?.application_method?.target_rules!,
-        item
+        item,
+        ApplicationMethodTargetType.ITEMS
       )
 
       return (

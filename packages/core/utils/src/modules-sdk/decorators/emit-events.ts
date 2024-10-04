@@ -2,6 +2,12 @@ import { MessageAggregator } from "../../event-bus"
 import { InjectIntoContext } from "./inject-into-context"
 import { MessageAggregatorFormat } from "@medusajs/types"
 
+/**
+ * @internal this decorator is not meant to be used except by the internal team for now
+ *
+ * @param options
+ * @constructor
+ */
 export function EmitEvents(
   options: MessageAggregatorFormat = {} as MessageAggregatorFormat
 ) {
@@ -30,9 +36,12 @@ export function EmitEvents(
 
       const argIndex = target.MedusaContextIndex_[propertyKey]
       const aggregator = args[argIndex].messageAggregator as MessageAggregator
-      await target.emitEvents_.apply(this, [aggregator.getMessages(options)])
 
-      aggregator.clearMessages()
+      if (aggregator.count() > 0) {
+        await target.emitEvents_.apply(this, [aggregator.getMessages(options)])
+        aggregator.clearMessages()
+      }
+
       return result
     }
   }

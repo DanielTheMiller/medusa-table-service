@@ -1,6 +1,10 @@
 import { BatchMethodRequest } from "../../../common"
 import { ProductStatus } from "../common"
 
+export interface AdminExportProductRequest {}
+export interface AdminImportProductRequest {
+  file: File
+}
 export interface AdminBatchProductRequest
   extends BatchMethodRequest<AdminCreateProduct, AdminUpdateProduct> {}
 
@@ -22,6 +26,13 @@ export interface AdminCreateProductVariantPrice {
   amount: number
   min_quantity?: number | null
   max_quantity?: number | null
+  // Note: Although the BE is generic, we only use region_id for price rules for now, so it's better to keep the typings stricter.
+  rules?: { region_id: string } | null
+}
+
+export interface AdminCreateProductVariantInventoryKit {
+  inventory_item_id: string
+  required_quantity?: number
 }
 
 export interface AdminCreateProductVariant {
@@ -43,6 +54,7 @@ export interface AdminCreateProductVariant {
   material?: string
   metadata?: Record<string, unknown>
   prices: AdminCreateProductVariantPrice[]
+  inventory_items?: AdminCreateProductVariantInventoryKit[]
   options?: Record<string, string>
 }
 
@@ -59,7 +71,7 @@ export interface AdminCreateProduct {
   type_id?: string
   collection_id?: string
   categories?: { id: string }[]
-  tags?: { id?: string; value?: string }[]
+  tags?: { id: string }[]
   options?: AdminCreateProductOption[]
   variants?: AdminCreateProductVariant[]
   sales_channels?: { id: string }[]
@@ -109,9 +121,9 @@ export interface AdminUpdateProduct {
   type_id?: string | null
   collection_id?: string | null
   categories?: { id: string }[]
-  tags?: { id?: string; value?: string }[]
+  tags?: { id: string }[]
   options?: AdminUpdateProductOption[]
-  variants?: AdminCreateProductVariant[]
+  variants?: (AdminCreateProductVariant | AdminUpdateProductVariant)[]
   sales_channels?: { id: string }[]
   weight?: number | null
   length?: number | null

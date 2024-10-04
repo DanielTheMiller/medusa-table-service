@@ -2,20 +2,21 @@ import { refundPaymentWorkflow } from "@medusajs/core-flows"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchPayment } from "../../helpers"
 import { AdminCreatePaymentRefundType } from "../../validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminCreatePaymentRefundType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminPaymentResponse>
 ) => {
   const { id } = req.params
   await refundPaymentWorkflow(req.scope).run({
     input: {
       payment_id: id,
       created_by: req.auth_context.actor_id,
-      amount: req.validatedBody.amount,
+      ...req.validatedBody,
     },
   })
 

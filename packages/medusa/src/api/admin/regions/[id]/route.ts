@@ -2,17 +2,18 @@ import {
   deleteRegionsWorkflow,
   updateRegionsWorkflow,
 } from "@medusajs/core-flows"
-import { MedusaError } from "@medusajs/utils"
+import { MedusaError } from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchRegion } from "../helpers"
 import { AdminGetRegionParamsType, AdminUpdateRegionType } from "../validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<AdminGetRegionParamsType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminRegionResponse>
 ) => {
   const region = await refetchRegion(
     req.params.id,
@@ -32,8 +33,16 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminUpdateRegionType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminRegionResponse>
 ) => {
+  const existingRegion = await refetchRegion(req.params.id, req.scope, ["id"])
+  if (!existingRegion) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Region with id "${req.params.id}" not found`
+    )
+  }
+
   const { result } = await updateRegionsWorkflow(req.scope).run({
     input: {
       selector: { id: req.params.id },
@@ -52,7 +61,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminRegionDeleteResponse>
 ) => {
   const id = req.params.id
 

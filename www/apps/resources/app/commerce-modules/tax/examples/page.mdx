@@ -14,16 +14,16 @@ In this guide, you’ll find common examples of how you can use the Tax Module i
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { ITaxModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { ITaxModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const taxModuleService: ITaxModuleService = req.scope.resolve(
-    ModuleRegistrationName.TAX
+    Modules.TAX
   )
 
   const taxRegion = await taxModuleService.createTaxRegions({
@@ -46,7 +46,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeTaxModule } from "@medusajs/tax"
+import { initialize as initializeTaxModule } from "@medusajs/medusa/tax"
 
 export async function POST(request: Request) {
   const taxModuleService = await initializeTaxModule()
@@ -76,16 +76,16 @@ export async function POST(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { ITaxModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { ITaxModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const taxModuleService: ITaxModuleService = req.scope.resolve(
-    ModuleRegistrationName.TAX
+    Modules.TAX
   )
 
   res.json({
@@ -100,7 +100,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeTaxModule } from "@medusajs/tax"
+import { initialize as initializeTaxModule } from "@medusajs/medusa/tax"
 
 export async function GET(request: Request) {
   const taxModuleService = await initializeTaxModule()
@@ -122,16 +122,16 @@ export async function GET(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { ITaxModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { ITaxModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const taxModuleService: ITaxModuleService = req.scope.resolve(
-    ModuleRegistrationName.TAX
+    Modules.TAX
   )
 
   const taxRate = await taxModuleService.createTaxRates({
@@ -162,7 +162,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeTaxModule } from "@medusajs/tax"
+import { initialize as initializeTaxModule } from "@medusajs/medusa/tax"
 
 export async function POST(request: Request) {
   const taxModuleService = await initializeTaxModule()
@@ -200,16 +200,16 @@ export async function POST(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { ITaxModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { ITaxModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const taxModuleService: ITaxModuleService = req.scope.resolve(
-    ModuleRegistrationName.TAX
+    Modules.TAX
   )
 
   res.json({
@@ -224,7 +224,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeTaxModule } from "@medusajs/tax"
+import { initialize as initializeTaxModule } from "@medusajs/medusa/tax"
 
 export async function GET(request: Request) {
   const taxModuleService = await initializeTaxModule()
@@ -246,16 +246,16 @@ export async function GET(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { ITaxModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { ITaxModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const taxModuleService: ITaxModuleService = req.scope.resolve(
-    ModuleRegistrationName.TAX
+    Modules.TAX
   )
 
   const taxLines = await taxModuleService.getTaxLines(
@@ -296,7 +296,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeTaxModule } from "@medusajs/tax"
+import { initialize as initializeTaxModule } from "@medusajs/medusa/tax"
 
 export async function GET(request: Request) {
   const taxModuleService = await initializeTaxModule()

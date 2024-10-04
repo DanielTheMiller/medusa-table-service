@@ -1,6 +1,6 @@
-import { Constructor, Context, DAL } from "@medusajs/types"
+import { Constructor, Context, DAL } from "@medusajs/framework/types"
 import { LoadStrategy } from "@mikro-orm/core"
-import { Order } from "@models"
+import { Order, OrderClaim } from "@models"
 import { mapRepositoryToOrderModel } from "."
 
 export function setFindMethods<T>(klass: Constructor<T>, entity: any) {
@@ -31,9 +31,22 @@ export function setFindMethods<T>(klass: Constructor<T>, entity: any) {
 
     const isRelatedEntity = entity !== Order
     const config = mapRepositoryToOrderModel(findOptions_, isRelatedEntity)
+    config.options ??= {}
+    config.options.populate ??= []
 
+    const strategy = config.options.strategy ?? LoadStrategy.JOINED
     let orderAlias = "o0"
     if (isRelatedEntity) {
+      if (entity === OrderClaim) {
+        config.options.populate.push("claim_items")
+      }
+
+      if (strategy === LoadStrategy.JOINED) {
+        config.options.populate.push("order.shipping_methods")
+        config.options.populate.push("order.summary")
+        config.options.populate.push("shipping_methods")
+      }
+
       if (!config.options.populate.includes("order.items")) {
         config.options.populate.unshift("order.items")
       }
@@ -49,7 +62,7 @@ export function setFindMethods<T>(klass: Constructor<T>, entity: any) {
     }
 
     let defaultVersion = knex.raw(`"${orderAlias}"."version"`)
-    const strategy = config.options.strategy ?? LoadStrategy.JOINED
+
     if (strategy === LoadStrategy.SELECT_IN) {
       const sql = manager
         .qb(Order, "_sub0")
@@ -69,6 +82,12 @@ export function setFindMethods<T>(klass: Constructor<T>, entity: any) {
 
     if (isRelatedEntity) {
       popWhere.order ??= {}
+
+      popWhere.shipping_methods ??= {}
+      popWhere.shipping_methods.deleted_at ??= null
+
+      popWhere.shipping_methods.shipping_method ??= {}
+      popWhere.shipping_methods.shipping_method.deleted_at ??= null
     }
 
     const orderWhere = isRelatedEntity ? popWhere.order : popWhere
@@ -80,9 +99,12 @@ export function setFindMethods<T>(klass: Constructor<T>, entity: any) {
     orderWhere.items.version = version
     orderWhere.items.deleted_at ??= null
 
-    popWhere.shipping_methods ??= {}
-    popWhere.shipping_methods.version = version
-    popWhere.shipping_methods.deleted_at ??= null
+    orderWhere.shipping_methods ??= {}
+    orderWhere.shipping_methods.version = version
+    orderWhere.shipping_methods.deleted_at ??= null
+
+    orderWhere.shipping_methods.shipping_method ??= {}
+    orderWhere.shipping_methods.shipping_method.deleted_at ??= null
 
     if (!config.options.orderBy) {
       config.options.orderBy = { id: "ASC" }
@@ -117,6 +139,15 @@ export function setFindMethods<T>(klass: Constructor<T>, entity: any) {
 
     let orderAlias = "o0"
     if (isRelatedEntity) {
+      if (entity === OrderClaim) {
+        if (
+          config.options.populate.includes("additional_items") &&
+          !config.options.populate.includes("claim_items")
+        ) {
+          config.options.populate.push("claim_items")
+        }
+      }
+
       // first relation is always order if the entity is not Order
       const index = config.options.populate.findIndex((p) => p === "order")
       if (index > -1) {

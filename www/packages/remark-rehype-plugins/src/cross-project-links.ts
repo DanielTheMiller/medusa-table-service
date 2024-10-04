@@ -18,7 +18,7 @@ const PROJECT_REGEX = /^!(?<area>[\w-]+)!/
 
 function matchAndFixLinks(
   link: string,
-  { baseUrl, projectUrls }: CrossProjectLinksOptions
+  { baseUrl, projectUrls, useBaseUrl = false }: CrossProjectLinksOptions
 ): string {
   const projectArea = PROJECT_REGEX.exec(link)
 
@@ -29,6 +29,7 @@ function matchAndFixLinks(
   const actualUrl = link.replace(PROJECT_REGEX, "")
 
   const base =
+    !useBaseUrl &&
     projectUrls &&
     Object.hasOwn(projectUrls, projectArea.groups.area) &&
     projectUrls[projectArea.groups.area]?.url
@@ -60,6 +61,27 @@ function componentFixer(
     return
   }
 
+  const fixProperty = (item: ExpressionJsVar) => {
+    if (!isExpressionJsVarObj(item)) {
+      return
+    }
+
+    Object.entries(item).forEach(([key, value]) => {
+      if (
+        (key !== "href" && key !== "link") ||
+        !isExpressionJsVarLiteral(value)
+      ) {
+        return
+      }
+
+      value.original.value = matchAndFixLinks(
+        value.original.value as string,
+        options
+      )
+      value.original.raw = JSON.stringify(value.original.value)
+    })
+  }
+
   switch (node.name) {
     case "CardList":
       const itemsAttribute = getAttribute(node, "items")
@@ -78,24 +100,6 @@ function componentFixer(
         return
       }
 
-      const fixProperty = (item: ExpressionJsVar) => {
-        if (!isExpressionJsVarObj(item)) {
-          return
-        }
-
-        Object.entries(item).forEach(([key, value]) => {
-          if (key !== "href" || !isExpressionJsVarLiteral(value)) {
-            return
-          }
-
-          value.original.value = matchAndFixLinks(
-            value.original.value as string,
-            options
-          )
-          value.original.raw = JSON.stringify(value.original.value)
-        })
-      }
-
       if (Array.isArray(jsVar)) {
         jsVar.forEach(fixProperty)
       } else {
@@ -112,6 +116,31 @@ function componentFixer(
       hrefAttribute.value = matchAndFixLinks(hrefAttribute.value, options)
 
       return
+    case "Prerequisites":
+      const prerequisitesItemsAttribute = getAttribute(node, "items")
+
+      if (
+        !prerequisitesItemsAttribute?.value ||
+        typeof prerequisitesItemsAttribute.value === "string" ||
+        !prerequisitesItemsAttribute.value.data?.estree
+      ) {
+        return
+      }
+
+      const prerequisitesJsVar = estreeToJs(
+        prerequisitesItemsAttribute.value.data.estree
+      )
+
+      if (!prerequisitesJsVar) {
+        return
+      }
+
+      if (Array.isArray(prerequisitesJsVar)) {
+        prerequisitesJsVar.forEach(fixProperty)
+      } else {
+        fixProperty(prerequisitesJsVar)
+      }
+      return
   }
 }
 
@@ -125,7 +154,10 @@ export function crossProjectLinksPlugin(
       tree as UnistTree,
       ["element", "mdxJsxFlowElement"],
       (node: UnistNode) => {
-        const isComponent = node.name === "Card" || node.name === "CardList"
+        const isComponent =
+          node.name === "Card" ||
+          node.name === "CardList" ||
+          node.name === "Prerequisites"
         const isLink = node.tagName === "a" && node.properties?.href
         if (!isComponent && !isLink) {
           return

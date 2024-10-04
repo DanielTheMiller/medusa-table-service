@@ -2,15 +2,14 @@ import {
   BaseFilterable,
   Context,
   FilterQuery,
-  FilterQuery as InternalFilterQuery,
   FindConfig,
   InferEntityType,
+  FilterQuery as InternalFilterQuery,
   ModulesSdkTypes,
   PerformedActions,
   UpsertWithReplaceConfig,
 } from "@medusajs/types"
-import { EntitySchema } from "@mikro-orm/core"
-import { EntityClass } from "@mikro-orm/core/typings"
+import type { EntitySchema, EntityClass } from "@mikro-orm/core"
 import {
   doNotForceTransaction,
   isDefined,
@@ -22,13 +21,13 @@ import {
   shouldForceTransaction,
 } from "../common"
 import { FreeTextSearchFilterKey } from "../dal"
+import { DmlEntity, toMikroORMEntity } from "../dml"
 import { buildQuery } from "./build-query"
 import {
   InjectManager,
   InjectTransactionManager,
   MedusaContext,
 } from "./decorators"
-import { DmlEntity, toMikroORMEntity } from "../dml"
 
 type SelectorAndData = {
   selector: FilterQuery<any> | BaseFilterable<FilterQuery<any>>
@@ -273,9 +272,7 @@ export function MedusaInternalService<
         if (input_.selector) {
           const entitiesToUpdate = await this.list(
             input_.selector,
-            {
-              take: null,
-            },
+            {},
             sharedContext
           )
           // Create a pair of entity and data to update

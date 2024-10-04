@@ -1,9 +1,12 @@
-import { IInventoryService, InventoryTypes } from "@medusajs/types"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
+import { IInventoryService, InventoryTypes } from "@medusajs/framework/types"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
-import { ModuleRegistrationName } from "@medusajs/utils"
+import { MathBN, Modules } from "@medusajs/framework/utils"
 
 export const adjustInventoryLevelsStepId = "adjust-inventory-levels-step"
+/**
+ * This step adjusts one or more inventory levels.
+ */
 export const adjustInventoryLevelsStep = createStep(
   adjustInventoryLevelsStepId,
   async (
@@ -11,7 +14,7 @@ export const adjustInventoryLevelsStep = createStep(
     { container }
   ) => {
     const inventoryService: IInventoryService = container.resolve(
-      ModuleRegistrationName.INVENTORY
+      Modules.INVENTORY
     )
 
     const adjustedLevels: InventoryTypes.InventoryLevelDTO[] =
@@ -30,7 +33,7 @@ export const adjustInventoryLevelsStep = createStep(
       input.map((item) => {
         return {
           ...item,
-          adjustment: item.adjustment * -1,
+          adjustment: MathBN.mult(item.adjustment, -1),
         }
       })
     )
@@ -40,7 +43,7 @@ export const adjustInventoryLevelsStep = createStep(
       return
     }
 
-    const inventoryService = container.resolve(ModuleRegistrationName.INVENTORY)
+    const inventoryService = container.resolve(Modules.INVENTORY)
 
     /**
      * @todo

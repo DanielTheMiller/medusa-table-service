@@ -1,8 +1,8 @@
 /**
  * @oas [post] /admin/inventory-items/{id}
  * operationId: PostInventoryItemsId
- * summary: Update a Inventory Item
- * description: Update a inventory item's details.
+ * summary: Update an Inventory Item
+ * description: Update an inventory item's details.
  * x-authenticated: true
  * parameters:
  *   - name: id
@@ -21,46 +21,16 @@
  *       description: Comma-separated relations that should be expanded in the returned data.
  *   - name: fields
  *     in: query
- *     description: >-
- *       Comma-separated fields that should be included in the returned data.
- *        * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *        * without prefix it will replace the entire default fields.
+ *     description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *       fields. without prefix it will replace the entire default fields.
  *     required: false
  *     schema:
  *       type: string
  *       title: fields
- *       description: >-
- *         Comma-separated fields that should be included in the returned data.
- *          * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *          * without prefix it will replace the entire default fields.
- *   - name: offset
- *     in: query
- *     description: The number of items to skip when retrieving a list.
- *     required: false
- *     schema:
- *       type: number
- *       title: offset
- *       description: The number of items to skip when retrieving a list.
- *   - name: limit
- *     in: query
- *     description: Limit the number of items returned in the list.
- *     required: false
- *     schema:
- *       type: number
- *       title: limit
- *       description: Limit the number of items returned in the list.
- *   - name: order
- *     in: query
- *     description: The field to sort the data by. By default, the sort order is
- *       ascending. To change the order to descending, prefix the field name with
- *       `-`.
- *     required: false
- *     schema:
- *       type: string
- *       title: order
- *       description: The field to sort the data by. By default, the sort order is
- *         ascending. To change the order to descending, prefix the field name with
- *         `-`.
+ *       description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *         fields. without prefix it will replace the entire default fields.
+ *       externalDocs:
+ *         url: "#select-fields-and-relations"
  * security:
  *   - api_token: []
  *   - cookie_auth: []
@@ -70,30 +40,16 @@
  *     application/json:
  *       schema:
  *         type: object
- *         description: SUMMARY
- *         required:
- *           - sku
- *           - hs_code
- *           - weight
- *           - length
- *           - height
- *           - width
- *           - origin_country
- *           - mid_code
- *           - material
- *           - title
- *           - description
- *           - thumbnail
- *           - metadata
+ *         description: The properties to update in the inventory item.
  *         properties:
  *           sku:
  *             type: string
  *             title: sku
- *             description: The inventory item's sku.
+ *             description: The inventory item's SKU.
  *           hs_code:
  *             type: string
  *             title: hs_code
- *             description: The inventory item's hs code.
+ *             description: The inventory item's HS code.
  *           weight:
  *             type: number
  *             title: weight
@@ -117,7 +73,7 @@
  *           mid_code:
  *             type: string
  *             title: mid_code
- *             description: The inventory item's mid code.
+ *             description: The inventory item's MID code.
  *           material:
  *             type: string
  *             title: material
@@ -133,20 +89,20 @@
  *           requires_shipping:
  *             type: boolean
  *             title: requires_shipping
- *             description: The inventory item's requires shipping.
+ *             description: Whether the inventory item requires shipping.
  *           thumbnail:
  *             type: string
  *             title: thumbnail
- *             description: The inventory item's thumbnail.
+ *             description: The URL of an image to be used as the inventory item's thumbnail. You can use the Upload API routes to upload an image and get its URL.
  *           metadata:
  *             type: object
- *             description: The inventory item's metadata.
+ *             description: The inventory item's metadata. Can be custom data in key-value pairs.
  * x-codeSamples:
  *   - lang: Shell
  *     label: cURL
  *     source: |-
  *       curl -X POST '{backend_url}/admin/inventory-items/{id}' \
- *       -H 'x-medusa-access-token: {api_token}' \
+ *       -H 'Authorization: Bearer {access_token}' \
  *       -H 'Content-Type: application/json' \
  *       --data-raw '{
  *         "sku": "{value}",
@@ -168,6 +124,10 @@
  * responses:
  *   "200":
  *     description: OK
+ *     content:
+ *       application/json:
+ *         schema:
+ *           $ref: "#/components/schemas/AdminInventoryItemResponse"
  *   "400":
  *     $ref: "#/components/responses/400_error"
  *   "401":
@@ -180,6 +140,7 @@
  *     $ref: "#/components/responses/invalid_request_error"
  *   "500":
  *     $ref: "#/components/responses/500_error"
+ * x-workflow: updateInventoryItemsWorkflow
  * 
 */
 

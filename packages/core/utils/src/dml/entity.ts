@@ -6,12 +6,13 @@ import {
   IDmlEntity,
   IDmlEntityConfig,
   InferDmlEntityNameFromConfig,
-  IsDmlEntity,
   QueryCondition,
 } from "@medusajs/types"
 import { isObject, isString, toCamelCase } from "../common"
 import { transformIndexWhere } from "./helpers/entity-builder/build-indexes"
 import { BelongsTo } from "./relations/belongs-to"
+
+const IsDmlEntity = Symbol.for("isDmlEntity")
 
 function extractNameAndTableName<const Config extends IDmlEntityConfig>(
   nameOrConfig: Config
@@ -59,7 +60,7 @@ export class DmlEntity<
   const TConfig extends IDmlEntityConfig
 > implements IDmlEntity<Schema, TConfig>
 {
-  [IsDmlEntity]: true = true
+  [IsDmlEntity] = true
 
   name: InferDmlEntityNameFromConfig<TConfig>
   schema: Schema
@@ -116,7 +117,7 @@ export class DmlEntity<
    * action should be cascaded to.
    *
    * @example
-   * import { model } from "@medusajs/utils"
+   * import { model } from "@medusajs/framework/utils"
    *
    * const Store = model.define("store", {
    *   id: model.id(),
@@ -161,7 +162,7 @@ export class DmlEntity<
    * An example of a simple index:
    *
    * ```ts
-   * import { model } from "@medusajs/utils"
+   * import { model } from "@medusajs/framework/utils"
    *
    * const MyCustom = model.define("my_custom", {
    *   id: model.id(),
@@ -179,7 +180,7 @@ export class DmlEntity<
    * To add a condition on the index, use the `where` option:
    *
    * ```ts
-   * import { model } from "@medusajs/utils"
+   * import { model } from "@medusajs/framework/utils"
    *
    * const MyCustom = model.define("my_custom", {
    *   id: model.id(),
@@ -200,7 +201,7 @@ export class DmlEntity<
    * The condition can also be a negation. For example:
    *
    * ```ts
-   * import { model } from "@medusajs/utils"
+   * import { model } from "@medusajs/framework/utils"
    *
    * const MyCustom = model.define("my_custom", {
    *   id: model.id(),

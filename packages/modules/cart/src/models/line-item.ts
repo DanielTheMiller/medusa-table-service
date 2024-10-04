@@ -1,11 +1,11 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
-  DALUtils,
-  MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
+  DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+  MikroOrmBigNumberProperty,
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -13,8 +13,8 @@ import {
   Entity,
   Filter,
   ManyToOne,
-  OnInit,
   OneToMany,
+  OnInit,
   OptionalProps,
   PrimaryKey,
   Property,
@@ -30,7 +30,7 @@ type OptionalLineItemProps =
   | "compare_at_unit_price"
   | "requires_shipping"
   | "cart"
-  | DAL.SoftDeletableEntityDateColumns
+  | DAL.SoftDeletableModelDateColumns
 
 const CartIdIndex = createPsqlIndexStatementHelper({
   name: "IDX_line_item_cart_id",

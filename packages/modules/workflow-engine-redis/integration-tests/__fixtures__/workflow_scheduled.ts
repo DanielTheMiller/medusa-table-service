@@ -1,13 +1,20 @@
-import { SchedulerOptions } from "@medusajs/orchestration"
+import { SchedulerOptions } from "@medusajs/framework/orchestration"
 import {
   createStep,
   createWorkflow,
   StepResponse,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 
-export const createScheduled = (name: string, schedule?: SchedulerOptions) => {
-  const workflowScheduledStepInvoke = jest.fn((input, context) => {
-    return new StepResponse({})
+export const createScheduled = (
+  name: string,
+  next: () => void,
+  schedule?: SchedulerOptions
+) => {
+  const workflowScheduledStepInvoke = jest.fn((input, { container }) => {
+    next()
+    return new StepResponse({
+      testValue: container.resolve("test-value"),
+    })
   })
 
   const step = createStep("step_1", workflowScheduledStepInvoke)

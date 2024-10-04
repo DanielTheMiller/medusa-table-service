@@ -1,7 +1,7 @@
 /**
  * @schema AdminProductVariantDeleteResponse
  * type: object
- * description: SUMMARY
+ * description: The details of the product variant's deletion.
  * x-schemaName: AdminProductVariantDeleteResponse
  * required:
  *   - id
@@ -11,16 +11,16 @@
  *   id:
  *     type: string
  *     title: id
- *     description: The product's ID.
+ *     description: The product variant's ID.
  *   object:
  *     type: string
  *     title: object
- *     description: The product's object.
- *     default: variant
+ *     description: The name of the deleted object.
  *   deleted:
  *     type: boolean
  *     title: deleted
- *     description: The product's deleted.
+ *     description: Whether the product variant was deleted.
+ *     default: variant
  *   parent:
  *     $ref: "#/components/schemas/AdminProduct"
  * 

@@ -1,22 +1,25 @@
-import { CreateOrderDTO, OrderDTO } from "@medusajs/types"
-import { MathBN, MedusaError, isPresent } from "@medusajs/utils"
+import { AdditionalData, CreateOrderDTO } from "@medusajs/framework/types"
+import { MathBN, MedusaError, isPresent } from "@medusajs/framework/utils"
 import {
   WorkflowData,
+  WorkflowResponse,
+  createHook,
   createWorkflow,
   parallelize,
   transform,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
+import { findOneOrAnyRegionStep } from "../../cart/steps/find-one-or-any-region"
+import { findOrCreateCustomerStep } from "../../cart/steps/find-or-create-customer"
+import { findSalesChannelStep } from "../../cart/steps/find-sales-channel"
+import { getVariantPriceSetsStep } from "../../cart/steps/get-variant-price-sets"
+import { validateVariantPricesStep } from "../../cart/steps/validate-variant-prices"
+import { prepareLineItemData } from "../../cart/utils/prepare-line-item-data"
+import { confirmVariantInventoryWorkflow } from "../../cart/workflows/confirm-variant-inventory"
 import { useRemoteQueryStep } from "../../common"
-import { findOneOrAnyRegionStep } from "../../definition/cart/steps/find-one-or-any-region"
-import { findOrCreateCustomerStep } from "../../definition/cart/steps/find-or-create-customer"
-import { findSalesChannelStep } from "../../definition/cart/steps/find-sales-channel"
-import { getVariantPriceSetsStep } from "../../definition/cart/steps/get-variant-price-sets"
-import { validateVariantPricesStep } from "../../definition/cart/steps/validate-variant-prices"
-import { prepareLineItemData } from "../../definition/cart/utils/prepare-line-item-data"
-import { confirmVariantInventoryWorkflow } from "../../definition/cart/workflows/confirm-variant-inventory"
-import { createOrdersStep, updateOrderTaxLinesStep } from "../steps"
+import { createOrdersStep } from "../steps"
 import { productVariantsFields } from "../utils/fields"
 import { prepareCustomLineItemData } from "../utils/prepare-custom-line-item-data"
+import { updateOrderTaxLinesWorkflow } from "./update-tax-lines"
 
 function prepareLineItems(data) {
   const items = (data.input.items ?? []).map((item) => {
@@ -28,6 +31,7 @@ function prepareLineItems(data) {
           ...item,
         },
         unitPrice: MathBN.max(0, item.unit_price),
+        isTaxInclusive: item.is_tax_inclusive,
         quantity: item.quantity as number,
         metadata: item?.metadata ?? {},
       })
@@ -37,8 +41,12 @@ function prepareLineItems(data) {
       variant: variant,
       unitPrice: MathBN.max(
         0,
-        item.unit_price ?? data.priceSets[item.variant_id!]?.calculated_amount
+        item.unit_price ??
+          data.priceSets[item.variant_id!]?.raw_calculated_amount
       ),
+      isTaxInclusive:
+        item.is_tax_inclusive ??
+        data.priceSets[item.variant_id!]?.is_calculated_price_tax_inclusive,
       quantity: item.quantity as number,
       metadata: item?.metadata ?? {},
       taxLines: item.tax_lines || [],
@@ -77,9 +85,12 @@ function getOrderInput(data) {
 }
 
 export const createOrdersWorkflowId = "create-orders"
+/**
+ * This workflow creates an order.
+ */
 export const createOrdersWorkflow = createWorkflow(
   createOrdersWorkflowId,
-  (input: WorkflowData<CreateOrderDTO>): WorkflowData<OrderDTO> => {
+  (input: WorkflowData<CreateOrderDTO & AdditionalData>) => {
     const variantIds = transform({ input }, (data) => {
       return (data.input.items ?? [])
         .map((item) => item.variant_id)
@@ -162,15 +173,19 @@ export const createOrdersWorkflow = createWorkflow(
     const orders = createOrdersStep([orderToCreate])
     const order = transform({ orders }, (data) => data.orders?.[0])
 
-    /* TODO: Implement Order promotions
-    refreshOrderPromotionsStep({
-      id: order.id,
-      promo_codes: input.promo_codes,
+    updateOrderTaxLinesWorkflow.runAsStep({
+      input: {
+        order_id: order.id,
+      },
     })
-    */
 
-    updateOrderTaxLinesStep({ order_id: order.id })
+    const orderCreated = createHook("orderCreated", {
+      order,
+      additional_data: input.additional_data,
+    })
 
-    return order
+    return new WorkflowResponse(order, {
+      hooks: [orderCreated],
+    })
   }
 )

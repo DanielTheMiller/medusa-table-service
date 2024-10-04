@@ -1,16 +1,15 @@
-import * as QueryConfig from "./query-config"
-
+import { MiddlewareRoute } from "@medusajs/framework/http"
+import { authenticate } from "../../../utils/middlewares/authenticate-middleware"
 import {
-  AdminCreateUser,
+  validateAndTransformBody,
+  validateAndTransformQuery,
+} from "@medusajs/framework"
+import * as QueryConfig from "./query-config"
+import {
   AdminGetUserParams,
   AdminGetUsersParams,
   AdminUpdateUser,
 } from "./validators"
-
-import { MiddlewareRoute } from "../../../types/middlewares"
-import { authenticate } from "../../../utils/middlewares/authenticate-middleware"
-import { validateAndTransformQuery } from "../../utils/validate-query"
-import { validateAndTransformBody } from "../../utils/validate-body"
 
 // TODO: Due to issues with our routing (and using router.use for applying middlewares), we have to opt-out of global auth in all routes, and then reapply it here.
 // See https://medusacorp.slack.com/archives/C025KMS13SA/p1716455350491879 for details.
@@ -23,18 +22,6 @@ export const adminUserRoutesMiddlewares: MiddlewareRoute[] = [
       validateAndTransformQuery(
         AdminGetUsersParams,
         QueryConfig.listTransformQueryConfig
-      ),
-    ],
-  },
-  {
-    method: ["POST"],
-    matcher: "/admin/users",
-    middlewares: [
-      authenticate("user", ["bearer", "session"], { allowUnregistered: true }),
-      validateAndTransformBody(AdminCreateUser),
-      validateAndTransformQuery(
-        AdminGetUserParams,
-        QueryConfig.retrieveTransformQueryConfig
       ),
     ],
   },

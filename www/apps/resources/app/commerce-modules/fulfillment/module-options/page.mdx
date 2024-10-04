@@ -21,7 +21,7 @@ When the Medusa application starts, these providers are registered and can be us
 For example:
 
 ```js title="medusa-config.js"
-import { Modules } from "@medusajs/utils"
+const { Modules } = require("@medusajs/framework/utils")
 
 // ...
 
@@ -29,12 +29,12 @@ module.exports = defineConfig({
   // ...
   modules: {
     [Modules.FULFILLMENT]: {
-      resolve: "@medusajs/fulfillment",
+      resolve: "@medusajs/medusa/fulfillment",
       options: {
         providers: [
           {
-            resolve: `@medusajs/fulfillment-manual`,
-            name: "manual",
+            resolve: `@medusajs/medusa/fulfillment-manual`,
+            id: "manual",
             options: {
               // provider options...
             },
@@ -49,5 +49,5 @@ module.exports = defineConfig({
 The `providers` option is an array of objects that accept the following properties:
 
 - `resolve`: A string indicating either the package name  of the module provider or the path to it relative to the `src` directory.
-- `name`: A string indicating the provider's unique name.
+- `id`: A string indicating the provider's unique name or ID.
 - `options`: An optional object of the module provider's options.

@@ -22,3 +22,7 @@ www/**/.yarn/*
 build/**
 **/dist
 **/stats
+.favorites.json
+.vscode
+
+**/tsconfig.tsbuildinfo

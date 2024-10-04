@@ -1,5 +1,5 @@
-import { ModuleJoinerConfig } from "@medusajs/types"
-import { Modules } from "@medusajs/utils"
+import { ModuleJoinerConfig } from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
 
 export const InventoryLevelStockLocation: ModuleJoinerConfig = {
   isLink: true,
@@ -9,6 +9,7 @@ export const InventoryLevelStockLocation: ModuleJoinerConfig = {
       serviceName: Modules.INVENTORY,
       relationship: {
         serviceName: Modules.STOCK_LOCATION,
+        entity: "StockLocation",
         primaryKey: "id",
         foreignKey: "location_id",
         alias: "stock_locations",

@@ -93,8 +93,6 @@ In this document, you'll learn about the options of the Payment Module.
   </Table.Body>
 </Table>
 
----
-
 ## providers
 
 The `providers` option is an array of payment module providers.
@@ -104,7 +102,7 @@ When the Medusa application starts, these providers are registered and can be us
 For example:
 
 ```js title="medusa-config.js"
-import { Modules } from "@medusajs/utils"
+const { Modules } = require("@medusajs/framework/utils")
 
 // ...
 
@@ -112,11 +110,11 @@ module.exports = defineConfig({
   // ...
   modules: {
     [Modules.PAYMENT]: {
-      resolve: "@medusajs/payment",
+      resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
           {
-            resolve: "@medusajs/payment-stripe",
+            resolve: "@medusajs/medusa/payment-stripe",
             id: "stripe",
             options: {
               // ...

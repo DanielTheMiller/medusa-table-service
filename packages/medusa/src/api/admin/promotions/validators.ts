@@ -4,14 +4,15 @@ import {
   ApplicationMethodType,
   PromotionRuleOperator,
   PromotionType,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { z } from "zod"
 import {
   createFindParams,
   createOperatorMap,
   createSelectParams,
+  WithAdditionalData,
 } from "../../utils/validators"
-import { AdminCreateCampaign } from "../campaigns/validators"
+import { CreateCampaign } from "../campaigns/validators"
 
 export type AdminGetPromotionParamsType = z.infer<
   typeof AdminGetPromotionParams
@@ -131,8 +132,6 @@ export const AdminUpdateApplicationMethod = z
     type: z.nativeEnum(ApplicationMethodType).optional(),
     target_type: z.nativeEnum(ApplicationMethodTargetType).optional(),
     allocation: z.nativeEnum(ApplicationMethodAllocation).optional(),
-    target_rules: z.array(AdminCreatePromotionRule).optional(),
-    buy_rules: z.array(AdminCreatePromotionRule).optional(),
     apply_to_quantity: z.number().nullish(),
     buy_rules_min_quantity: z.number().nullish(),
   })
@@ -155,38 +154,46 @@ const promoRefinement = (promo) => {
   return true
 }
 
-export type AdminCreatePromotionType = z.infer<typeof AdminCreatePromotion>
-export const AdminCreatePromotion = z
+export type AdminCreatePromotionType = z.infer<typeof CreatePromotion>
+export const CreatePromotion = z
   .object({
     code: z.string(),
     is_automatic: z.boolean().optional(),
     type: z.nativeEnum(PromotionType),
     campaign_id: z.string().nullish(),
-    campaign: AdminCreateCampaign.optional(),
+    campaign: CreateCampaign.optional(),
     application_method: AdminCreateApplicationMethod,
     rules: z.array(AdminCreatePromotionRule).optional(),
   })
   .strict()
-  // In the case of a buyget promotion, we require at least one buy rule and quantities
-  .refine(promoRefinement, {
-    message:
-      "Buyget promotions require at least one buy rule and quantities to be defined",
-  })
 
-export type AdminUpdatePromotionType = z.infer<typeof AdminUpdatePromotion>
-export const AdminUpdatePromotion = z
+export const AdminCreatePromotion = WithAdditionalData(
+  CreatePromotion,
+  (schema) => {
+    return schema.refine(promoRefinement, {
+      message:
+        "Buyget promotions require at least one buy rule and quantities to be defined",
+    })
+  }
+)
+
+export type AdminUpdatePromotionType = z.infer<typeof UpdatePromotion>
+export const UpdatePromotion = z
   .object({
     code: z.string().optional(),
     is_automatic: z.boolean().optional(),
     type: z.nativeEnum(PromotionType).optional(),
     campaign_id: z.string().nullish(),
-    campaign: AdminCreateCampaign.optional(),
     application_method: AdminUpdateApplicationMethod.optional(),
-    rules: z.array(AdminCreatePromotionRule).optional(),
   })
   .strict()
-  // In the case of a buyget promotion, we require at least one buy rule and quantities
-  .refine(promoRefinement, {
-    message:
-      "Buyget promotions require at least one buy rule and quantities to be defined",
-  })
+
+export const AdminUpdatePromotion = WithAdditionalData(
+  UpdatePromotion,
+  (schema) => {
+    return schema.refine(promoRefinement, {
+      message:
+        "Buyget promotions require at least one buy rule and quantities to be defined",
+    })
+  }
+)

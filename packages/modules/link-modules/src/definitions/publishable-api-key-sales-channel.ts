@@ -1,5 +1,5 @@
-import { ModuleJoinerConfig } from "@medusajs/types"
-import { LINKS, Modules } from "@medusajs/utils"
+import { ModuleJoinerConfig } from "@medusajs/framework/types"
+import { LINKS, Modules } from "@medusajs/framework/utils"
 
 export const PublishableApiKeySalesChannel: ModuleJoinerConfig = {
   serviceName: LINKS.PublishableApiKeySalesChannel,
@@ -20,6 +20,7 @@ export const PublishableApiKeySalesChannel: ModuleJoinerConfig = {
   relationships: [
     {
       serviceName: Modules.API_KEY,
+      entity: "ApiKey",
       primaryKey: "id",
       foreignKey: "publishable_key_id",
       alias: "api_key",
@@ -29,6 +30,7 @@ export const PublishableApiKeySalesChannel: ModuleJoinerConfig = {
     },
     {
       serviceName: Modules.SALES_CHANNEL,
+      entity: "SalesChannel",
       primaryKey: "id",
       foreignKey: "sales_channel_id",
       alias: "sales_channel",
@@ -41,7 +43,10 @@ export const PublishableApiKeySalesChannel: ModuleJoinerConfig = {
     {
       serviceName: Modules.API_KEY,
       fieldAlias: {
-        sales_channels: "sales_channels_link.sales_channel",
+        sales_channels: {
+          path: "sales_channels_link.sales_channel",
+          isList: true,
+        },
       },
       relationship: {
         serviceName: LINKS.PublishableApiKeySalesChannel,
@@ -54,7 +59,10 @@ export const PublishableApiKeySalesChannel: ModuleJoinerConfig = {
     {
       serviceName: Modules.SALES_CHANNEL,
       fieldAlias: {
-        publishable_api_keys: "api_keys_link.api_key",
+        publishable_api_keys: {
+          path: "api_keys_link.api_key",
+          isList: true,
+        },
       },
       relationship: {
         serviceName: LINKS.PublishableApiKeySalesChannel,

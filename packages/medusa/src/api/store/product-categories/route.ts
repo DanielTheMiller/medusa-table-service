@@ -1,16 +1,18 @@
-import { StoreProductCategoryListResponse } from "@medusajs/types"
+import {
+  StoreProductCategoryListParams,
+  StoreProductCategoryListResponse,
+} from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
-import { StoreProductCategoriesParamsType } from "./validators"
+} from "@medusajs/framework/http"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest<StoreProductCategoriesParamsType>,
+  req: AuthenticatedMedusaRequest<StoreProductCategoryListParams>,
   res: MedusaResponse<StoreProductCategoryListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)

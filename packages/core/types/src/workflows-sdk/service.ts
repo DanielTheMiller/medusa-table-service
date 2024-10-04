@@ -1,4 +1,4 @@
-import { ContainerLike, FindConfig } from "../common"
+import { FindConfig } from "../common"
 import { IModuleService } from "../modules-sdk"
 import { Context } from "../shared-context"
 import {
@@ -11,13 +11,21 @@ type FlowRunOptions<TData = unknown> = {
   context?: Context
   resultFrom?: string | string[] | Symbol
   throwOnError?: boolean
+  logOnError?: boolean
   events?: Record<string, Function>
+}
+
+export type Acknowledgement = {
+  workflowId: string
+  transactionId: string
+  parentStepIdempotencyKey?: string
+  hasFinished: boolean
+  hasFailed: boolean
 }
 
 export interface WorkflowOrchestratorRunDTO<T = unknown>
   extends FlowRunOptions<T> {
   transactionId?: string
-  container?: ContainerLike
 }
 
 export type IdempotencyKeyParts = {
@@ -59,7 +67,7 @@ export interface IWorkflowEngineService extends IModuleService {
     errors: Error[]
     transaction: object
     result: any
-    acknowledgement: object
+    acknowledgement: Acknowledgement
   }>
 
   getRunningTransaction(

@@ -14,6 +14,9 @@ medusaIntegrationTestRunner({
       let shippingProfile
       let fulfillmentSet
       let region
+      let appContainer
+      let location
+      let location2
 
       const shippingOptionRule = {
         operator: RuleOperator.EQ,
@@ -22,7 +25,8 @@ medusaIntegrationTestRunner({
       }
 
       beforeEach(async () => {
-        const appContainer = getContainer()
+        appContainer = getContainer()
+
         await createAdminUser(dbConnection, adminHeaders, appContainer)
 
         shippingProfile = (
@@ -36,12 +40,10 @@ medusaIntegrationTestRunner({
           )
         ).data.shipping_profile
 
-        let location = (
+        location = (
           await api.post(
             `/admin/stock-locations`,
-            {
-              name: "Test location",
-            },
+            { name: "Test location" },
             adminHeaders
           )
         ).data.stock_location
@@ -49,13 +51,24 @@ medusaIntegrationTestRunner({
         location = (
           await api.post(
             `/admin/stock-locations/${location.id}/fulfillment-sets?fields=*fulfillment_sets`,
-            {
-              name: "Test",
-              type: "test-type",
-            },
+            { name: "Test", type: "test-type" },
             adminHeaders
           )
         ).data.stock_location
+
+        location2 = (
+          await api.post(
+            `/admin/stock-locations`,
+            { name: "Test location 2" },
+            adminHeaders
+          )
+        ).data.stock_location
+
+        await api.post(
+          `/admin/stock-locations/${location.id}/fulfillment-providers`,
+          { add: ["manual_test-provider"] },
+          adminHeaders
+        )
 
         fulfillmentSet = (
           await api.post(
@@ -79,6 +92,145 @@ medusaIntegrationTestRunner({
             adminHeaders
           )
         ).data.region
+      })
+
+      describe("GET /admin/shipping-options", () => {
+        it("should filters options by stock_location_id", async () => {
+          const shippingOptionPayload = {
+            name: "Test shipping option",
+            service_zone_id: fulfillmentSet.service_zones[0].id,
+            shipping_profile_id: shippingProfile.id,
+            provider_id: "manual_test-provider",
+            price_type: "flat",
+            type: {
+              label: "Test type",
+              description: "Test description",
+              code: "test-code",
+            },
+            prices: [{ currency_code: "usd", amount: 1000 }],
+          }
+
+          const {
+            data: { shipping_option: shippingOption },
+          } = await api.post(
+            `/admin/shipping-options`,
+            shippingOptionPayload,
+            adminHeaders
+          )
+
+          const shippingOptions = await api.get(
+            `/admin/shipping-options?stock_location_id=${location.id}`,
+            adminHeaders
+          )
+
+          expect(shippingOptions.data.shipping_options).toHaveLength(1)
+
+          const shippingOptions2 = await api.get(
+            `/admin/shipping-options?stock_location_id=${location2.id}`,
+            adminHeaders
+          )
+
+          expect(shippingOptions2.data.shipping_options).toHaveLength(0)
+        })
+      })
+
+      describe("GET /admin/shipping-options/:id", () => {
+        it("should filters options by stock_location_id", async () => {
+          const shippingOptionPayload = {
+            name: "Test shipping option",
+            service_zone_id: fulfillmentSet.service_zones[0].id,
+            shipping_profile_id: shippingProfile.id,
+            provider_id: "manual_test-provider",
+            price_type: "flat",
+            type: {
+              label: "Test type",
+              description: "Test description",
+              code: "test-code",
+            },
+            prices: [{ currency_code: "usd", amount: 1000 }],
+          }
+
+          const {
+            data: { shipping_option: shippingOption },
+          } = await api.post(
+            `/admin/shipping-options`,
+            shippingOptionPayload,
+            adminHeaders
+          )
+
+          const shippingOptionRes = await api.get(
+            `/admin/shipping-options/${shippingOption.id}`,
+            adminHeaders
+          )
+
+          expect(shippingOptionRes.data.shipping_option).toEqual({
+            id: expect.any(String),
+            name: "Test shipping option",
+            price_type: "flat",
+            prices: [
+              {
+                id: expect.any(String),
+                amount: 1000,
+                currency_code: "usd",
+                max_quantity: null,
+                min_quantity: null,
+                price_list: null,
+                price_set_id: expect.any(String),
+                raw_amount: {
+                  precision: 20,
+                  value: "1000",
+                },
+                rules_count: 0,
+                title: null,
+                created_at: expect.any(String),
+                updated_at: expect.any(String),
+                deleted_at: null,
+              },
+            ],
+            provider_id: "manual_test-provider",
+            provider: {
+              id: "manual_test-provider",
+              is_enabled: true,
+            },
+            rules: [],
+            service_zone_id: expect.any(String),
+            service_zone: {
+              id: expect.any(String),
+              name: "Test",
+              fulfillment_set: {
+                id: expect.any(String),
+              },
+              fulfillment_set_id: expect.any(String),
+              metadata: null,
+              created_at: expect.any(String),
+              updated_at: expect.any(String),
+              deleted_at: null,
+            },
+            shipping_profile_id: expect.any(String),
+            shipping_profile: {
+              id: expect.any(String),
+              metadata: null,
+              name: "Test",
+              type: "default",
+              created_at: expect.any(String),
+              updated_at: expect.any(String),
+              deleted_at: null,
+            },
+            type: {
+              code: "test-code",
+              description: "Test description",
+              id: expect.any(String),
+              label: "Test type",
+              created_at: expect.any(String),
+              updated_at: expect.any(String),
+              deleted_at: null,
+            },
+            created_at: expect.any(String),
+            updated_at: expect.any(String),
+            data: null,
+            metadata: null,
+          })
+        })
       })
 
       describe("POST /admin/shipping-options", () => {
@@ -171,6 +323,41 @@ medusaIntegrationTestRunner({
                 }),
               ]),
             })
+          )
+        })
+
+        it("should throw error when provider does not exist on a location", async () => {
+          const shippingOptionPayload = {
+            name: "Test shipping option",
+            service_zone_id: fulfillmentSet.service_zones[0].id,
+            shipping_profile_id: shippingProfile.id,
+            provider_id: "does-not-exist",
+            price_type: "flat",
+            type: {
+              label: "Test type",
+              description: "Test description",
+              code: "test-code",
+            },
+            prices: [
+              {
+                currency_code: "usd",
+                amount: 1000,
+              },
+            ],
+            rules: [shippingOptionRule],
+          }
+
+          const error = await api
+            .post(
+              `/admin/shipping-options`,
+              shippingOptionPayload,
+              adminHeaders
+            )
+            .catch((e) => e)
+
+          expect(error.response.status).toEqual(400)
+          expect(error.response.data.message).toEqual(
+            "Providers (does-not-exist) are not enabled for the service location"
           )
         })
       })
@@ -329,6 +516,57 @@ medusaIntegrationTestRunner({
                 }),
               ]),
             })
+          )
+        })
+
+        it("should throw an error when provider does not belong to service location", async () => {
+          const shippingOptionPayload = {
+            name: "Test shipping option",
+            service_zone_id: fulfillmentSet.service_zones[0].id,
+            shipping_profile_id: shippingProfile.id,
+            provider_id: "manual_test-provider",
+            price_type: "flat",
+            type: {
+              label: "Test type",
+              description: "Test description",
+              code: "test-code",
+            },
+            prices: [
+              {
+                currency_code: "usd",
+                amount: 1000,
+              },
+              {
+                region_id: region.id,
+                amount: 1000,
+              },
+            ],
+            rules: [shippingOptionRule],
+          }
+
+          const response = await api.post(
+            `/admin/shipping-options`,
+            shippingOptionPayload,
+            adminHeaders
+          )
+
+          const shippingOptionId = response.data.shipping_option.id
+
+          const updateShippingOptionPayload = {
+            provider_id: "another_test-provider",
+          }
+
+          const error = await api
+            .post(
+              `/admin/shipping-options/${shippingOptionId}`,
+              updateShippingOptionPayload,
+              adminHeaders
+            )
+            .catch((e) => e)
+
+          expect(error.response.status).toEqual(400)
+          expect(error.response.data.message).toEqual(
+            "Providers (another_test-provider) are not enabled for the service location"
           )
         })
       })

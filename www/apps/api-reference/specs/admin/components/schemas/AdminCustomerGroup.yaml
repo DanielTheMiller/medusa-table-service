@@ -1,10 +1,10 @@
 type: object
-description: The group's groups.
+description: The customer group's details.
 x-schemaName: AdminCustomerGroup
 required:
+  - customers
   - id
   - name
-  - customers
   - metadata
   - created_at
   - updated_at
@@ -12,26 +12,26 @@ properties:
   id:
     type: string
     title: id
-    description: The group's ID.
+    description: The customer group's ID.
   name:
     type: string
     title: name
-    description: The group's name.
+    description: The customer group's name.
   customers:
     type: array
-    description: The group's customers.
+    description: The customer group's customers.
     items:
-      $ref: ./BaseCustomer.yaml
+      type: object
   metadata:
     type: object
-    description: The group's metadata.
+    description: The customer group's metadata, used to store custom key-value pairs.
   created_at:
     type: string
     format: date-time
     title: created_at
-    description: The group's created at.
+    description: The customer group's creation date.
   updated_at:
     type: string
     format: date-time
     title: updated_at
-    description: The group's updated at.
+    description: The customer group's update date.

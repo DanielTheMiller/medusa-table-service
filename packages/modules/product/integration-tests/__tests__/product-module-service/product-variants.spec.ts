@@ -4,14 +4,14 @@ import {
   IProductModuleService,
   ProductDTO,
   ProductVariantDTO,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   CommonEvents,
   composeMessage,
   Modules,
   ProductEvents,
   ProductStatus,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
 import {
   MockEventBusService,
@@ -212,14 +212,19 @@ moduleIntegrationTestRunner<IProductModuleService>({
           expect(productVariant.title).toEqual("new test")
 
           expect(eventBusEmitSpy.mock.calls[0][0]).toHaveLength(1)
-          expect(eventBusEmitSpy).toHaveBeenCalledWith([
-            composeMessage(ProductEvents.PRODUCT_VARIANT_UPDATED, {
-              data: { id: variantOne.id },
-              object: "product_variant",
-              source: Modules.PRODUCT,
-              action: CommonEvents.UPDATED,
-            }),
-          ])
+          expect(eventBusEmitSpy).toHaveBeenCalledWith(
+            [
+              composeMessage(ProductEvents.PRODUCT_VARIANT_UPDATED, {
+                data: { id: variantOne.id },
+                object: "product_variant",
+                source: Modules.PRODUCT,
+                action: CommonEvents.UPDATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
 
         it("should upsert the options of a variant successfully", async () => {
@@ -245,14 +250,19 @@ moduleIntegrationTestRunner<IProductModuleService>({
           )
 
           expect(eventBusEmitSpy.mock.calls[0][0]).toHaveLength(1)
-          expect(eventBusEmitSpy).toHaveBeenCalledWith([
-            composeMessage(ProductEvents.PRODUCT_VARIANT_UPDATED, {
-              data: { id: variantOne.id },
-              object: "product_variant",
-              source: Modules.PRODUCT,
-              action: CommonEvents.UPDATED,
-            }),
-          ])
+          expect(eventBusEmitSpy).toHaveBeenCalledWith(
+            [
+              composeMessage(ProductEvents.PRODUCT_VARIANT_UPDATED, {
+                data: { id: variantOne.id },
+                object: "product_variant",
+                source: Modules.PRODUCT,
+                action: CommonEvents.UPDATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
 
         it("should do a partial update on the options of a variant successfully", async () => {
@@ -319,14 +329,82 @@ moduleIntegrationTestRunner<IProductModuleService>({
           )
 
           expect(eventBusEmitSpy.mock.calls[0][0]).toHaveLength(1)
-          expect(eventBusEmitSpy).toHaveBeenCalledWith([
-            composeMessage(ProductEvents.PRODUCT_VARIANT_CREATED, {
-              data: { id: variant.id },
-              object: "product_variant",
-              source: Modules.PRODUCT,
-              action: CommonEvents.CREATED,
-            }),
-          ])
+          expect(eventBusEmitSpy).toHaveBeenCalledWith(
+            [
+              composeMessage(ProductEvents.PRODUCT_VARIANT_CREATED, {
+                data: { id: variant.id },
+                object: "product_variant",
+                source: Modules.PRODUCT,
+                action: CommonEvents.CREATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
+        })
+
+        it("should correctly associate variants with own product options", async () => {
+          jest.clearAllMocks()
+          const productThree = await service.createProducts({
+            id: "product-3",
+            title: "product 3",
+            status: ProductStatus.PUBLISHED,
+            options: [
+              {
+                title: "size",
+                values: ["large", "small"],
+              },
+              {
+                title: "color",
+                values: ["red", "blue"],
+              },
+            ],
+          } as CreateProductDTO)
+
+          const data: CreateProductVariantDTO[] = [
+            {
+              title: "new variant",
+              product_id: productOne.id,
+              options: { size: "small" },
+            },
+            {
+              title: "new variant",
+              product_id: productThree.id,
+              options: { size: "small" },
+            },
+          ]
+
+          const variants = await service.createProductVariants(data)
+
+          expect(variants).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                title: "new variant",
+                product_id: productOne.id,
+                options: expect.arrayContaining([
+                  expect.objectContaining({
+                    id: productOne.options
+                      .find((o) => o.title === "size")
+                      ?.values?.find((v) => v.value === "small")?.id,
+                    value: "small",
+                  }),
+                ]),
+              }),
+              expect.objectContaining({
+                title: "new variant",
+                product_id: productThree.id,
+                options: expect.arrayContaining([
+                  expect.objectContaining({
+                    id: productThree.options
+                      .find((o) => o.title === "size")
+                      ?.values?.find((v) => v.value === "small")?.id,
+                    value: "small",
+                  }),
+                ]),
+              }),
+            ])
+          )
         })
       })
 

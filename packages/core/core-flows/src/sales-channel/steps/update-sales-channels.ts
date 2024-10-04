@@ -2,24 +2,27 @@ import {
   FilterableSalesChannelProps,
   ISalesChannelModuleService,
   UpdateSalesChannelDTO,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
-  ModuleRegistrationName,
+  Modules,
   getSelectsAndRelationsFromObjectArray,
-} from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
-type UpdateSalesChannelsStepInput = {
+export type UpdateSalesChannelsStepInput = {
   selector: FilterableSalesChannelProps
   update: UpdateSalesChannelDTO
 }
 
 export const updateSalesChannelsStepId = "update-sales-channels"
+/**
+ * This step updates sales channels matching the specified filters.
+ */
 export const updateSalesChannelsStep = createStep(
   updateSalesChannelsStepId,
   async (data: UpdateSalesChannelsStepInput, { container }) => {
     const service = container.resolve<ISalesChannelModuleService>(
-      ModuleRegistrationName.SALES_CHANNEL
+      Modules.SALES_CHANNEL
     )
 
     const { selects, relations } = getSelectsAndRelationsFromObjectArray([
@@ -44,7 +47,7 @@ export const updateSalesChannelsStep = createStep(
     }
 
     const service = container.resolve<ISalesChannelModuleService>(
-      ModuleRegistrationName.SALES_CHANNEL
+      Modules.SALES_CHANNEL
     )
 
     await service.upsertSalesChannels(

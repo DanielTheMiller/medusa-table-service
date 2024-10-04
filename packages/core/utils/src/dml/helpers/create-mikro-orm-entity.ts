@@ -8,6 +8,8 @@ import type {
 import { Entity, Filter } from "@mikro-orm/core"
 import { mikroOrmSoftDeletableFilterOptions } from "../../dal"
 import { DmlEntity } from "../entity"
+import { DuplicateIdPropertyError } from "../errors"
+import { IdProperty } from "../properties/id"
 import { applySearchable } from "./entity-builder/apply-searchable"
 import { defineProperty } from "./entity-builder/define-property"
 import { defineRelationship } from "./entity-builder/define-relationship"
@@ -34,7 +36,7 @@ export function createMikrORMEntity() {
    * - [team.users] // cannot be an owner
    */
   // TODO: if we use the util toMikroOrmEntities then a new builder will be used each time, lets think about this. Currently if means that with many to many we need to use the same builder
-  const MANY_TO_MANY_TRACKED_REALTIONS: Record<string, boolean> = {}
+  const MANY_TO_MANY_TRACKED_RELATIONS: Record<string, boolean> = {}
 
   /**
    * A helper function to define a Mikro ORM entity from a
@@ -59,8 +61,10 @@ export function createMikrORMEntity() {
     })
 
     const context = {
-      MANY_TO_MANY_TRACKED_REALTIONS,
+      MANY_TO_MANY_TRACKED_RELATIONS,
     }
+
+    let hasIdAlreadyDefined = false
 
     /**
      * Processing schema fields
@@ -69,6 +73,13 @@ export function createMikrORMEntity() {
       const field = property.parse(name)
 
       if ("fieldName" in field) {
+        if (IdProperty.isIdProperty(field)) {
+          if (hasIdAlreadyDefined) {
+            throw new DuplicateIdPropertyError(modelName)
+          }
+          hasIdAlreadyDefined = true
+        }
+
         defineProperty(MikroORMEntity, name, property as PropertyType<any>)
         applyIndexes(MikroORMEntity, tableName, field)
         applySearchable(MikroORMEntity, field)

@@ -1,10 +1,10 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   DALUtils,
   Searchable,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Collection,
@@ -20,7 +20,7 @@ import {
 import Customer from "./customer"
 import CustomerGroupCustomer from "./customer-group-customer"
 
-type OptionalGroupProps = DAL.SoftDeletableEntityDateColumns // TODO: To be revisited when more clear
+type OptionalGroupProps = DAL.SoftDeletableModelDateColumns // TODO: To be revisited when more clear
 
 const CustomerGroupUniqueName = createPsqlIndexStatementHelper({
   tableName: "customer_group",

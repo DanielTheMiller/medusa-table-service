@@ -1,3 +1,5 @@
+import { IAuthModuleService } from "@medusajs/types"
+import { Modules } from "@medusajs/utils"
 import { medusaIntegrationTestRunner } from "medusa-test-utils"
 import {
   adminHeaders,
@@ -8,17 +10,18 @@ jest.setTimeout(30000)
 
 medusaIntegrationTestRunner({
   testSuite: ({ dbConnection, getContainer, api }) => {
-    let user
+    let user, container, authIdentity
 
     beforeEach(async () => {
-      const container = getContainer()
-      const { user: adminUser } = await createAdminUser(
+      container = getContainer()
+      const { user: adminUser, authIdentity: authId } = await createAdminUser(
         dbConnection,
         adminHeaders,
         container
       )
 
       user = adminUser
+      authIdentity = authId
     })
 
     describe("GET /admin/users/:id", () => {
@@ -40,8 +43,7 @@ medusaIntegrationTestRunner({
 
     describe("GET /admin/users", () => {
       it("should list users", async () => {
-        const response = await api
-          .get("/admin/users", adminHeaders)
+        const response = await api.get("/admin/users", adminHeaders)
 
         expect(response.status).toEqual(200)
 
@@ -80,84 +82,6 @@ medusaIntegrationTestRunner({
       })
     })
 
-    describe("POST /admin/users", () => {
-      let token
-
-      beforeEach(async () => {
-        token = (
-          await api.post("/auth/user/emailpass", {
-            email: "test@test123.com",
-            password: "test123",
-          })
-        ).data.token
-      })
-
-      // BREAKING: V2 users do not require a role
-      //   We should probably remove this endpoint?
-      it("should create a user", async () => {
-        const payload = {
-          email: "test@test123.com",
-        }
-
-        // In V2, the flow to create an authenticated user depends on the token or session of a previously created auth user
-        const headers = {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-
-        const response = await api.post("/admin/users", payload, headers)
-
-        expect(response.status).toEqual(200)
-        expect(response.data.user).toEqual(
-          expect.objectContaining({
-            id: expect.stringMatching(/^user_*/),
-            created_at: expect.any(String),
-            updated_at: expect.any(String),
-            email: "test@test123.com",
-          })
-        )
-      })
-
-      // V2 only test
-      it("should throw, if session/bearer auth is present for existing user", async () => {
-        const emailPassResponse = await api.post("/auth/user/emailpass", {
-          email: "test@test123.com",
-          password: "test123",
-        })
-
-        const token = emailPassResponse.data.token
-
-        const headers = (token) => ({
-          headers: { Authorization: `Bearer ${token}` },
-        })
-
-        const res = await api.post(
-          "/admin/users",
-          {
-            email: "test@test123.com",
-          },
-          headers(token)
-        )
-
-        const authenticated = await api.post("/auth/user/emailpass", {
-          email: "test@test123.com",
-          password: "test123",
-        })
-
-        const payload = {
-          email: "different@email.com",
-        }
-
-        const errorResponse = await api
-          .post("/admin/users", payload, headers(authenticated.data.token))
-          .catch((err) => err.response)
-
-        expect(errorResponse.status).toEqual(400)
-        expect(errorResponse.data.message).toEqual(
-          "Request carries authentication for an existing user"
-        )
-      })
-    })
-
     describe("POST /admin/users/:id", () => {
       it("should update a user", async () => {
         const updateResponse = (
@@ -181,20 +105,74 @@ medusaIntegrationTestRunner({
     })
 
     describe("DELETE /admin/users", () => {
-      it("Deletes a user", async () => {
-        const userId = "member-user"
-
+      it("Deletes a user and updates associated auth identity", async () => {
         const response = await api.delete(
-          `/admin/users/${userId}`,
+          `/admin/users/${user.id}`,
           adminHeaders
         )
 
         expect(response.status).toEqual(200)
         expect(response.data).toEqual({
-          id: userId,
+          id: user.id,
           object: "user",
           deleted: true,
         })
+
+        const authModule: IAuthModuleService = container.resolve(Modules.AUTH)
+
+        const updatedAuthIdentity = await authModule.retrieveAuthIdentity(
+          authIdentity.id
+        )
+
+        // Ensure the auth identity has been updated to not contain the user's id
+        expect(updatedAuthIdentity).toEqual(
+          expect.objectContaining({
+            id: authIdentity.id,
+            app_metadata: expect.not.objectContaining({
+              user_id: user.id,
+            }),
+          })
+        )
+
+        // Authentication should still succeed
+        const authenticateToken = (
+          await api.post(`/auth/user/emailpass`, {
+            email: user.email,
+            password: "somepassword",
+          })
+        ).data.token
+
+        expect(authenticateToken).toEqual(expect.any(String))
+
+        // However, it should not be possible to access routes any longer
+        const meResponse = await api
+          .get(`/admin/users/me`, {
+            headers: {
+              authorization: `Bearer ${authenticateToken}`,
+            },
+          })
+          .catch((e) => e)
+
+        expect(meResponse.response.status).toEqual(401)
+      })
+
+      it("throws if you attempt to delete another user", async () => {
+        const userModule = container.resolve(Modules.USER)
+
+        const userTwo = await userModule.createUsers({
+          email: "test@test.com",
+          password: "test",
+          role: "member",
+        })
+
+        const error = await api
+          .delete(`/admin/users/${userTwo.id}`, adminHeaders)
+          .catch((e) => e)
+
+        expect(error.response.status).toEqual(400)
+        expect(error.response.data.message).toEqual(
+          "You are not allowed to delete other users"
+        )
       })
 
       // TODO: Migrate when analytics config is implemented in 2.0

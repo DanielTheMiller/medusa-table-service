@@ -1,20 +1,25 @@
-import { isPresent, ProductStatus } from "@medusajs/utils"
-import { MiddlewareRoute } from "../../../loaders/helpers/routing/types"
-import { maybeApplyLinkFilter } from "../../utils/maybe-apply-link-filter"
+import { isPresent, ProductStatus } from "@medusajs/framework/utils"
 import {
   applyDefaultFilters,
+  applyParamsAsFilters,
+  clearFiltersByKey,
+  maybeApplyLinkFilter,
+  MiddlewareRoute,
+  setContext,
+} from "@medusajs/framework/http"
+import {
   filterByValidSalesChannels,
+  normalizeDataForContext,
   setPricingContext,
+  setTaxContext,
 } from "../../utils/middlewares"
-import { setContext } from "../../utils/middlewares/common/set-context"
-import { validateAndTransformQuery } from "../../utils/validate-query"
+import { validateAndTransformQuery } from "@medusajs/framework"
 import { maybeApplyStockLocationId } from "./helpers"
 import * as QueryConfig from "./query-config"
 import {
   StoreGetProductsParams,
   StoreGetProductsParamsType,
 } from "./validators"
-import { applyParamsAsFilters } from "../../utils/middlewares/common/apply-params-as-filters"
 
 export const storeProductRoutesMiddlewares: MiddlewareRoute[] = [
   {
@@ -47,7 +52,10 @@ export const storeProductRoutesMiddlewares: MiddlewareRoute[] = [
           return { id: categoryIds, is_internal: false, is_active: true }
         },
       }),
+      normalizeDataForContext(),
       setPricingContext(),
+      setTaxContext(),
+      clearFiltersByKey(["region_id", "country_code", "province", "cart_id"]),
     ],
   },
   {
@@ -78,7 +86,10 @@ export const storeProductRoutesMiddlewares: MiddlewareRoute[] = [
           return { is_internal: false, is_active: true }
         },
       }),
+      normalizeDataForContext(),
       setPricingContext(),
+      setTaxContext(),
+      clearFiltersByKey(["region_id", "country_code", "province", "cart_id"]),
     ],
   },
 ]

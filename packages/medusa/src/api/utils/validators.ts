@@ -1,4 +1,29 @@
-import { z } from "zod"
+import { z, ZodEffects, ZodObject } from "zod"
+
+/**
+ * Wraps the original schema to a function to accept and merge
+ * additional_data schema
+ */
+export const WithAdditionalData = <T extends ZodObject<any, any>>(
+  originalSchema: T,
+  modifyCallback?: (schema: T) => ZodObject<any, any> | ZodEffects<any, any>
+) => {
+  return (additionalDataValidator?: ZodObject<any, any>) => {
+    let schema: ZodObject<any, any>
+
+    if (!additionalDataValidator) {
+      schema = originalSchema.extend({
+        additional_data: z.record(z.unknown()).nullish(),
+      })
+    } else {
+      schema = originalSchema.extend({
+        additional_data: additionalDataValidator,
+      })
+    }
+
+    return modifyCallback ? modifyCallback(schema as T) : schema
+  }
+}
 
 export const createBatchBody = (
   createValidator: z.ZodType,
@@ -77,30 +102,29 @@ export const createOperatorMap = (
     type = z.string()
   }
 
-  let unionType: any = z.union([type, z.array(type)]).optional()
-  let arrayType: any = z.array(type).optional()
   let simpleType: any = type.optional()
-
   if (valueParser) {
-    unionType = z
-      .preprocess(valueParser, z.union([type, z.array(type)]))
-      .optional()
-    arrayType = z.preprocess(valueParser, z.array(type)).optional()
     simpleType = z.preprocess(valueParser, type).optional()
   }
 
-  return z.object({
-    $eq: unionType,
-    $ne: unionType,
-    $in: arrayType,
-    $nin: arrayType,
-    $like: simpleType,
-    $ilike: simpleType,
-    $re: simpleType,
-    $contains: simpleType,
-    $gt: simpleType,
-    $gte: simpleType,
-    $lt: simpleType,
-    $lte: simpleType,
-  })
+  const arrayType: any = z.array(type).optional()
+  const unionType: any = z.union([simpleType, arrayType]).optional()
+
+  return z.union([
+    unionType,
+    z.object({
+      $eq: unionType,
+      $ne: unionType,
+      $in: arrayType,
+      $nin: arrayType,
+      $like: simpleType,
+      $ilike: simpleType,
+      $re: simpleType,
+      $contains: simpleType,
+      $gt: simpleType,
+      $gte: simpleType,
+      $lt: simpleType,
+      $lte: simpleType,
+    }),
+  ])
 }

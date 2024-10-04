@@ -13,6 +13,7 @@ import {
   OneToOne,
   OnInit,
   Property,
+  rel,
 } from "@mikro-orm/core"
 import { camelToSnakeCase, pluralize } from "../../../common"
 import { ForeignKey } from "../../../dal/mikro-orm/decorators/foreign-key"
@@ -23,7 +24,67 @@ import { ManyToMany as DmlManyToMany } from "../../relations/many-to-many"
 import { parseEntityName } from "./parse-entity-name"
 
 type Context = {
-  MANY_TO_MANY_TRACKED_REALTIONS: Record<string, boolean>
+  MANY_TO_MANY_TRACKED_RELATIONS: Record<string, boolean>
+}
+
+/**
+ * Validates a many to many relationship without mappedBy and checks if the other side of the relationship is defined and possesses mappedBy.
+ * @param MikroORMEntity
+ * @param relationship
+ * @param relatedEntity
+ * @param relatedModelName
+ */
+function validateManyToManyRelationshipWithoutMappedBy({
+  MikroORMEntity,
+  relationship,
+  relatedEntity,
+  relatedModelName,
+}: {
+  MikroORMEntity: EntityConstructor<any>
+  relationship: RelationshipMetadata
+  relatedEntity: DmlEntity<
+    Record<string, PropertyType<any> | RelationshipType<any>>,
+    any
+  >
+  relatedModelName: string
+}) {
+  /**
+   * Since we don't have the information about the other side of the
+   * relationship, we will try to find all the other side many to many that refers to the current entity.
+   * If there is any, we will try to find if at least one of them has a mappedBy.
+   */
+  const potentialOtherSides = Object.entries(relatedEntity.schema)
+    .filter(([, propConfig]) => DmlManyToMany.isManyToMany(propConfig))
+    .filter(([prop, propConfig]) => {
+      const parsedProp = propConfig.parse(prop) as RelationshipMetadata
+      const relatedEntity =
+        typeof parsedProp.entity === "function"
+          ? parsedProp.entity()
+          : undefined
+
+      if (!relatedEntity) {
+        throw new Error(
+          `Invalid relationship reference for "${relatedModelName}.${prop}". Make sure to define the relationship using a factory function`
+        )
+      }
+
+      return parseEntityName(relatedEntity).modelName === MikroORMEntity.name
+    }) as unknown as [string, RelationshipType<any>][]
+
+  if (potentialOtherSides.length) {
+    const hasMappedBy = potentialOtherSides.some(
+      ([, propConfig]) => !!propConfig.parse("").mappedBy
+    )
+    if (!hasMappedBy) {
+      throw new Error(
+        `Invalid relationship reference for "${MikroORMEntity.name}.${relationship.name}". "mappedBy" should be defined on one side or the other.`
+      )
+    }
+  } else {
+    throw new Error(
+      `Invalid relationship reference for "${MikroORMEntity.name}.${relationship.name}". The other side of the relationship is missing.`
+    )
+  }
 }
 
 /**
@@ -42,7 +103,7 @@ export function defineHasOneRelationship(
     nullable: relationship.nullable,
     mappedBy: relationship.mappedBy || camelToSnakeCase(MikroORMEntity.name),
     cascade: shouldRemoveRelated
-      ? (["perist", "soft-remove"] as any)
+      ? (["persist", "soft-remove"] as any)
       : undefined,
   })(MikroORMEntity.prototype, relationship.name)
 }
@@ -63,7 +124,7 @@ export function defineHasManyRelationship(
     orphanRemoval: true,
     mappedBy: relationship.mappedBy || camelToSnakeCase(MikroORMEntity.name),
     cascade: shouldRemoveRelated
-      ? (["perist", "soft-remove"] as any)
+      ? (["persist", "soft-remove"] as any)
       : undefined,
   })(MikroORMEntity.prototype, relationship.name)
 }
@@ -116,6 +177,23 @@ export function defineBelongsToRelationship(
      * Hook to handle foreign key assignation
      */
     MikroORMEntity.prototype[hookName] = function () {
+      /**
+       * In case of has one relation, in order to be able to have both ways
+       * to associate a relation (through the relation or the foreign key) we need to handle it
+       * specifically
+       */
+      if (HasOne.isHasOne(otherSideRelation)) {
+        const relationMeta = this.__meta.relations.find(
+          (relation) => relation.name === relationship.name
+        ).targetMeta
+        this[relationship.name] ??= rel(
+          relationMeta.class,
+          this[foreignKeyName]
+        )
+        this[relationship.name] ??= this[relationship.name]?.id
+        return
+      }
+
       this[relationship.name] ??= this[foreignKeyName]
       this[foreignKeyName] ??= this[relationship.name]?.id
     }
@@ -179,19 +257,18 @@ export function defineBelongsToRelationship(
       onDelete: shouldCascade ? "cascade" : undefined,
     })(MikroORMEntity.prototype, relationship.name)
 
-    if (relationship.nullable) {
-      Object.defineProperty(MikroORMEntity.prototype, foreignKeyName, {
-        value: null,
-        configurable: true,
-        enumerable: true,
-        writable: true,
-      })
-    }
+    Object.defineProperty(MikroORMEntity.prototype, foreignKeyName, {
+      value: null,
+      configurable: true,
+      enumerable: true,
+      writable: true,
+    })
 
     Property({
       type: "string",
       columnType: "text",
       nullable: relationship.nullable,
+      persist: false,
     })(MikroORMEntity.prototype, foreignKeyName)
     ForeignKey()(MikroORMEntity.prototype, foreignKeyName)
 
@@ -221,7 +298,7 @@ export function defineManyToManyRelationship(
     relatedModelName,
     pgSchema,
   }: { relatedModelName: string; pgSchema: string | undefined },
-  { MANY_TO_MANY_TRACKED_REALTIONS }: Context
+  { MANY_TO_MANY_TRACKED_RELATIONS }: Context
 ) {
   let mappedBy = relationship.mappedBy
   let inversedBy: undefined | string
@@ -254,15 +331,22 @@ export function defineManyToManyRelationship(
      */
     if (
       otherSideRelation.parse(mappedBy).mappedBy &&
-      MANY_TO_MANY_TRACKED_REALTIONS[`${relatedModelName}.${mappedBy}`]
+      MANY_TO_MANY_TRACKED_RELATIONS[`${relatedModelName}.${mappedBy}`]
     ) {
       inversedBy = mappedBy
       mappedBy = undefined
     } else {
-      MANY_TO_MANY_TRACKED_REALTIONS[
+      MANY_TO_MANY_TRACKED_RELATIONS[
         `${MikroORMEntity.name}.${relationship.name}`
       ] = true
     }
+  } else {
+    validateManyToManyRelationshipWithoutMappedBy({
+      MikroORMEntity,
+      relationship,
+      relatedEntity,
+      relatedModelName,
+    })
   }
 
   /**

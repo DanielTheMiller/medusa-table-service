@@ -1,35 +1,31 @@
 import {
-  InternalModuleDeclaration,
   MedusaModule,
   MODULE_RESOURCE_TYPE,
   MODULE_SCOPE,
-} from "@medusajs/modules-sdk"
+} from "@medusajs/framework/modules-sdk"
 import {
   ExternalModuleDeclaration,
   ILinkModule,
+  InternalModuleDeclaration,
   LinkModuleDefinition,
-  LoaderOptions,
   ModuleExports,
   ModuleJoinerConfig,
   ModuleServiceInitializeCustomDataLayerOptions,
   ModuleServiceInitializeOptions,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   arrayDifference,
-  ContainerRegistrationKeys,
-  lowerCaseFirst,
-  ModuleRegistrationName,
-  simpleHash,
-  toPascalCase,
-} from "@medusajs/utils"
-import * as linkDefinitions from "../definitions"
-import { getMigration, getRevertMigration } from "../migration"
-import { InitializeModuleInjectableDependencies } from "../types"
-import {
   composeLinkName,
   composeTableName,
-  generateGraphQLSchema,
-} from "../utils"
+  ContainerRegistrationKeys,
+  Modules,
+  simpleHash,
+  toPascalCase,
+} from "@medusajs/framework/utils"
+import * as linkDefinitions from "../definitions"
+import { MigrationsExecutionPlanner } from "../migration"
+import { InitializeModuleInjectableDependencies } from "../types"
+import { generateGraphQLSchema } from "../utils"
 import { getLinkModuleDefinition } from "./module-definition"
 
 export const initialize = async (
@@ -38,7 +34,7 @@ export const initialize = async (
     | ModuleServiceInitializeCustomDataLayerOptions
     | ExternalModuleDeclaration
     | InternalModuleDeclaration,
-  modulesDefinition?: ModuleJoinerConfig[],
+  pluginLinksDefinitions?: ModuleJoinerConfig[],
   injectedDependencies?: InitializeModuleInjectableDependencies
 ): Promise<{ [link: string]: ILinkModule }> => {
   const allLinks = {}
@@ -47,7 +43,7 @@ export const initialize = async (
   )
 
   const allLinksToLoad = Object.values(linkDefinitions).concat(
-    modulesDefinition ?? []
+    pluginLinksDefinitions ?? []
   )
 
   for (const linkDefinition of allLinksToLoad) {
@@ -87,14 +83,12 @@ export const initialize = async (
     }
 
     const serviceKey = !definition.isReadOnlyLink
-      ? lowerCaseFirst(
-          definition.serviceName ??
-            composeLinkName(
-              primary.serviceName,
-              primary.foreignKey,
-              foreign.serviceName,
-              foreign.foreignKey
-            )
+      ? definition.serviceName ??
+        composeLinkName(
+          primary.serviceName,
+          primary.foreignKey,
+          foreign.serviceName,
+          foreign.foreignKey
         )
       : simpleHash(JSON.stringify(definition.extends))
 
@@ -140,7 +134,7 @@ export const initialize = async (
     for (const alias of definition.alias) {
       alias.args ??= {}
 
-      alias.args.entity = toPascalCase(
+      alias.entity = toPascalCase(
         "Link_" +
           (definition.databaseConfig?.tableName ??
             composeTableName(
@@ -160,9 +154,8 @@ export const initialize = async (
 
     const linkModuleDefinition: LinkModuleDefinition = {
       key: serviceKey,
-      registrationName: serviceKey,
       label: serviceKey,
-      dependencies: [ModuleRegistrationName.EVENT_BUS],
+      dependencies: [Modules.EVENT_BUS],
       defaultModuleDeclaration: {
         scope: MODULE_SCOPE.INTERNAL,
         resources: injectedDependencies?.[
@@ -186,20 +179,24 @@ export const initialize = async (
   return allLinks
 }
 
-async function applyMigrationUpOrDown(
-  {
-    options,
-    logger,
-  }: Omit<LoaderOptions<ModuleServiceInitializeOptions>, "container">,
-  modulesDefinition?: ModuleJoinerConfig[],
-  revert = false
+/**
+ * Prepare an execution plan and run the migrations accordingly.
+ * It includes creating, updating, deleting the tables according to the execution plan.
+ * If any unsafe sql is identified then we will notify the user to act manually.
+ *
+ * @param options
+ * @param pluginLinksDefinition
+ */
+export function getMigrationPlanner(
+  options: ModuleServiceInitializeOptions,
+  pluginLinksDefinition?: ModuleJoinerConfig[]
 ) {
   const modulesLoadedKeys = MedusaModule.getLoadedModules().map(
     (mod) => Object.keys(mod)[0]
   )
 
   const allLinksToLoad = Object.values(linkDefinitions).concat(
-    modulesDefinition ?? []
+    pluginLinksDefinition ?? []
   )
 
   const allLinks = new Set<string>()
@@ -215,15 +212,14 @@ async function applyMigrationUpOrDown(
     }
 
     const [primary, foreign] = definition.relationships ?? []
-    const serviceKey = lowerCaseFirst(
+    const serviceKey =
       definition.serviceName ??
-        composeLinkName(
-          primary.serviceName,
-          primary.foreignKey,
-          foreign.serviceName,
-          foreign.foreignKey
-        )
-    )
+      composeLinkName(
+        primary.serviceName,
+        primary.foreignKey,
+        foreign.serviceName,
+        foreign.foreignKey
+      )
 
     if (allLinks.has(serviceKey)) {
       throw new Error(`Link module ${serviceKey} already exists.`)
@@ -237,30 +233,7 @@ async function applyMigrationUpOrDown(
     ) {
       continue
     }
-
-    const migrate = revert
-      ? getRevertMigration(definition, serviceKey, primary, foreign)
-      : getMigration(definition, serviceKey, primary, foreign)
-    await migrate({ options, logger })
   }
-}
 
-export async function runMigrations(
-  {
-    options,
-    logger,
-  }: Omit<LoaderOptions<ModuleServiceInitializeOptions>, "container">,
-  modulesDefinition?: ModuleJoinerConfig[]
-) {
-  await applyMigrationUpOrDown({ options, logger }, modulesDefinition)
-}
-
-export async function revertMigrations(
-  {
-    options,
-    logger,
-  }: Omit<LoaderOptions<ModuleServiceInitializeOptions>, "container">,
-  modulesDefinition?: ModuleJoinerConfig[]
-) {
-  await applyMigrationUpOrDown({ options, logger }, modulesDefinition, true)
+  return new MigrationsExecutionPlanner(allLinksToLoad, options)
 }

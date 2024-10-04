@@ -1,11 +1,13 @@
-import { MiddlewareRoute } from "../../../types/middlewares"
-import { validateAndTransformBody } from "../../utils/validate-body"
-import { validateAndTransformQuery } from "../../utils/validate-query"
+import { MiddlewareRoute } from "@medusajs/framework/http"
+import {
+  validateAndTransformBody,
+  validateAndTransformQuery,
+} from "@medusajs/framework"
 import * as queryConfig from "./query-config"
 import {
-  StoreGetPaymentCollectionParams,
   StoreCreatePaymentCollection,
   StoreCreatePaymentSession,
+  StoreGetPaymentCollectionParams,
 } from "./validators"
 
 export const storePaymentCollectionsMiddlewares: MiddlewareRoute[] = [

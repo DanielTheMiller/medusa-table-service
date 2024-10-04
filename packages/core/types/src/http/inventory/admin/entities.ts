@@ -14,4 +14,21 @@ export interface AdminInventoryItem {
   description?: string | null
   thumbnail?: string | null
   metadata?: Record<string, unknown> | null
+
+  location_levels?: AdminInventoryLevel[]
+}
+
+export interface AdminInventoryLevel {
+  id: string
+  created_at: Date
+  updated_at: Date
+  deleted_at: Date | null
+  inventory_item_id: string
+  location_id: string
+  stocked_quantity: number
+  reserved_quantity: number
+  incoming_quantity: number
+  metadata: Record<string, unknown> | null
+  inventory_item?: AdminInventoryItem
+  available_quantity: number | null
 }

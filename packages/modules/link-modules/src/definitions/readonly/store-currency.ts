@@ -1,5 +1,5 @@
-import { ModuleJoinerConfig } from "@medusajs/types"
-import { Modules } from "@medusajs/utils"
+import { ModuleJoinerConfig } from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
 
 export const StoreCurrencies: ModuleJoinerConfig = {
   isLink: true,
@@ -9,6 +9,7 @@ export const StoreCurrencies: ModuleJoinerConfig = {
       serviceName: Modules.STORE,
       relationship: {
         serviceName: Modules.CURRENCY,
+        entity: "Currency",
         primaryKey: "code",
         foreignKey: "supported_currencies.currency_code",
         alias: "currency",

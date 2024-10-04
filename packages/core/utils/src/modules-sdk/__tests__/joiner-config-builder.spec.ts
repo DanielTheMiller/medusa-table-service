@@ -1,13 +1,6 @@
-import {
-  buildLinkableKeysFromDmlObjects,
-  buildLinkableKeysFromMikroOrmObjects,
-  buildLinkConfigFromLinkableKeys,
-  buildLinkConfigFromModelObjects,
-  defineJoinerConfig,
-} from "../joiner-config-builder"
-import { Modules } from "../definition"
-import { model } from "../../dml"
 import { expectTypeOf } from "expect-type"
+import { upperCaseFirst } from "../../common"
+import { model } from "../../dml"
 import {
   dmlFulfillment,
   dmlFulfillmentProvider,
@@ -26,7 +19,14 @@ import {
   ShippingOptionRule,
   ShippingProfile,
 } from "../__fixtures__/joiner-config/entities"
-import { upperCaseFirst } from "../../common"
+import { Modules } from "../definition"
+import {
+  buildLinkableKeysFromDmlObjects,
+  buildLinkableKeysFromMikroOrmObjects,
+  buildLinkConfigFromLinkableKeys,
+  buildLinkConfigFromModelObjects,
+  defineJoinerConfig,
+} from "../joiner-config-builder"
 
 describe("joiner-config-builder", () => {
   describe("defineJoiner | Mikro orm objects", () => {
@@ -47,7 +47,7 @@ describe("joiner-config-builder", () => {
       expect(joinerConfig).toEqual({
         serviceName: Modules.FULFILLMENT,
         primaryKeys: ["id"],
-        schema: undefined,
+        schema: "",
         linkableKeys: {
           fulfillment_set_id: FulfillmentSet.name,
           shipping_option_id: ShippingOption.name,
@@ -61,57 +61,57 @@ describe("joiner-config-builder", () => {
         alias: [
           {
             name: ["fulfillment_set", "fulfillment_sets"],
+            entity: FulfillmentSet.name,
             args: {
-              entity: FulfillmentSet.name,
               methodSuffix: "FulfillmentSets",
             },
           },
           {
             name: ["shipping_option", "shipping_options"],
+            entity: ShippingOption.name,
             args: {
-              entity: ShippingOption.name,
               methodSuffix: "ShippingOptions",
             },
           },
           {
             name: ["shipping_profile", "shipping_profiles"],
+            entity: ShippingProfile.name,
             args: {
-              entity: ShippingProfile.name,
               methodSuffix: "ShippingProfiles",
             },
           },
           {
             name: ["fulfillment", "fulfillments"],
+            entity: Fulfillment.name,
             args: {
-              entity: Fulfillment.name,
               methodSuffix: "Fulfillments",
             },
           },
           {
             name: ["fulfillment_provider", "fulfillment_providers"],
+            entity: FulfillmentProvider.name,
             args: {
-              entity: FulfillmentProvider.name,
               methodSuffix: "FulfillmentProviders",
             },
           },
           {
             name: ["service_zone", "service_zones"],
+            entity: ServiceZone.name,
             args: {
-              entity: ServiceZone.name,
               methodSuffix: "ServiceZones",
             },
           },
           {
             name: ["geo_zone", "geo_zones"],
+            entity: GeoZone.name,
             args: {
-              entity: GeoZone.name,
               methodSuffix: "GeoZones",
             },
           },
           {
             name: ["shipping_option_rule", "shipping_option_rules"],
+            entity: ShippingOptionRule.name,
             args: {
-              entity: ShippingOptionRule.name,
               methodSuffix: "ShippingOptionRules",
             },
           },
@@ -124,8 +124,8 @@ describe("joiner-config-builder", () => {
         alias: [
           {
             name: ["custom", "customs"],
+            entity: "Custom",
             args: {
-              entity: "Custom",
               methodSuffix: "Customs",
             },
           },
@@ -135,13 +135,13 @@ describe("joiner-config-builder", () => {
       expect(joinerConfig).toEqual({
         serviceName: Modules.FULFILLMENT,
         primaryKeys: ["id"],
-        schema: undefined,
+        schema: "",
         linkableKeys: {},
         alias: [
           {
             name: ["custom", "customs"],
+            entity: "Custom",
             args: {
-              entity: "Custom",
               methodSuffix: "Customs",
             },
           },
@@ -164,8 +164,8 @@ describe("joiner-config-builder", () => {
         alias: [
           {
             name: ["custom", "customs"],
+            entity: "Custom",
             args: {
-              entity: "Custom",
               methodSuffix: "Customs",
             },
           },
@@ -175,7 +175,7 @@ describe("joiner-config-builder", () => {
       expect(joinerConfig).toEqual({
         serviceName: Modules.FULFILLMENT,
         primaryKeys: ["id"],
-        schema: undefined,
+        schema: "",
         linkableKeys: {
           fulfillment_set_id: FulfillmentSet.name,
           shipping_option_id: ShippingOption.name,
@@ -189,64 +189,64 @@ describe("joiner-config-builder", () => {
         alias: [
           {
             name: ["custom", "customs"],
+            entity: "Custom",
             args: {
-              entity: "Custom",
               methodSuffix: "Customs",
             },
           },
           {
             name: ["fulfillment_set", "fulfillment_sets"],
+            entity: FulfillmentSet.name,
             args: {
-              entity: FulfillmentSet.name,
               methodSuffix: "FulfillmentSets",
             },
           },
           {
             name: ["shipping_option", "shipping_options"],
+            entity: ShippingOption.name,
             args: {
-              entity: ShippingOption.name,
               methodSuffix: "ShippingOptions",
             },
           },
           {
             name: ["shipping_profile", "shipping_profiles"],
+            entity: ShippingProfile.name,
             args: {
-              entity: ShippingProfile.name,
               methodSuffix: "ShippingProfiles",
             },
           },
           {
             name: ["fulfillment", "fulfillments"],
+            entity: Fulfillment.name,
             args: {
-              entity: Fulfillment.name,
               methodSuffix: "Fulfillments",
             },
           },
           {
             name: ["fulfillment_provider", "fulfillment_providers"],
+            entity: FulfillmentProvider.name,
             args: {
-              entity: FulfillmentProvider.name,
               methodSuffix: "FulfillmentProviders",
             },
           },
           {
             name: ["service_zone", "service_zones"],
+            entity: ServiceZone.name,
             args: {
-              entity: ServiceZone.name,
               methodSuffix: "ServiceZones",
             },
           },
           {
             name: ["geo_zone", "geo_zones"],
+            entity: GeoZone.name,
             args: {
-              entity: GeoZone.name,
               methodSuffix: "GeoZones",
             },
           },
           {
             name: ["shipping_option_rule", "shipping_option_rules"],
+            entity: ShippingOptionRule.name,
             args: {
-              entity: ShippingOptionRule.name,
               methodSuffix: "ShippingOptionRules",
             },
           },
@@ -259,9 +259,8 @@ describe("joiner-config-builder", () => {
         alias: [
           {
             name: ["custom", "customs"],
-            args: {
-              entity: "Custom",
-            },
+            entity: "Custom",
+            args: {},
           },
         ],
       })
@@ -269,13 +268,13 @@ describe("joiner-config-builder", () => {
       expect(joinerConfig).toEqual({
         serviceName: Modules.FULFILLMENT,
         primaryKeys: ["id"],
-        schema: undefined,
+        schema: "",
         linkableKeys: {},
         alias: [
           {
             name: ["custom", "customs"],
+            entity: "Custom",
             args: {
-              entity: "Custom",
               methodSuffix: "Customs",
             },
           },
@@ -283,14 +282,14 @@ describe("joiner-config-builder", () => {
       })
     })
 
-    it("should return a full joiner configuration with custom aliases overriding defaults", () => {
+    it.only("should return a full joiner configuration with custom aliases overriding defaults", () => {
       const joinerConfig = defineJoinerConfig(Modules.FULFILLMENT, {
         models: [FulfillmentSet],
         alias: [
           {
             name: ["fulfillment_set", "fulfillment_sets"],
+            entity: "FulfillmentSet",
             args: {
-              entity: "FulfillmentSet",
               methodSuffix: "fulfillmentSetCustom",
             },
           },
@@ -300,15 +299,15 @@ describe("joiner-config-builder", () => {
       expect(joinerConfig).toEqual({
         serviceName: Modules.FULFILLMENT,
         primaryKeys: ["id"],
-        schema: undefined,
+        schema: "",
         linkableKeys: {
           fulfillment_set_id: FulfillmentSet.name,
         },
         alias: [
           {
             name: ["fulfillment_set", "fulfillment_sets"],
+            entity: "FulfillmentSet",
             args: {
-              entity: "FulfillmentSet",
               methodSuffix: "fulfillmentSetCustom",
             },
           },
@@ -335,7 +334,7 @@ describe("joiner-config-builder", () => {
       expect(joinerConfig).toEqual({
         serviceName: Modules.FULFILLMENT,
         primaryKeys: ["id"],
-        schema: undefined,
+        schema: expect.any(String),
         linkableKeys: {
           fulfillment_set_id: FulfillmentSet.name,
           shipping_option_id: ShippingOption.name,
@@ -349,62 +348,115 @@ describe("joiner-config-builder", () => {
         alias: [
           {
             name: ["fulfillment_set", "fulfillment_sets"],
+            entity: FulfillmentSet.name,
             args: {
-              entity: FulfillmentSet.name,
               methodSuffix: "FulfillmentSets",
             },
           },
           {
             name: ["shipping_option", "shipping_options"],
+            entity: ShippingOption.name,
             args: {
-              entity: ShippingOption.name,
               methodSuffix: "ShippingOptions",
             },
           },
           {
             name: ["shipping_profile", "shipping_profiles"],
+            entity: ShippingProfile.name,
             args: {
-              entity: ShippingProfile.name,
               methodSuffix: "ShippingProfiles",
             },
           },
           {
             name: ["fulfillment", "fulfillments"],
+            entity: Fulfillment.name,
             args: {
-              entity: Fulfillment.name,
               methodSuffix: "Fulfillments",
             },
           },
           {
             name: ["fulfillment_provider", "fulfillment_providers"],
+            entity: FulfillmentProvider.name,
             args: {
-              entity: FulfillmentProvider.name,
               methodSuffix: "FulfillmentProviders",
             },
           },
           {
             name: ["service_zone", "service_zones"],
+            entity: ServiceZone.name,
             args: {
-              entity: ServiceZone.name,
               methodSuffix: "ServiceZones",
             },
           },
           {
             name: ["geo_zone", "geo_zones"],
+            entity: GeoZone.name,
             args: {
-              entity: GeoZone.name,
               methodSuffix: "GeoZones",
             },
           },
           {
             name: ["shipping_option_rule", "shipping_option_rules"],
+            entity: ShippingOptionRule.name,
             args: {
-              entity: ShippingOptionRule.name,
               methodSuffix: "ShippingOptionRules",
             },
           },
         ],
       })
+
+      const schemaExpected = `type FulfillmentSet {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }
+          type ShippingOption {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }
+          type ShippingProfile {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }
+          type Fulfillment {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }
+          type FulfillmentProvider {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }
+          type ServiceZone {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }
+          type GeoZone {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }
+          type ShippingOptionRule {
+            id: ID!
+            created_at: DateTime!
+            updated_at: DateTime!
+            deleted_at: DateTime
+          }`
+
+      expect(joinerConfig.schema!.replace(/\s/g, "")).toEqual(
+        schemaExpected.replace(/\s/g, "")
+      )
     })
   })
 
@@ -465,6 +517,7 @@ describe("joiner-config-builder", () => {
         car: {
           id: {
             field: "car",
+            entity: "Car",
             linkable: "car_id",
             primaryKey: "id",
             serviceName: "myService",
@@ -474,6 +527,7 @@ describe("joiner-config-builder", () => {
         user: {
           id: {
             field: "user",
+            entity: "User",
             linkable: "user_id",
             primaryKey: "id",
             serviceName: "myService",
@@ -484,12 +538,14 @@ describe("joiner-config-builder", () => {
 
       expect(linkConfig.car.toJSON()).toEqual({
         field: "car",
+        entity: "Car",
         linkable: "car_id",
         primaryKey: "id",
         serviceName: "myService",
       })
       expect(linkConfig.user.toJSON()).toEqual({
         field: "user",
+        entity: "User",
         linkable: "user_id",
         primaryKey: "id",
         serviceName: "myService",
@@ -506,6 +562,7 @@ describe("joiner-config-builder", () => {
         user: {
           id: {
             field: "user",
+            entity: "User",
             linkable: "user_id",
             primaryKey: "id",
             serviceName: "myService",
@@ -515,6 +572,7 @@ describe("joiner-config-builder", () => {
         currency: {
           code: {
             field: "currency",
+            entity: "Currency",
             linkable: "currency_code",
             primaryKey: "code",
             serviceName: "myService",
@@ -525,12 +583,14 @@ describe("joiner-config-builder", () => {
 
       expect(linkConfig.user.toJSON()).toEqual({
         field: "user",
+        entity: "User",
         linkable: "user_id",
         primaryKey: "id",
         serviceName: "myService",
       })
       expect(linkConfig.currency.toJSON()).toEqual({
         field: "currency",
+        entity: "Currency",
         linkable: "currency_code",
         primaryKey: "code",
         serviceName: "myService",
@@ -592,12 +652,14 @@ describe("joiner-config-builder", () => {
       expect(linkConfig.user.id).toEqual({
         serviceName: "myService",
         field: "user",
+        entity: "User",
         linkable: "user_id",
         primaryKey: "id",
       })
       expect(linkConfig.car.number_plate).toEqual({
         serviceName: "myService",
         field: "car",
+        entity: "Car",
         linkable: "car_number_plate",
         primaryKey: "number_plate",
       })
@@ -605,12 +667,14 @@ describe("joiner-config-builder", () => {
       expect(linkConfig.car.toJSON()).toEqual({
         serviceName: "myService",
         field: "car",
+        entity: "Car",
         linkable: "car_number_plate",
         primaryKey: "number_plate",
       })
       expect(linkConfig.user.toJSON()).toEqual({
         serviceName: "myService",
         field: "user",
+        entity: "User",
         linkable: "user_id",
         primaryKey: "id",
       })

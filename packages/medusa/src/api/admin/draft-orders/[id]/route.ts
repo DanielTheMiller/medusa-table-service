@@ -1,9 +1,13 @@
-import { MedusaError } from "@medusajs/utils"
-import { MedusaRequest, MedusaResponse } from "../../../../types/routing"
+import { MedusaError } from "@medusajs/framework/utils"
+import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { refetchOrder } from "../helpers"
 import { defaultAdminOrderFields } from "../query-config"
+import { HttpTypes } from "@medusajs/framework/types"
 
-export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
+export const GET = async (
+  req: MedusaRequest,
+  res: MedusaResponse<HttpTypes.AdminDraftOrderResponse>
+) => {
   const draftOrder = await refetchOrder(
     req.params.id,
     req.scope,

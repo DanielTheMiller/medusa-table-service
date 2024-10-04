@@ -2,8 +2,8 @@ import {
   ContainerRegistrationKeys,
   LINKS,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
-import { MedusaRequest } from "../../../../types/routing"
+} from "@medusajs/framework/utils"
+import { MedusaRequest } from "@medusajs/framework/http"
 
 export async function getVariantInventoryItems({
   req,
@@ -24,11 +24,12 @@ export async function getVariantInventoryItems({
     fields: [
       "variant_id",
       "variant.manage_inventory",
+      "variant.allow_backorder",
       "required_quantity",
       "inventory.*",
       "inventory.location_levels.*",
     ],
-  })
+  } as any)
 
   const links = await remoteQuery(linkQuery)
 

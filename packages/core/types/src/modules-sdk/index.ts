@@ -1,19 +1,31 @@
-import {
-  JoinerRelationship,
-  JoinerServiceConfig,
-  RemoteJoinerOptions,
-  RemoteJoinerQuery,
-} from "../joiner"
+import { JoinerRelationship, JoinerServiceConfig } from "../joiner"
 
 import { MedusaContainer } from "../common"
 import { RepositoryService } from "../dal"
 import { Logger } from "../logger"
+import {
+  RemoteQueryGraph,
+  RemoteQueryInput,
+  RemoteQueryObjectConfig,
+  RemoteQueryObjectFromStringResult,
+} from "./remote-query-object-from-string"
+
+export {
+  RemoteQueryGraph,
+  RemoteQueryInput,
+  RemoteQueryObjectConfig,
+  RemoteQueryObjectFromStringResult,
+}
 
 export type Constructor<T> = new (...args: any[]) => T | (new () => T)
 
 export * from "../common/medusa-container"
 export * from "./medusa-internal-service"
 export * from "./module-provider"
+export * from "./remote-query"
+export * from "./remote-query-entry-points"
+export * from "./to-remote-query"
+export * from "./query-filter"
 
 export type LogLevel =
   | "query"
@@ -27,7 +39,6 @@ export type LoggerOptions = boolean | "all" | LogLevel[]
 
 export type CustomModuleDefinition = {
   key?: string
-  registrationName?: string
   label?: string
   isQueryable?: boolean // If the module is queryable via Remote Joiner
   dependencies?: string[]
@@ -81,12 +92,13 @@ export type ModuleResolution = {
 
 export type ModuleDefinition = {
   key: string
-  registrationName: string
   defaultPackage: string | false
   label: string
   isRequired?: boolean
   isQueryable?: boolean // If the module is queryable via Remote Joiner
   dependencies?: string[]
+  /** @internal only used in exceptional cases - relying on the shared contrainer breaks encapsulation */
+  __passSharedContainer?: boolean
   defaultModuleDeclaration:
     | InternalModuleDeclaration
     | ExternalModuleDeclaration
@@ -94,7 +106,6 @@ export type ModuleDefinition = {
 
 export type LinkModuleDefinition = {
   key: string
-  registrationName: string
   label: string
   dependencies?: string[]
   defaultModuleDeclaration: InternalModuleDeclaration
@@ -162,6 +173,20 @@ export type LinkModulesExtraFields = Record<
     options?: Record<string, unknown>
   }
 >
+
+/**
+ * A link for two records of linked data models.
+ *
+ * The keys are the names of each module, and their value is an object that holds the ID of the linked data model's record.
+ */
+export type LinkDefinition = {
+  [moduleName: string]: {
+    // TODO: changing this to any temporarily as the "data" attribute is not being picked up correctly
+    [fieldName: string]: any
+  }
+} & {
+  data?: Record<string, unknown>
+}
 
 export type ModuleJoinerConfig = Omit<
   JoinerServiceConfig,
@@ -235,6 +260,15 @@ export type ModuleExports<T = Constructor<any>> = {
     options: LoaderOptions<any>,
     moduleDeclaration?: InternalModuleDeclaration
   ): Promise<void>
+  generateMigration?(
+    options: LoaderOptions<any>,
+    moduleDeclaration?: InternalModuleDeclaration
+  ): Promise<void>
+  /**
+   * Explicitly set the the true location of the module resources.
+   * Can be used to re-export the module from a different location and specify its original location.
+   */
+  discoveryPath?: string
 }
 
 export interface ModuleServiceInitializeOptions {
@@ -271,12 +305,6 @@ export type ModuleBootstrapDeclaration =
 // TODO: These should be added back when the chain of types are fixed
 // | ModuleServiceInitializeOptions
 // | ModuleServiceInitializeCustomDataLayerOptions
-
-export type RemoteQueryFunction = (
-  query: string | RemoteJoinerQuery | object,
-  variables?: Record<string, unknown>,
-  options?: RemoteJoinerOptions
-) => Promise<any> | null
 
 export interface IModuleService {
   /**

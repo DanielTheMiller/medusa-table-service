@@ -1,10 +1,11 @@
 get:
   operationId: GetOrders
-  summary: List Orders
+  summary: List Logged-in Customer's Orders
+  x-sidebar-summary: List Orders
   description: >-
-    Retrieve a list of orders. The orders can be filtered by fields such as
-    `id`. The orders can also be sorted or paginated.
-  x-authenticated: false
+    Retrieve the orders of the logged-in customer. The orders can be filtered by
+    fields such as `id`. The orders can also be sorted or paginated.
+  x-authenticated: true
   parameters:
     - name: expand
       in: query
@@ -32,6 +33,8 @@ get:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
+        externalDocs:
+          url: '#select-fields-and-relations'
     - name: offset
       in: query
       description: The number of items to skip when retrieving a list.
@@ -40,6 +43,8 @@ get:
         type: number
         title: offset
         description: The number of items to skip when retrieving a list.
+        externalDocs:
+          url: '#pagination'
     - name: limit
       in: query
       description: Limit the number of items returned in the list.
@@ -48,6 +53,8 @@ get:
         type: number
         title: limit
         description: Limit the number of items returned in the list.
+        externalDocs:
+          url: '#pagination'
     - name: order
       in: query
       description: >-
@@ -68,35 +75,66 @@ get:
         oneOf:
           - type: string
             title: id
-            description: The order's ID.
+            description: Filter by an order ID.
           - type: array
-            description: The order's ID.
+            description: Filter by order IDs.
             items:
               type: string
               title: id
-              description: The id's ID.
-    - name: name
+              description: An order ID.
+    - name: $and
+      in: query
+      required: false
+      schema:
+        type: array
+        description: The order's $and.
+        items:
+          type: object
+        title: $and
+    - name: $or
+      in: query
+      required: false
+      schema:
+        type: array
+        description: The order's $or.
+        items:
+          type: object
+        title: $or
+    - name: status
       in: query
       required: false
       schema:
         oneOf:
           - type: string
-            title: name
-            description: The order's name.
+            title: status
+            description: The order's status.
+          - type: string
+            title: status
+            description: The order's status.
+          - type: string
+            title: status
+            description: The order's status.
+          - type: string
+            title: status
+            description: The order's status.
+          - type: string
+            title: status
+            description: The order's status.
+          - type: string
+            title: status
+            description: The order's status.
           - type: array
-            description: The order's name.
+            description: The order's status.
             items:
               type: string
-              title: name
-              description: The name's details.
-    - name: $and
-      in: query
-      required: false
-      schema: {}
-    - name: $or
-      in: query
-      required: false
-      schema: {}
+              description: The status's details.
+              enum:
+                - canceled
+                - requires_action
+                - pending
+                - completed
+                - draft
+                - archived
   x-codeSamples:
     - lang: Shell
       label: cURL
@@ -105,6 +143,43 @@ get:
   tags:
     - Orders
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - type: object
+                description: The paginated list of orders.
+                required:
+                  - limit
+                  - offset
+                  - count
+                properties:
+                  limit:
+                    type: number
+                    title: limit
+                    description: The maximum number of items returned.
+                  offset:
+                    type: number
+                    title: offset
+                    description: >-
+                      The number of items skipped before retrieving the returned
+                      items.
+                  count:
+                    type: number
+                    title: count
+                    description: The total number of items.
+              - type: object
+                description: The paginated list of orders.
+                required:
+                  - orders
+                properties:
+                  orders:
+                    type: array
+                    description: The order's orders.
+                    items:
+                      $ref: ../components/schemas/StoreOrder.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':
@@ -117,3 +192,6 @@ get:
       $ref: ../components/responses/invalid_request_error.yaml
     '500':
       $ref: ../components/responses/500_error.yaml
+  security:
+    - cookie_auth: []
+    - jwt_token: []

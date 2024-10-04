@@ -1,7 +1,7 @@
 /**
  * @schema BaseProduct
  * type: object
- * description: The updated's product.
+ * description: The parent's product.
  * x-schemaName: BaseProduct
  * required:
  *   - id
@@ -22,7 +22,6 @@
  *   - material
  *   - collection_id
  *   - type_id
- *   - tags
  *   - variants
  *   - options
  *   - images
@@ -58,6 +57,7 @@
  *     description: The product's is giftcard.
  *   status:
  *     type: string
+ *     description: The product's status.
  *     enum:
  *       - draft
  *       - proposed

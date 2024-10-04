@@ -2,9 +2,9 @@ import {
   createPsqlIndexStatementHelper,
   DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   BeforeCreate,
   Cascade,
@@ -20,7 +20,7 @@ import {
 } from "@mikro-orm/core"
 import ServiceZone from "./service-zone"
 
-type FulfillmentSetOptionalProps = DAL.SoftDeletableEntityDateColumns
+type FulfillmentSetOptionalProps = DAL.SoftDeletableModelDateColumns
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
   tableName: "fulfillment_set",

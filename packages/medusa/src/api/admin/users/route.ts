@@ -1,19 +1,16 @@
-import { createUserAccountWorkflow } from "@medusajs/core-flows"
-import { CreateUserDTO } from "@medusajs/types"
+import { HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
-  MedusaError,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
-import { refetchUser } from "./helpers"
+} from "@medusajs/framework/http"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminUserListParams>,
+  res: MedusaResponse<HttpTypes.AdminUserListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -33,36 +30,6 @@ export const GET = async (
     offset: metadata.skip,
     limit: metadata.take,
   })
-}
-
-export const POST = async (
-  req: AuthenticatedMedusaRequest<CreateUserDTO>,
-  res: MedusaResponse
-) => {
-  // If `actor_id` is present, the request carries authentication for an existing user
-  if (req.auth_context.actor_id) {
-    throw new MedusaError(
-      MedusaError.Types.INVALID_DATA,
-      "Request carries authentication for an existing user"
-    )
-  }
-
-  const input = {
-    input: {
-      userData: req.validatedBody,
-      authIdentityId: req.auth_context.auth_identity_id,
-    },
-  }
-
-  const { result } = await createUserAccountWorkflow(req.scope).run(input)
-
-  const user = await refetchUser(
-    result.id,
-    req.scope,
-    req.remoteQueryConfig.fields
-  )
-
-  res.status(200).json({ user })
 }
 
 export const AUTHENTICATE = false

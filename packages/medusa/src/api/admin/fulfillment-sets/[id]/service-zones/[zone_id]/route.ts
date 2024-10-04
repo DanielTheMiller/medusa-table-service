@@ -5,19 +5,20 @@ import {
 import {
   AdminFulfillmentSetResponse,
   AdminServiceZoneResponse,
+  HttpTypes,
   IFulfillmentModuleService,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   MedusaError,
-  ModuleRegistrationName,
+  Modules,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaRequest,
   MedusaResponse,
-} from "../../../../../../types/routing"
+} from "@medusajs/framework/http"
 import { AdminUpdateFulfillmentSetServiceZonesType } from "../../../validators"
 
 export const GET = async (
@@ -51,7 +52,7 @@ export const POST = async (
   res: MedusaResponse<AdminFulfillmentSetResponse>
 ) => {
   const fulfillmentModuleService = req.scope.resolve<IFulfillmentModuleService>(
-    ModuleRegistrationName.FULFILLMENT
+    Modules.FULFILLMENT
   )
 
   // ensure fulfillment set exists and that the service zone is part of it
@@ -93,12 +94,12 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminServiceZoneDeleteResponse>
 ) => {
   const { id, zone_id } = req.params
 
   const fulfillmentModuleService = req.scope.resolve<IFulfillmentModuleService>(
-    ModuleRegistrationName.FULFILLMENT
+    Modules.FULFILLMENT
   )
 
   // ensure fulfillment set exists and that the service zone is part of it
@@ -124,6 +125,6 @@ export const DELETE = async (
     id: zone_id,
     object: "service_zone",
     deleted: true,
-    parent: fulfillmentSet,
+    parent: fulfillmentSet as unknown as HttpTypes.AdminFulfillmentSet,
   })
 }

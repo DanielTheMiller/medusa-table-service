@@ -1,12 +1,19 @@
-import { FulfillmentDTO, OrderDTO, OrderWorkflow } from "@medusajs/types"
-import { FulfillmentEvents, Modules } from "@medusajs/utils"
+import {
+  AdditionalData,
+  FulfillmentDTO,
+  OrderDTO,
+  OrderWorkflow,
+} from "@medusajs/framework/types"
+import { FulfillmentEvents, Modules } from "@medusajs/framework/utils"
 import {
   WorkflowData,
+  WorkflowResponse,
+  createHook,
   createStep,
   createWorkflow,
   parallelize,
   transform,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 import { emitEventStep, useRemoteQueryStep } from "../../common"
 import { createShipmentWorkflow } from "../../fulfillment"
 import { registerOrderShipmentStep } from "../steps"
@@ -15,8 +22,11 @@ import {
   throwIfOrderIsCancelled,
 } from "../utils/order-validation"
 
-const validateOrder = createStep(
-  "validate-order",
+/**
+ * This step validates that a shipment can be created for an order.
+ */
+export const createShipmentValidateOrder = createStep(
+  "create-shipment-validate-order",
   ({
     order,
     input,
@@ -57,7 +67,7 @@ function prepareRegisterShipmentData({
     reference: Modules.FULFILLMENT,
     reference_id: fulfillment.id,
     created_by: input.created_by,
-    items: order.items!.map((i) => {
+    items: (input.items ?? order.items)!.map((i) => {
       return {
         id: i.id,
         quantity: i.quantity,
@@ -67,11 +77,16 @@ function prepareRegisterShipmentData({
 }
 
 export const createOrderShipmentWorkflowId = "create-order-shipment"
+/**
+ * This workflow creates a shipment for an order.
+ */
 export const createOrderShipmentWorkflow = createWorkflow(
   createOrderShipmentWorkflowId,
   (
-    input: WorkflowData<OrderWorkflow.CreateOrderShipmentWorkflowInput>
-  ): WorkflowData<void> => {
+    input: WorkflowData<
+      OrderWorkflow.CreateOrderShipmentWorkflowInput & AdditionalData
+    >
+  ) => {
     const order: OrderDTO = useRemoteQueryStep({
       entry_point: "orders",
       fields: [
@@ -87,12 +102,12 @@ export const createOrderShipmentWorkflow = createWorkflow(
       throw_if_key_not_found: true,
     })
 
-    validateOrder({ order, input })
+    createShipmentValidateOrder({ order, input })
 
     const fulfillmentData = transform({ input }, ({ input }) => {
       return {
         id: input.fulfillment_id,
-        labels: input.labels,
+        labels: input.labels ?? [],
       }
     })
 
@@ -111,6 +126,15 @@ export const createOrderShipmentWorkflow = createWorkflow(
     emitEventStep({
       eventName: FulfillmentEvents.SHIPMENT_CREATED,
       data: { id: shipment.id },
+    })
+
+    const shipmentCreated = createHook("shipmentCreated", {
+      shipment,
+      additional_data: input.additional_data,
+    })
+
+    return new WorkflowResponse(void 0, {
+      hooks: [shipmentCreated],
     })
   }
 )

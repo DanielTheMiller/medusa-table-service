@@ -3,10 +3,9 @@ import {
   CreateOrderChangeDTO,
   CreateOrderDTO,
   IOrderModuleService,
-} from "@medusajs/types"
-import { BigNumber, Modules } from "@medusajs/utils"
+} from "@medusajs/framework/types"
+import { BigNumber, ChangeActionType, Modules } from "@medusajs/framework/utils"
 import { moduleIntegrationTestRunner } from "medusa-test-utils"
-import { ChangeActionType } from "../../src/utils"
 
 jest.setTimeout(100000)
 
@@ -128,6 +127,9 @@ moduleIntegrationTestRunner<IOrderModuleService>({
 
       it("should change an order by adding actions to it", async function () {
         const createdOrder = await service.createOrders(input)
+        createdOrder.items = createdOrder.items!.sort((a, b) =>
+          a.title.localeCompare(b.title)
+        )
 
         await service.addOrderAction([
           {
@@ -220,123 +222,322 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           ],
           relations: ["items", "shipping_methods", "transactions"],
         })
+
         const serializedFinalOrder = JSON.parse(JSON.stringify(finalOrder))
 
         const serializedCreatedOrder = JSON.parse(JSON.stringify(createdOrder))
-        expect(serializedCreatedOrder.items).toEqual([
-          expect.objectContaining({
-            title: "Item 1",
-            unit_price: 8,
-            quantity: 1,
-            detail: expect.objectContaining({
-              version: 1,
+        expect(serializedCreatedOrder.items).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              title: "Item 1",
+              unit_price: 8,
               quantity: 1,
-              fulfilled_quantity: 0,
-              shipped_quantity: 0,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 0,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 1,
+                fulfilled_quantity: 0,
+                shipped_quantity: 0,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 0,
+                written_off_quantity: 0,
+              }),
             }),
-          }),
-          expect.objectContaining({
-            title: "Item 2",
-            compare_at_unit_price: null,
-            unit_price: 5,
-            quantity: 2,
-          }),
-          expect.objectContaining({
-            title: "Item 3",
-            unit_price: 30,
-            quantity: 1,
-            detail: expect.objectContaining({
-              version: 1,
+            expect.objectContaining({
+              title: "Item 2",
+              compare_at_unit_price: null,
+              unit_price: 5,
+              quantity: 2,
+            }),
+            expect.objectContaining({
+              title: "Item 3",
+              unit_price: 30,
               quantity: 1,
-              fulfilled_quantity: 0,
-              shipped_quantity: 0,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 0,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 1,
+                fulfilled_quantity: 0,
+                shipped_quantity: 0,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 0,
+                written_off_quantity: 0,
+              }),
             }),
-          }),
-        ])
+          ])
+        )
 
         expect(serializedFinalOrder).toEqual(
           expect.objectContaining({
             version: 1,
           })
         )
-        expect(serializedFinalOrder.items).toEqual([
-          expect.objectContaining({
-            title: "Item 1",
-            subtitle: "Subtitle 1",
-            thumbnail: "thumbnail1.jpg",
-            variant_id: "variant1",
-            product_id: "product1",
-            product_title: "Product 1",
-            product_description: "Description 1",
-            product_subtitle: "Product Subtitle 1",
-            product_type: "Type 1",
-            product_collection: "Collection 1",
-            product_handle: "handle1",
-            variant_sku: "SKU1",
-            variant_barcode: "Barcode1",
-            variant_title: "Variant 1",
-            variant_option_values: { size: "Large", color: "Red" },
-            requires_shipping: true,
-            is_discountable: true,
-            is_tax_inclusive: true,
-            compare_at_unit_price: 10,
-            unit_price: 8,
-            quantity: 2,
-            detail: expect.objectContaining({
-              version: 1,
+        expect(serializedFinalOrder.items).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              title: "Item 1",
+              subtitle: "Subtitle 1",
+              thumbnail: "thumbnail1.jpg",
+              variant_id: "variant1",
+              product_id: "product1",
+              product_title: "Product 1",
+              product_description: "Description 1",
+              product_subtitle: "Product Subtitle 1",
+              product_type: "Type 1",
+              product_collection: "Collection 1",
+              product_handle: "handle1",
+              variant_sku: "SKU1",
+              variant_barcode: "Barcode1",
+              variant_title: "Variant 1",
+              variant_option_values: { size: "Large", color: "Red" },
+              requires_shipping: true,
+              is_discountable: true,
+              is_tax_inclusive: true,
+              compare_at_unit_price: 10,
+              unit_price: 8,
               quantity: 2,
-              fulfilled_quantity: 0,
-              shipped_quantity: 0,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 0,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 2,
+                fulfilled_quantity: 0,
+                shipped_quantity: 0,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 0,
+                written_off_quantity: 0,
+              }),
             }),
-          }),
-          expect.objectContaining({
-            title: "Item 2",
-            compare_at_unit_price: null,
-            unit_price: 5,
-            quantity: 5,
-            detail: expect.objectContaining({
-              version: 1,
+            expect.objectContaining({
+              title: "Item 2",
+              compare_at_unit_price: null,
+              unit_price: 5,
               quantity: 5,
-              fulfilled_quantity: 0,
-              shipped_quantity: 0,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 0,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 5,
+                fulfilled_quantity: 0,
+                shipped_quantity: 0,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 0,
+                written_off_quantity: 0,
+              }),
             }),
-          }),
-          expect.objectContaining({
-            title: "Item 3",
-            unit_price: 30,
-            quantity: 1,
-            detail: expect.objectContaining({
-              version: 1,
+            expect.objectContaining({
+              title: "Item 3",
+              unit_price: 30,
               quantity: 1,
-              fulfilled_quantity: 1,
-              shipped_quantity: 1,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 1,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 1,
+                fulfilled_quantity: 1,
+                shipped_quantity: 1,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 1,
+                written_off_quantity: 1,
+              }),
             }),
-          }),
-        ])
+          ])
+        )
+      })
+
+      it("should create an order change, add actions to it and confirm the changes.", async function () {
+        const createdOrder = await service.createOrders(input)
+        createdOrder.items = createdOrder.items!.sort((a, b) =>
+          a.title.localeCompare(b.title)
+        )
+
+        const orderChange = await service.createOrderChange({
+          order_id: createdOrder.id,
+          actions: [
+            {
+              action: ChangeActionType.FULFILL_ITEM,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 2,
+              },
+            },
+            {
+              action: ChangeActionType.ITEM_UPDATE,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 1,
+              },
+            },
+          ],
+        })
+
+        await expect(
+          service.confirmOrderChange({
+            id: orderChange.id,
+          })
+        ).rejects.toThrow(
+          `Item ${
+            createdOrder.items![1].id
+          } has already been fulfilled and quantity cannot be lower than 2.`
+        )
+        await service.deleteOrderChanges([orderChange.id])
+
+        // Create Order Change
+        const orderChange2 = await service.createOrderChange({
+          order_id: createdOrder.id,
+          actions: [
+            {
+              action: ChangeActionType.FULFILL_ITEM,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 1,
+              },
+            },
+            {
+              action: ChangeActionType.ITEM_UPDATE,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 4,
+              },
+            },
+            {
+              action: ChangeActionType.DELIVER_ITEM,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 1,
+              },
+            },
+          ],
+        })
+
+        await service.confirmOrderChange({
+          id: orderChange2.id,
+        })
+
+        const changedOrder = await service.retrieveOrder(createdOrder.id, {
+          select: ["total", "items.detail", "summary"],
+          relations: ["items"],
+        })
+
+        expect(
+          JSON.parse(
+            JSON.stringify(
+              changedOrder.items?.find(
+                (i) => i.id === createdOrder.items![1].id
+              )?.detail
+            )
+          )
+        ).toEqual(
+          expect.objectContaining({
+            quantity: 4,
+            fulfilled_quantity: 1,
+            delivered_quantity: 1,
+          })
+        )
+
+        // Create Order Change
+        const orderChange3 = await service.createOrderChange({
+          order_id: createdOrder.id,
+          actions: [
+            {
+              action: ChangeActionType.FULFILL_ITEM,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 3,
+              },
+            },
+            {
+              action: ChangeActionType.ITEM_UPDATE,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 3,
+              },
+            },
+          ],
+        })
+
+        await expect(
+          service.confirmOrderChange({
+            id: orderChange3.id,
+          })
+        ).rejects.toThrow(
+          `Item ${
+            createdOrder.items![1].id
+          } has already been fulfilled and quantity cannot be lower than 4.`
+        )
+        await service.deleteOrderChanges([orderChange3.id])
+
+        // Create Order Change
+        const orderChange4 = await service.createOrderChange({
+          order_id: createdOrder.id,
+          actions: [
+            {
+              action: ChangeActionType.FULFILL_ITEM,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 1,
+              },
+            },
+            {
+              action: ChangeActionType.ITEM_UPDATE,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 3,
+              },
+            },
+          ],
+        })
+
+        await service.confirmOrderChange({
+          id: orderChange4.id,
+        })
+
+        const modified = await service.retrieveOrder(createdOrder.id, {
+          select: ["total", "items.detail", "summary"],
+          relations: ["items"],
+        })
+
+        expect(
+          JSON.parse(
+            JSON.stringify(
+              modified.items?.find((i) => i.id === createdOrder.items![1].id)
+                ?.detail
+            )
+          )
+        ).toEqual(
+          expect.objectContaining({
+            quantity: 3,
+            fulfilled_quantity: 2,
+          })
+        )
+
+        const orderChange5 = await service.createOrderChange({
+          order_id: createdOrder.id,
+          actions: [
+            {
+              action: ChangeActionType.DELIVER_ITEM,
+              details: {
+                reference_id: createdOrder.items![1].id,
+                quantity: 5,
+              },
+            },
+          ],
+        })
+
+        await expect(
+          service.confirmOrderChange({
+            id: orderChange5.id,
+          })
+        ).rejects.toThrow(
+          `Cannot deliver more items than what was fulfilled for item ${
+            createdOrder.items![1].id
+          }`
+        )
+        await service.deleteOrderChanges([orderChange5.id])
       })
 
       it("should create an order change, add actions to it, confirm the changes, revert all the changes and restore the changes again.", async function () {
         const createdOrder = await service.createOrders(input)
+        createdOrder.items = createdOrder.items!.sort((a, b) =>
+          a.title.localeCompare(b.title)
+        )
 
         const orderChange = await service.createOrderChange({
           order_id: createdOrder.id,
@@ -440,45 +641,47 @@ moduleIntegrationTestRunner<IOrderModuleService>({
         expect(serializedModifiedOrder.shipping_methods).toHaveLength(1)
         expect(serializedModifiedOrder.shipping_methods[0].amount).toEqual(10)
 
-        expect(serializedModifiedOrder.items).toEqual([
-          expect.objectContaining({
-            quantity: 2,
-            detail: expect.objectContaining({
-              version: 2,
+        expect(serializedModifiedOrder.items).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               quantity: 2,
+              detail: expect.objectContaining({
+                version: 2,
+                quantity: 2,
+              }),
             }),
-          }),
-          expect.objectContaining({
-            title: "Item 2",
-            unit_price: 5,
-            quantity: 5,
-            detail: expect.objectContaining({
-              version: 2,
+            expect.objectContaining({
+              title: "Item 2",
+              unit_price: 5,
               quantity: 5,
-              fulfilled_quantity: 0,
-              shipped_quantity: 0,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 0,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 2,
+                quantity: 5,
+                fulfilled_quantity: 0,
+                shipped_quantity: 0,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 0,
+                written_off_quantity: 0,
+              }),
             }),
-          }),
-          expect.objectContaining({
-            title: "Item 3",
-            unit_price: 30,
-            quantity: 1,
-            detail: expect.objectContaining({
-              version: 2,
+            expect.objectContaining({
+              title: "Item 3",
+              unit_price: 30,
               quantity: 1,
-              fulfilled_quantity: 1,
-              shipped_quantity: 1,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 1,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 2,
+                quantity: 1,
+                fulfilled_quantity: 1,
+                shipped_quantity: 1,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 1,
+                written_off_quantity: 1,
+              }),
             }),
-          }),
-        ])
+          ])
+        )
 
         // Revert Last Changes
         await service.revertLastVersion(createdOrder.id)
@@ -505,50 +708,55 @@ moduleIntegrationTestRunner<IOrderModuleService>({
         expect(serializedRevertedOrder.shipping_methods).toHaveLength(1)
         expect(serializedRevertedOrder.shipping_methods[0].amount).toEqual(10)
 
-        expect(serializedRevertedOrder.items).toEqual([
-          expect.objectContaining({
-            quantity: 1,
-            unit_price: 8,
-            detail: expect.objectContaining({
-              version: 1,
+        expect(serializedRevertedOrder.items).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               quantity: 1,
+              unit_price: 8,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 1,
+              }),
             }),
-          }),
-          expect.objectContaining({
-            title: "Item 2",
-            unit_price: 5,
-            quantity: 2,
-            detail: expect.objectContaining({
-              version: 1,
+            expect.objectContaining({
+              title: "Item 2",
+              unit_price: 5,
               quantity: 2,
-              fulfilled_quantity: 0,
-              shipped_quantity: 0,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 0,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 2,
+                fulfilled_quantity: 0,
+                shipped_quantity: 0,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 0,
+                written_off_quantity: 0,
+              }),
             }),
-          }),
-          expect.objectContaining({
-            title: "Item 3",
-            unit_price: 30,
-            quantity: 1,
-            detail: expect.objectContaining({
-              version: 1,
+            expect.objectContaining({
+              title: "Item 3",
+              unit_price: 30,
               quantity: 1,
-              fulfilled_quantity: 0,
-              shipped_quantity: 0,
-              return_requested_quantity: 0,
-              return_received_quantity: 0,
-              return_dismissed_quantity: 0,
-              written_off_quantity: 0,
+              detail: expect.objectContaining({
+                version: 1,
+                quantity: 1,
+                fulfilled_quantity: 0,
+                shipped_quantity: 0,
+                return_requested_quantity: 0,
+                return_received_quantity: 0,
+                return_dismissed_quantity: 0,
+                written_off_quantity: 0,
+              }),
             }),
-          }),
-        ])
+          ])
+        )
       })
 
-      it("should create order changes, cancel and reject them.", async function () {
+      it("should create order change, cancel and reject them.", async function () {
         const createdOrder = await service.createOrders(input)
+        createdOrder.items = createdOrder.items!.sort((a, b) =>
+          a.title.localeCompare(b.title)
+        )
 
         const orderChange = await service.createOrderChange({
           order_id: createdOrder.id,
@@ -556,6 +764,14 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           internal_note: "changing the order to version 2",
           created_by: "user_123",
         })
+        await service.cancelOrderChange({
+          id: orderChange.id,
+          canceled_by: "cx_agent_123",
+        })
+
+        await expect(service.cancelOrderChange(orderChange.id)).rejects.toThrow(
+          "Order Change cannot be modified"
+        )
 
         const orderChange2 = await service.createOrderChange({
           order_id: createdOrder.id,
@@ -577,15 +793,6 @@ moduleIntegrationTestRunner<IOrderModuleService>({
             },
           ],
         } as CreateOrderChangeDTO)
-
-        await service.cancelOrderChange({
-          id: orderChange.id,
-          canceled_by: "cx_agent_123",
-        })
-
-        await expect(service.cancelOrderChange(orderChange.id)).rejects.toThrow(
-          "Order Change cannot be modified"
-        )
 
         await service.declineOrderChange({
           id: orderChange2.id,

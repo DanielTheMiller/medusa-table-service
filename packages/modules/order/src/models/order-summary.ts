@@ -2,7 +2,7 @@ import {
   BigNumber,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
@@ -30,31 +30,27 @@ type OrderSummaryTotals = {
   net_subtotal: BigNumber
   net_total_tax: BigNumber
 
-  future_total: BigNumber
-  future_subtotal: BigNumber
-  future_total_tax: BigNumber
-  future_projected_total: BigNumber
-
   balance: BigNumber
-  future_balance: BigNumber
 
   paid_total: BigNumber
   refunded_total: BigNumber
 }
 
+const tableName = "order_summary"
+
 const OrderIdVersionIndex = createPsqlIndexStatementHelper({
-  tableName: "order_summary",
+  tableName,
   columns: ["order_id", "version"],
   where: "deleted_at IS NOT NULL",
 })
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
-  tableName: "order",
+  tableName,
   columns: "deleted_at",
   where: "deleted_at IS NOT NULL",
 })
 
-@Entity({ tableName: "order_summary" })
+@Entity({ tableName })
 @OrderIdVersionIndex.MikroORMIndex()
 export default class OrderSummary {
   @PrimaryKey({ columnType: "text" })

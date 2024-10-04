@@ -1,5 +1,9 @@
-import { IProductModuleService, ProductCategoryDTO } from "@medusajs/types"
-import { kebabCase, Modules, ProductStatus } from "@medusajs/utils"
+import {
+  IProductModuleService,
+  ProductCategoryDTO,
+  ProductTagDTO,
+} from "@medusajs/framework/types"
+import { Modules, ProductStatus, kebabCase } from "@medusajs/framework/utils"
 import {
   Product,
   ProductCategory,
@@ -23,7 +27,7 @@ jest.setTimeout(300000)
 moduleIntegrationTestRunner<IProductModuleService>({
   moduleName: Modules.PRODUCT,
   injectedDependencies: {
-    eventBusModuleService: new MockEventBusService(),
+    [Modules.EVENT_BUS]: new MockEventBusService(),
   },
   testSuite: ({ MikroOrmWrapper, service }) => {
     describe("ProductModuleService products", function () {
@@ -104,6 +108,11 @@ moduleIntegrationTestRunner<IProductModuleService>({
             categories.push(await service.createProductCategories(entry))
           }
 
+          const tags: ProductTagDTO[] = []
+          for (const entry of tagsData) {
+            tags.push(await service.createProductTags(entry))
+          }
+
           productCategoryOne = categories[0]
           productCategoryTwo = categories[1]
 
@@ -125,7 +134,7 @@ moduleIntegrationTestRunner<IProductModuleService>({
             status: ProductStatus.PUBLISHED,
             categories: [{ id: productCategoryOne.id }],
             collection_id: productCollectionOne.id,
-            tags: tagsData,
+            tags: [{ id: tags[0].id }],
             options: [
               {
                 title: "size",
@@ -264,6 +273,90 @@ moduleIntegrationTestRunner<IProductModuleService>({
           )
         })
 
+        it("should preserve option and value identity on update", async () => {
+          const productBefore = await service.retrieveProduct(productTwo.id, {
+            relations: [
+              "images",
+              "variants",
+              "options",
+              "options.values",
+              "variants.options",
+              "tags",
+              "type",
+            ],
+          })
+
+          const updatedProducts = await service.upsertProducts([
+            {
+              id: productBefore.id,
+              title: "updated title",
+              options: [
+                {
+                  title: "size",
+                  values: ["large", "small"],
+                },
+                {
+                  title: "color",
+                  values: ["red"],
+                },
+                {
+                  title: "material",
+                  values: ["cotton"],
+                },
+              ],
+            },
+          ])
+
+          expect(updatedProducts).toHaveLength(1)
+          const product = await service.retrieveProduct(productBefore.id, {
+            relations: [
+              "images",
+              "variants",
+              "options",
+              "options.values",
+              "variants.options",
+              "tags",
+              "type",
+            ],
+          })
+
+          const beforeOption = productBefore.options.find(
+            (opt) => opt.title === "size"
+          )!
+          expect(product.options).toHaveLength(3)
+          expect(product.options).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: beforeOption.id,
+                title: beforeOption.title,
+                values: expect.arrayContaining([
+                  expect.objectContaining({
+                    id: beforeOption.values[0].id,
+                    value: beforeOption.values[0].value,
+                  }),
+                ]),
+              }),
+              expect.objectContaining({
+                title: "color",
+                values: expect.arrayContaining([
+                  expect.objectContaining({
+                    value: "red",
+                  }),
+                ]),
+              }),
+              expect.objectContaining({
+                id: expect.any(String),
+                title: "material",
+                values: expect.arrayContaining([
+                  expect.objectContaining({
+                    value: "cotton",
+                  }),
+                ]),
+              }),
+            ])
+          )
+        })
+
         it("should emit events through event bus", async () => {
           const eventBusSpy = jest.spyOn(MockEventBusService.prototype, "emit")
           const data = buildProductAndRelationsData({
@@ -281,12 +374,17 @@ moduleIntegrationTestRunner<IProductModuleService>({
           await service.upsertProducts([updateData])
 
           expect(eventBusSpy).toHaveBeenCalledTimes(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              {
+                name: "product.updated",
+                data: { id: productOne.id },
+              },
+            ],
             {
-              eventName: "product.updated",
-              data: { id: productOne.id },
-            },
-          ])
+              internal: true,
+            }
+          )
         })
 
         it("should add relationships to a product", async () => {
@@ -353,6 +451,8 @@ moduleIntegrationTestRunner<IProductModuleService>({
             value: "tag 2",
           }
 
+          await service.createProductTags(newTagData)
+
           const updateData = {
             id: productTwo.id,
             categories: [
@@ -362,7 +462,7 @@ moduleIntegrationTestRunner<IProductModuleService>({
             ],
             collection_id: productCollectionTwo.id,
             type_id: productTypeTwo.id,
-            tags: [newTagData],
+            tags: [{ id: newTagData.id }],
           }
 
           await service.upsertProducts([updateData])
@@ -629,12 +729,17 @@ moduleIntegrationTestRunner<IProductModuleService>({
 
           const products = await service.createProducts([data])
           expect(eventBusSpy).toHaveBeenCalledTimes(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              {
+                name: "product.created",
+                data: { id: products[0].id },
+              },
+            ],
             {
-              eventName: "product.created",
-              data: { id: products[0].id },
-            },
-          ])
+              internal: true,
+            }
+          )
         })
       })
 
@@ -719,12 +824,17 @@ moduleIntegrationTestRunner<IProductModuleService>({
 
           await service.softDeleteProducts([products[0].id])
 
-          expect(eventBusSpy).toHaveBeenCalledWith([
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              {
+                name: "product.created",
+                data: { id: products[0].id },
+              },
+            ],
             {
-              eventName: "product.created",
-              data: { id: products[0].id },
-            },
-          ])
+              internal: true,
+            }
+          )
         })
       })
 

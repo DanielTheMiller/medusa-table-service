@@ -1,20 +1,35 @@
-import { LinkDefinition } from "@medusajs/modules-sdk"
-import { InventoryTypes, PricingTypes, ProductTypes } from "@medusajs/types"
+import {
+  AdditionalData,
+  InventoryTypes,
+  LinkDefinition,
+  PricingTypes,
+  ProductTypes,
+} from "@medusajs/framework/types"
+import {
+  MedusaError,
+  Modules,
+  ProductVariantWorkflowEvents,
+} from "@medusajs/framework/utils"
 import {
   WorkflowData,
+  WorkflowResponse,
+  createHook,
   createWorkflow,
   transform,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
+import { emitEventStep } from "../../common"
 import { createLinksWorkflow } from "../../common/workflows/create-links"
 import { validateInventoryItems } from "../../inventory/steps/validate-inventory-items"
 import { createInventoryItemsWorkflow } from "../../inventory/workflows/create-inventory-items"
 import { createPriceSetsStep } from "../../pricing"
 import { createProductVariantsStep } from "../steps/create-product-variants"
 import { createVariantPricingLinkStep } from "../steps/create-variant-pricing-link"
-import { Modules } from "@medusajs/utils"
 
-// TODO: Create separate typings for the workflow input
-type WorkflowInput = {
+/**
+ * @privateRemarks
+ * TODO: Create separate typings for the workflow input
+ */
+export type CreateProductVariantsWorkflowInput = {
   product_variants: (ProductTypes.CreateProductVariantDTO & {
     prices?: PricingTypes.CreateMoneyAmountDTO[]
   } & {
@@ -23,7 +38,7 @@ type WorkflowInput = {
       required_quantity?: number
     }[]
   })[]
-}
+} & AdditionalData
 
 const buildLink = (
   variant_id: string,
@@ -39,13 +54,59 @@ const buildLink = (
   return link
 }
 
+const validateVariantsDuplicateInventoryItemIds = (
+  variantsData: {
+    variantId: string
+    inventory_items: {
+      inventory_item_id: string
+      required_quantity?: number
+    }[]
+  }[]
+) => {
+  const erroredVariantIds: string[] = []
+
+  for (const variantData of variantsData) {
+    const inventoryItemIds = variantData.inventory_items.map(
+      (item) => item.inventory_item_id
+    )
+    const duplicatedInventoryItemIds = inventoryItemIds.filter(
+      (id, index) => inventoryItemIds.indexOf(id) !== index
+    )
+
+    if (duplicatedInventoryItemIds.length) {
+      erroredVariantIds.push(variantData.variantId)
+    }
+  }
+
+  if (erroredVariantIds.length) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `Cannot associate duplicate inventory items to variant(s) ${erroredVariantIds.join(
+        "\n"
+      )}`
+    )
+  }
+}
+
 const buildLinksToCreate = (data: {
   createdVariants: ProductTypes.ProductVariantDTO[]
   inventoryIndexMap: Record<number, InventoryTypes.InventoryItemDTO>
-  input: WorkflowInput
+  input: CreateProductVariantsWorkflowInput
 }) => {
   let index = 0
   const linksToCreate: LinkDefinition[] = []
+
+  validateVariantsDuplicateInventoryItemIds(
+    (data.createdVariants ?? []).map((variant, index) => {
+      const variantInput = data.input.product_variants[index]
+      const inventoryItems = variantInput.inventory_items || []
+
+      return {
+        variantId: variant.id,
+        inventory_items: inventoryItems,
+      }
+    })
+  )
 
   for (const variant of data.createdVariants) {
     const variantInput = data.input.product_variants[index]
@@ -81,7 +142,7 @@ const buildLinksToCreate = (data: {
 
 const buildVariantItemCreateMap = (data: {
   createdVariants: ProductTypes.ProductVariantDTO[]
-  input: WorkflowInput
+  input: CreateProductVariantsWorkflowInput
 }) => {
   let index = 0
   const map: Record<number, InventoryTypes.CreateInventoryItemInput> = {}
@@ -117,11 +178,12 @@ const buildVariantItemCreateMap = (data: {
 }
 
 export const createProductVariantsWorkflowId = "create-product-variants"
+/**
+ * This workflow creates one or more product variants.
+ */
 export const createProductVariantsWorkflow = createWorkflow(
   createProductVariantsWorkflowId,
-  (
-    input: WorkflowData<WorkflowInput>
-  ): WorkflowData<ProductTypes.ProductVariantDTO[]> => {
+  (input: WorkflowData<CreateProductVariantsWorkflowInput>) => {
     // Passing prices to the product module will fail, we want to keep them for after the variant is created.
     const variantsWithoutPrices = transform({ input }, (data) =>
       data.input.product_variants.map((v) => ({
@@ -211,7 +273,7 @@ export const createProductVariantsWorkflow = createWorkflow(
 
     createVariantPricingLinkStep(variantAndPriceSetLinks)
 
-    return transform(
+    const response = transform(
       {
         variantAndPriceSets,
       },
@@ -222,5 +284,25 @@ export const createProductVariantsWorkflow = createWorkflow(
         }))
       }
     )
+
+    const variantIdEvents = transform({ response }, ({ response }) => {
+      return response.map((v) => {
+        return { id: v.id }
+      })
+    })
+
+    emitEventStep({
+      eventName: ProductVariantWorkflowEvents.CREATED,
+      data: variantIdEvents,
+    })
+
+    const productVariantsCreated = createHook("productVariantsCreated", {
+      product_variants: response,
+      additional_data: input.additional_data,
+    })
+
+    return new WorkflowResponse(response, {
+      hooks: [productVariantsCreated],
+    })
   }
 )

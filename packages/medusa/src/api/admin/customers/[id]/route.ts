@@ -1,19 +1,19 @@
 import {
-  deleteCustomersWorkflow,
+  removeCustomerAccountWorkflow,
   updateCustomersWorkflow,
 } from "@medusajs/core-flows"
-import { AdminCustomer } from "@medusajs/types"
-import { MedusaError } from "@medusajs/utils"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
+import { MedusaError } from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchCustomer } from "../helpers"
 import { AdminUpdateCustomerType } from "../validators"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse<{ customer: AdminCustomer }>
+  res: MedusaResponse<HttpTypes.AdminCustomerResponse>
 ) => {
   const customer = await refetchCustomer(
     req.params.id,
@@ -32,13 +32,26 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminUpdateCustomerType>,
-  res: MedusaResponse<{ customer: AdminCustomer }>
+  req: AuthenticatedMedusaRequest<AdminUpdateCustomerType & AdditionalData>,
+  res: MedusaResponse<HttpTypes.AdminCustomerResponse>
 ) => {
+  const existingCustomer = await refetchCustomer(req.params.id, req.scope, [
+    "id",
+  ])
+  if (!existingCustomer) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Customer with id "${req.params.id}" not found`
+    )
+  }
+
+  const { additional_data, ...rest } = req.validatedBody
+
   await updateCustomersWorkflow(req.scope).run({
     input: {
       selector: { id: req.params.id },
-      update: req.validatedBody,
+      update: rest,
+      additional_data,
     },
   })
 
@@ -52,13 +65,14 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminCustomerDeleteResponse>
 ) => {
   const id = req.params.id
-  const deleteCustomers = deleteCustomersWorkflow(req.scope)
 
-  await deleteCustomers.run({
-    input: { ids: [id] },
+  await removeCustomerAccountWorkflow(req.scope).run({
+    input: {
+      customerId: id,
+    },
   })
 
   res.status(200).json({

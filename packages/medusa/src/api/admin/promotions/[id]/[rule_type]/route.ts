@@ -1,14 +1,14 @@
-import { AdminGetPromotionRulesRes } from "@medusajs/types"
+import { HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
   RuleOperator,
   RuleType,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../types/routing"
+} from "@medusajs/framework/http"
 import {
   getRuleAttributesMap,
   operatorsMap,
@@ -18,7 +18,7 @@ import {
 
 export const GET = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminPromotionRuleListResponse>
 ) => {
   const { id, rule_type: ruleType } = req.params
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
@@ -48,7 +48,7 @@ export const GET = async (
     promotionRules.push(...(promotion?.application_method?.buy_rules || []))
   }
 
-  const transformedRules: AdminGetPromotionRulesRes = []
+  const transformedRules: HttpTypes.AdminPromotionRule[] = []
   const disguisedRules = ruleAttributes.filter((attr) => !!attr.disguised)
 
   for (const disguisedRule of disguisedRules) {

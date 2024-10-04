@@ -1,10 +1,10 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   createPsqlIndexStatementHelper,
   DALUtils,
   generateEntityId,
   Searchable,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -19,14 +19,14 @@ import {
   Property,
   Rel,
 } from "@mikro-orm/core"
-import Address from "./address"
+import CustomerAddress from "./address"
 import CustomerGroup from "./customer-group"
 import CustomerGroupCustomer from "./customer-group-customer"
 
 type OptionalCustomerProps =
   | "groups"
   | "addresses"
-  | DAL.SoftDeletableEntityDateColumns
+  | DAL.SoftDeletableModelDateColumns
 
 const CustomerUniqueEmail = createPsqlIndexStatementHelper({
   tableName: "customer",
@@ -77,10 +77,10 @@ export default class Customer {
   })
   groups = new Collection<Rel<CustomerGroup>>(this)
 
-  @OneToMany(() => Address, (address) => address.customer, {
+  @OneToMany(() => CustomerAddress, (address) => address.customer, {
     cascade: [Cascade.REMOVE],
   })
-  addresses = new Collection<Rel<Address>>(this)
+  addresses = new Collection<Rel<CustomerAddress>>(this)
 
   @Property({
     onCreate: () => new Date(),

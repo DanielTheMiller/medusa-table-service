@@ -3,9 +3,9 @@ import {
   Searchable,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 
 import {
   BeforeCreate,
@@ -21,7 +21,7 @@ import {
 } from "@mikro-orm/core"
 import StoreCurrency from "./currency"
 
-type StoreOptionalProps = DAL.SoftDeletableEntityDateColumns
+type StoreOptionalProps = DAL.SoftDeletableModelDateColumns
 
 const StoreDeletedAtIndex = createPsqlIndexStatementHelper({
   tableName: "store",

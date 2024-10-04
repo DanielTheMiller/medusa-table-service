@@ -1,7 +1,7 @@
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import {
   deleteCampaignsWorkflow,
   updateCampaignsWorkflow,
@@ -9,11 +9,12 @@ import {
 
 import { refetchCampaign } from "../helpers"
 import { AdminUpdateCampaignType } from "../validators"
-import { MedusaError } from "@medusajs/utils"
+import { MedusaError } from "@medusajs/framework/utils"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminCampaignResponse>
 ) => {
   const campaign = await refetchCampaign(
     req.params.id,
@@ -32,19 +33,30 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminUpdateCampaignType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<AdminUpdateCampaignType & AdditionalData>,
+  res: MedusaResponse<HttpTypes.AdminCampaignResponse>
 ) => {
+  const existingCampaign = await refetchCampaign(req.params.id, req.scope, [
+    "id",
+  ])
+  if (!existingCampaign) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Campaign with id "${req.params.id}" not found`
+    )
+  }
+
+  const { additional_data, ...rest } = req.validatedBody
   const updateCampaigns = updateCampaignsWorkflow(req.scope)
   const campaignsData = [
     {
       id: req.params.id,
-      ...req.validatedBody,
+      ...rest,
     },
   ]
 
   await updateCampaigns.run({
-    input: { campaignsData },
+    input: { campaignsData, additional_data },
   })
 
   const campaign = await refetchCampaign(
@@ -57,7 +69,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminCampaignDeleteResponse>
 ) => {
   const id = req.params.id
   const deleteCampaigns = deleteCampaignsWorkflow(req.scope)

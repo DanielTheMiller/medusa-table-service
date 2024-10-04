@@ -5,11 +5,12 @@ import {
   FilterableSalesChannelProps,
   InternalModuleDeclaration,
   ISalesChannelModuleService,
+  ModuleJoinerConfig,
   ModulesSdkTypes,
   SalesChannelDTO,
   UpdateSalesChannelDTO,
   UpsertSalesChannelDTO,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   InjectManager,
   InjectTransactionManager,
@@ -17,10 +18,11 @@ import {
   MedusaContext,
   MedusaService,
   promiseAll,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
 import { SalesChannel } from "@models"
 import { UpdateSalesChanneInput } from "@types"
+import { joinerConfig } from "../joinfer-config"
 
 type InjectedDependencies = {
   baseRepository: DAL.RepositoryService
@@ -46,6 +48,10 @@ export default class SalesChannelModuleService
     this.salesChannelService_ = salesChannelService
   }
 
+  __joinerConfig(): ModuleJoinerConfig {
+    return joinerConfig
+  }
+
   // @ts-expect-error
   async createSalesChannels(
     data: CreateSalesChannelDTO[],
@@ -56,7 +62,7 @@ export default class SalesChannelModuleService
     sharedContext?: Context
   ): Promise<SalesChannelDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createSalesChannels(
     data: CreateSalesChannelDTO | CreateSalesChannelDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -73,7 +79,7 @@ export default class SalesChannelModuleService
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async createSalesChannels_(
     data: CreateSalesChannelDTO[],
     @MedusaContext() sharedContext: Context
@@ -93,7 +99,7 @@ export default class SalesChannelModuleService
     sharedContext?: Context
   ): Promise<SalesChannelDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateSalesChannels(
     idOrSelector: string | FilterableSalesChannelProps,
     data: UpdateSalesChannelDTO | UpdateSalesChannelDTO[],
@@ -128,7 +134,7 @@ export default class SalesChannelModuleService
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async updateSalesChannels_(
     data: UpdateSalesChannelDTO[],
     sharedContext: Context
@@ -144,7 +150,7 @@ export default class SalesChannelModuleService
     data: UpsertSalesChannelDTO,
     sharedContext?: Context
   ): Promise<SalesChannelDTO>
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async upsertSalesChannels(
     data: UpsertSalesChannelDTO | UpsertSalesChannelDTO[],
     @MedusaContext() sharedContext: Context = {}

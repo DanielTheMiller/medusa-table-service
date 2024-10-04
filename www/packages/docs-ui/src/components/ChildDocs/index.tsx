@@ -2,7 +2,8 @@
 
 import React, { useMemo } from "react"
 import { Card, CardList, MDXComponents, useSidebar } from "../.."
-import { SidebarItemType } from "types"
+import { InteractiveSidebarItem, SidebarItem, SidebarItemLink } from "types"
+import slugify from "slugify"
 
 type ChildDocsProps = {
   onlyTopLevel?: boolean
@@ -10,6 +11,7 @@ type ChildDocsProps = {
   hideItems?: string[]
   showItems?: string[]
   hideTitle?: boolean
+  childLevel?: number
 }
 
 export const ChildDocs = ({
@@ -18,8 +20,9 @@ export const ChildDocs = ({
   showItems,
   type = "sidebar",
   hideTitle = false,
+  childLevel = 1,
 }: ChildDocsProps) => {
-  const { currentItems, getActiveItem } = useSidebar()
+  const { currentItems, activeItem } = useSidebar()
   const filterType = useMemo(() => {
     return showItems !== undefined
       ? "show"
@@ -28,16 +31,19 @@ export const ChildDocs = ({
       : "all"
   }, [showItems, hideItems])
 
-  const filterCondition = (item: SidebarItemType): boolean => {
+  const filterCondition = (item: SidebarItem): boolean => {
+    if (item.type === "separator") {
+      return false
+    }
     switch (filterType) {
       case "hide":
         return (
-          (!item.path || !hideItems.includes(item.path)) &&
+          (item.type !== "link" || !hideItems.includes(item.path)) &&
           !hideItems.includes(item.title)
         )
       case "show":
         return (
-          (item.path !== undefined && showItems!.includes(item.path)) ||
+          (item.type === "link" && showItems!.includes(item.path)) ||
           showItems!.includes(item.title)
         )
       case "all":
@@ -45,12 +51,16 @@ export const ChildDocs = ({
     }
   }
 
-  const filterItems = (items: SidebarItemType[]): SidebarItemType[] => {
+  const filterItems = (items: SidebarItem[]): SidebarItem[] => {
     return items
       .filter(filterCondition)
       .map((item) => Object.assign({}, item))
       .map((item) => {
-        if (item.children && filterType === "hide") {
+        if (
+          item.type !== "separator" &&
+          item.children &&
+          filterType === "hide"
+        ) {
           item.children = filterItems(item.children)
         }
 
@@ -65,8 +75,7 @@ export const ChildDocs = ({
           ? Object.assign({}, currentItems)
           : undefined
         : {
-            top: [...(getActiveItem()?.children || [])],
-            bottom: [],
+            default: [...(activeItem?.children || [])],
           }
     if (filterType === "all" || !targetItems) {
       return targetItems
@@ -74,26 +83,75 @@ export const ChildDocs = ({
 
     return {
       ...targetItems,
-      top: filterItems(targetItems.top),
-      bottom: filterItems(targetItems.bottom),
+      default: filterItems(targetItems.default),
     }
-  }, [currentItems, type, getActiveItem, filterItems])
+  }, [currentItems, type, activeItem, filterItems])
 
-  const getTopLevelElms = (items?: SidebarItemType[]) => (
-    <CardList
-      items={
-        items?.map((childItem) => ({
-          title: childItem.title,
-          href: childItem.path,
-          showLinkIcon: false,
-        })) || []
+  const filterNonInteractiveItems = (
+    items: SidebarItem[] | undefined
+  ): InteractiveSidebarItem[] => {
+    return (
+      (items?.filter(
+        (item) => item.type !== "separator"
+      ) as InteractiveSidebarItem[]) || []
+    )
+  }
+
+  const getChildrenForLevel = (
+    item: InteractiveSidebarItem,
+    currentLevel = 1
+  ): InteractiveSidebarItem[] | undefined => {
+    if (currentLevel === childLevel) {
+      return filterNonInteractiveItems(item.children)
+    }
+    if (!item.children) {
+      return
+    }
+
+    const childrenResult: InteractiveSidebarItem[] = []
+
+    filterNonInteractiveItems(item.children).forEach((child) => {
+      const childChildren = getChildrenForLevel(child, currentLevel + 1)
+
+      if (!childChildren) {
+        return
       }
-    />
-  )
 
-  const getAllLevelsElms = (items?: SidebarItemType[]) =>
-    items?.map((item, key) => {
-      const HeadingComponent = item.children?.length
+      childrenResult.push(...childChildren)
+    })
+
+    return childrenResult
+  }
+
+  const getTopLevelElms = (items?: SidebarItem[]) => {
+    return (
+      <CardList
+        items={
+          filterNonInteractiveItems(items).map((childItem) => {
+            const href =
+              childItem.type === "link"
+                ? childItem.path
+                : childItem.children?.length
+                ? (
+                    childItem.children.find(
+                      (item) => item.type === "link"
+                    ) as SidebarItemLink
+                  )?.path
+                : "#"
+            return {
+              title: childItem.title,
+              href,
+            }
+          }) || []
+        }
+      />
+    )
+  }
+
+  const getAllLevelsElms = (items?: SidebarItem[]) =>
+    filterNonInteractiveItems(items).map((item, key) => {
+      const itemChildren = getChildrenForLevel(item)
+      const HeadingComponent = itemChildren?.length
         ? MDXComponents["h2"]
         : undefined
 
@@ -101,33 +159,31 @@ export const ChildDocs = ({
         <React.Fragment key={key}>
           {HeadingComponent && (
             <>
-              {!hideTitle && <HeadingComponent>{item.title}</HeadingComponent>}
+              {!hideTitle && (
+                <HeadingComponent id={slugify(item.title)}>
+                  {item.title}
+                </HeadingComponent>
+              )}
               <CardList
                 items={
-                  item.children?.map((childItem) => ({
+                  itemChildren?.map((childItem) => ({
                     title: childItem.title,
-                    href: childItem.path,
-                    showLinkIcon: false,
+                    href: childItem.type === "link" ? childItem.path : "",
                   })) || []
                 }
               />
             </>
           )}
-          {!HeadingComponent && (
-            <Card title={item.title} href={item.path} showLinkIcon={false} />
+          {!HeadingComponent && item.type === "link" && (
+            <Card title={item.title} href={item.path} />
           )}
         </React.Fragment>
       )
     })
 
-  const getElms = (items?: SidebarItemType[]) => {
+  const getElms = (items?: SidebarItem[]) => {
     return onlyTopLevel ? getTopLevelElms(items) : getAllLevelsElms(items)
   }
 
-  return (
-    <>
-      {getElms(filteredItems?.top)}
-      {getElms(filteredItems?.bottom)}
-    </>
-  )
+  return <>{getElms(filteredItems?.default)}</>
 }

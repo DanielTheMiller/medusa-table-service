@@ -5,6 +5,10 @@ get:
     Retrieve a product by its ID. You can expand the product's relations or
     select the fields that should be returned.
   x-authenticated: false
+  externalDocs:
+    url: >-
+      https://docs.medusajs.com/v2/resources/storefront-development/products/price
+    description: 'Storefront guide: How to retrieve a product variants'' prices.'
   parameters:
     - name: id
       in: path
@@ -38,294 +42,63 @@ get:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
-    - name: offset
-      in: query
-      description: The number of items to skip when retrieving a list.
-      required: false
-      schema:
-        type: number
-        title: offset
-        description: The number of items to skip when retrieving a list.
-    - name: limit
-      in: query
-      description: Limit the number of items returned in the list.
-      required: false
-      schema:
-        type: number
-        title: limit
-        description: Limit the number of items returned in the list.
-    - name: order
-      in: query
-      description: >-
-        The field to sort the data by. By default, the sort order is ascending.
-        To change the order to descending, prefix the field name with `-`.
-      required: false
-      schema:
-        type: string
-        title: order
-        description: >-
-          The field to sort the data by. By default, the sort order is
-          ascending. To change the order to descending, prefix the field name
-          with `-`.
-    - name: currency_code
-      in: query
-      description: The product's currency code.
-      required: false
-      schema:
-        type: string
-        title: currency_code
-        description: The product's currency code.
+        externalDocs:
+          url: '#select-fields-and-relations'
     - name: region_id
       in: query
-      description: The product's region id.
+      description: >-
+        The ID of the region the product is being viewed from. This is required
+        if you're retrieving product variant prices with taxes.
       required: false
       schema:
         type: string
         title: region_id
-        description: The product's region id.
-    - name: $and
+        description: >-
+          The ID of the region the product is being viewed from. This is
+          required if you're retrieving product variant prices with taxes.
+        externalDocs:
+          url: >-
+            https://docs.medusajs.com/v2/resources/storefront-development/products/price/examples/tax-price
+          description: 'Storefront guide: How to show product variants'' prices with taxes.'
+    - name: country_code
       in: query
-      required: false
-      schema: {}
-    - name: $or
-      in: query
-      required: false
-      schema: {}
-    - name: variants
-      in: query
-      description: The product's variants.
-      required: false
-      schema:
-        type: object
-        description: The product's variants.
-        properties:
-          status:
-            type: array
-            description: The variant's status.
-            items:
-              type: string
-              enum:
-                - draft
-                - proposed
-                - published
-                - rejected
-          options:
-            type: object
-            description: The variant's options.
-            required:
-              - value
-              - option_id
-            properties:
-              value:
-                type: string
-                title: value
-                description: The option's value.
-              option_id:
-                type: string
-                title: option_id
-                description: The option's option id.
-          $and: {}
-          $or: {}
-    - name: q
-      in: query
-      description: The product's q.
+      description: >-
+        The country code the product is being viewed from. This is required if
+        you're retrieving product variant prices with taxes.
       required: false
       schema:
         type: string
-        title: q
-        description: The product's q.
-    - name: id
+        title: country_code
+        description: >-
+          The country code the product is being viewed from. This is required if
+          you're retrieving product variant prices with taxes.
+    - name: province
       in: query
+      description: >-
+        The province the product is being viewed from. This is useful to narrow
+        down the tax context when calculating product variant prices with taxes.
       required: false
-      schema:
-        oneOf:
-          - type: string
-            title: id
-            description: The product's ID.
-          - type: array
-            description: The product's ID.
-            items:
-              type: string
-              title: id
-              description: The id's ID.
-    - name: title
-      in: query
-      description: The product's title.
-      required: true
       schema:
         type: string
-        title: title
-        description: The product's title.
-    - name: handle
+        title: province
+        description: >-
+          The province the product is being viewed from. This is useful to
+          narrow down the tax context when calculating product variant prices
+          with taxes.
+    - name: cart_id
       in: query
-      description: The product's handle.
-      required: true
+      description: >-
+        The ID of the customer's cart. If set, the cart's region and shipping
+        address's country code and province are used instead of the `region_id`,
+        `country_code`, and `province` properties.
+      required: false
       schema:
         type: string
-        title: handle
-        description: The product's handle.
-    - name: is_giftcard
-      in: query
-      description: The product's is giftcard.
-      required: true
-      schema:
-        type: boolean
-        title: is_giftcard
-        description: The product's is giftcard.
-    - name: category_id
-      in: query
-      description: The product's category id.
-      required: true
-      schema:
-        type: array
-        description: The product's category id.
-        items:
-          type: string
-          title: category_id
-          description: The category id's details.
-    - name: sales_channel_id
-      in: query
-      description: The product's sales channel id.
-      required: true
-      schema:
-        type: array
-        description: The product's sales channel id.
-        items:
-          type: string
-          title: sales_channel_id
-          description: The sales channel id's details.
-    - name: collection_id
-      in: query
-      description: The product's collection id.
-      required: true
-      schema:
-        type: array
-        description: The product's collection id.
-        items:
-          type: string
-          title: collection_id
-          description: The collection id's details.
-    - name: tags
-      in: query
-      description: The product's tags.
-      required: false
-      schema:
-        type: array
-        description: The product's tags.
-        items:
-          type: string
-          title: tags
-          description: The tag's tags.
-    - name: type_id
-      in: query
-      description: The product's type id.
-      required: false
-      schema:
-        type: array
-        description: The product's type id.
-        items:
-          type: string
-          title: type_id
-          description: The type id's details.
-    - name: created_at
-      in: query
-      description: The product's created at.
-      required: false
-      schema:
-        type: object
-        description: The product's created at.
-        required:
-          - $eq
-          - $ne
-          - $in
-          - $nin
-          - $like
-          - $ilike
-          - $re
-          - $contains
-          - $gt
-          - $gte
-          - $lt
-          - $lte
-        properties:
-          $eq: {}
-          $ne: {}
-          $in: {}
-          $nin: {}
-          $like: {}
-          $ilike: {}
-          $re: {}
-          $contains: {}
-          $gt: {}
-          $gte: {}
-          $lt: {}
-          $lte: {}
-    - name: updated_at
-      in: query
-      description: The product's updated at.
-      required: false
-      schema:
-        type: object
-        description: The product's updated at.
-        required:
-          - $eq
-          - $ne
-          - $in
-          - $nin
-          - $like
-          - $ilike
-          - $re
-          - $contains
-          - $gt
-          - $gte
-          - $lt
-          - $lte
-        properties:
-          $eq: {}
-          $ne: {}
-          $in: {}
-          $nin: {}
-          $like: {}
-          $ilike: {}
-          $re: {}
-          $contains: {}
-          $gt: {}
-          $gte: {}
-          $lt: {}
-          $lte: {}
-    - name: deleted_at
-      in: query
-      description: The product's deleted at.
-      required: false
-      schema:
-        type: object
-        description: The product's deleted at.
-        required:
-          - $eq
-          - $ne
-          - $in
-          - $nin
-          - $like
-          - $ilike
-          - $re
-          - $contains
-          - $gt
-          - $gte
-          - $lt
-          - $lte
-        properties:
-          $eq: {}
-          $ne: {}
-          $in: {}
-          $nin: {}
-          $like: {}
-          $ilike: {}
-          $re: {}
-          $contains: {}
-          $gt: {}
-          $gte: {}
-          $lt: {}
-          $lte: {}
+        title: cart_id
+        description: >-
+          The ID of the customer's cart. If set, the cart's region and shipping
+          address's country code and province are used instead of the
+          `region_id`, `country_code`, and `province` properties.
   x-codeSamples:
     - lang: Shell
       label: cURL
@@ -334,6 +107,12 @@ get:
   tags:
     - Products
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/StoreProductResponse.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':

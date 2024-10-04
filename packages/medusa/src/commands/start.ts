@@ -1,40 +1,110 @@
-import "core-js/stable"
-import "regenerator-runtime/runtime"
-
+import path from "path"
 import express from "express"
 import { track } from "medusa-telemetry"
 import { scheduleJob } from "node-schedule"
 
+import {
+  dynamicImport,
+  FileSystem,
+  gqlSchemaToTypes,
+  GracefulShutdownServer,
+} from "@medusajs/framework/utils"
+import http from "http"
+import { logger } from "@medusajs/framework/logger"
+
 import loaders from "../loaders"
-import Logger from "../loaders/logger"
-import { GracefulShutdownServer } from "@medusajs/utils"
+import { MedusaModule } from "@medusajs/framework/modules-sdk"
 
 const EVERY_SIXTH_HOUR = "0 */6 * * *"
 const CRON_SCHEDULE = EVERY_SIXTH_HOUR
+const INSTRUMENTATION_FILE = "instrumentation.js"
 
-export default async function ({ port, directory }) {
-  async function start() {
+/**
+ * Imports the "instrumentation.js" file from the root of the
+ * directory and invokes the register function. The existence
+ * of this file is optional, hence we ignore "ENOENT"
+ * errors.
+ */
+export async function registerInstrumentation(directory: string) {
+  const fileSystem = new FileSystem(directory)
+  const exists = await fileSystem.exists(INSTRUMENTATION_FILE)
+  if (!exists) {
+    return
+  }
+
+  const instrumentation = await dynamicImport(
+    path.join(directory, INSTRUMENTATION_FILE)
+  )
+  if (typeof instrumentation.register === "function") {
+    logger.info("OTEL registered")
+    instrumentation.register()
+  } else {
+    logger.info(
+      "Skipping instrumentation registration. No register function found."
+    )
+  }
+}
+
+/**
+ * Wrap request handler inside custom implementation to enabled
+ * instrumentation.
+ */
+// eslint-disable-next-line no-var
+export var traceRequestHandler: (...args: any[]) => Promise<any> = void 0 as any
+
+async function start({ port, directory, types }) {
+  async function internalStart() {
     track("CLI_START")
+    await registerInstrumentation(directory)
 
     const app = express()
 
+    const http_ = http.createServer(async (req, res) => {
+      await new Promise((resolve) => {
+        res.on("finish", resolve)
+        if (traceRequestHandler) {
+          void traceRequestHandler(
+            async () => {
+              app(req, res)
+            },
+            req,
+            res
+          )
+        } else {
+          app(req, res)
+        }
+      })
+    })
+
     try {
-      const { shutdown } = await loaders({
+      const { shutdown, gqlSchema } = await loaders({
         directory,
         expressApp: app,
       })
 
-      const serverActivity = Logger.activity(`Creating server`)
+      if (gqlSchema && types) {
+        const outputDirGeneratedTypes = path.join(directory, ".medusa")
+        await gqlSchemaToTypes({
+          outputDir: outputDirGeneratedTypes,
+          filename: "remote-query-entry-points",
+          interfaceName: "RemoteQueryEntryPoints",
+          schema: gqlSchema,
+          joinerConfigs: MedusaModule.getAllJoinerConfigs(),
+        })
+        logger.info("Geneated modules types")
+      }
+
+      const serverActivity = logger.activity(`Creating server`)
       const server = GracefulShutdownServer.create(
-        app.listen(port).on("listening", () => {
-          Logger.success(serverActivity, `Server is ready on port: ${port}`)
+        http_.listen(port).on("listening", () => {
+          logger.success(serverActivity, `Server is ready on port: ${port}`)
           track("CLI_START_COMPLETED")
         })
       )
 
       // Handle graceful shutdown
       const gracefulShutDown = () => {
-        Logger.info("Gracefully shutting down server")
+        logger.info("Gracefully shutting down server")
         server
           .shutdown()
           .then(async () => {
@@ -42,7 +112,7 @@ export default async function ({ port, directory }) {
             process.exit(0)
           })
           .catch((e) => {
-            Logger.error("Error received when shutting down the server.", e)
+            logger.error("Error received when shutting down the server.", e)
             process.exit(1)
           })
       }
@@ -56,10 +126,12 @@ export default async function ({ port, directory }) {
 
       return { server }
     } catch (err) {
-      Logger.error("Error starting server", err)
+      logger.error("Error starting server", err)
       process.exit(1)
     }
   }
 
-  await start()
+  await internalStart()
 }
+
+export default start

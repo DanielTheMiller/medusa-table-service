@@ -1,17 +1,19 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
   ClaimType,
+  DALUtils,
   MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
   Collection,
   Entity,
   Enum,
+  Filter,
   ManyToOne,
   OnInit,
   OneToMany,
@@ -23,11 +25,11 @@ import {
 } from "@mikro-orm/core"
 import ClaimItem from "./claim-item"
 import Order from "./order"
-import OrderShippingMethod from "./order-shipping-method"
+import OrderShipping from "./order-shipping-method"
 import Return from "./return"
-import Transaction from "./transaction"
+import OrderTransaction from "./transaction"
 
-type OptionalOrderClaimProps = DAL.EntityDateColumns
+type OptionalOrderClaimProps = DAL.ModelDateColumns
 
 const DisplayIdIndex = createPsqlIndexStatementHelper({
   tableName: "order_claim",
@@ -54,6 +56,7 @@ const ReturnIdIndex = createPsqlIndexStatementHelper({
 })
 
 @Entity({ tableName: "order_claim" })
+@Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
 export default class OrderClaim {
   [OptionalProps]?: OptionalOrderClaimProps
 
@@ -77,7 +80,6 @@ export default class OrderClaim {
   @OneToOne({
     entity: () => Return,
     mappedBy: (ret) => ret.claim,
-    cascade: ["soft-remove"] as any,
     fieldName: "return_id",
     nullable: true,
     owner: true,
@@ -121,19 +123,18 @@ export default class OrderClaim {
   })
   claim_items = new Collection<Rel<ClaimItem>>(this)
 
-  @OneToMany(
-    () => OrderShippingMethod,
-    (shippingMethod) => shippingMethod.claim,
-    {
-      cascade: [Cascade.PERSIST],
-    }
-  )
-  shipping_methods = new Collection<Rel<OrderShippingMethod>>(this)
-
-  @OneToMany(() => Transaction, (transaction) => transaction.claim, {
+  @OneToMany(() => OrderShipping, (shippingMethod) => shippingMethod.claim, {
     cascade: [Cascade.PERSIST],
   })
-  transactions = new Collection<Transaction>(this)
+  shipping_methods = new Collection<Rel<OrderShipping>>(this)
+
+  @OneToMany(() => OrderTransaction, (transaction) => transaction.claim, {
+    cascade: [Cascade.PERSIST],
+  })
+  transactions = new Collection<OrderTransaction>(this)
+
+  @Property({ columnType: "text", nullable: true })
+  created_by: string | null = null
 
   @Property({ columnType: "jsonb", nullable: true })
   metadata: Record<string, unknown> | null = null

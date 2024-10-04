@@ -1,9 +1,9 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   createPsqlIndexStatementHelper,
   generateEntityId,
   Searchable,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -16,7 +16,7 @@ import {
 } from "@mikro-orm/core"
 import Customer from "./customer"
 
-type OptionalAddressProps = DAL.EntityDateColumns // TODO: To be revisited when more clear
+type OptionalAddressProps = DAL.ModelDateColumns // TODO: To be revisited when more clear
 
 const CustomerAddressUniqueCustomerShippingAddress =
   createPsqlIndexStatementHelper({
@@ -39,7 +39,7 @@ const CustomerAddressUniqueCustomerBillingAddress =
 @Entity({ tableName: "customer_address" })
 @CustomerAddressUniqueCustomerShippingAddress.MikroORMIndex()
 @CustomerAddressUniqueCustomerBillingAddress.MikroORMIndex()
-export default class Address {
+export default class CustomerAddress {
   [OptionalProps]: OptionalAddressProps
 
   @PrimaryKey({ columnType: "text" })

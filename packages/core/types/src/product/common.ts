@@ -193,6 +193,10 @@ export interface ProductVariantDTO {
    */
   manage_inventory: boolean
   /**
+   * Whether the product variant's requires shipping.
+   */
+  requires_shipping: boolean
+  /**
    * The HS Code of the product variant.
    */
   hs_code: string | null
@@ -305,11 +309,11 @@ export interface ProductCategoryDTO {
    *
    * @expandable
    */
-  parent_category?: ProductCategoryDTO | null
+  parent_category: ProductCategoryDTO | null
   /**
    * The associated parent category id.
    */
-  parent_category_id?: string | null
+  parent_category_id: string | null
   /**
    * The associated child categories.
    *
@@ -330,6 +334,10 @@ export interface ProductCategoryDTO {
    * When the product category was updated.
    */
   updated_at: string | Date
+  /**
+   * When the product category was deleted.
+   */
+  deleted_at?: string | Date
 }
 
 /**
@@ -698,25 +706,20 @@ export interface FilterableProductProps
    */
   tags?: {
     /**
-     * Values to filter product tags by.
+     * Filter a product by the IDs of their associated tags.
      */
-    value?: string[]
+    id?: string[]
   }
   /**
    * Filters on a product's variant properties.
    */
   variants?: {
-    options: { value: string; option_id: string }
+    options?: { value: string; option_id: string }
   }
   /**
    * Filter a product by the ID of the associated type
    */
   type_id?: string | string[]
-  /**
-   * @deprecated - Use `categories` instead
-   * Filter a product by the IDs of their associated categories.
-   */
-  category_id?: string | string[] | OperatorMap<string>
   /**
    * Filter a product by the IDs of their associated categories.
    */
@@ -814,6 +817,30 @@ export interface FilterableProductOptionProps
    * Filter the product options by their associated products' IDs.
    */
   product_id?: string | string[]
+}
+
+/**
+ * @interface
+ *
+ * The filters to apply on retrieved product option values.
+ *
+ * @prop id - The IDs to filter product options by.
+ * @prop value - The values to filter product options by.
+ */
+export interface FilterableProductOptionValueProps
+  extends BaseFilterable<FilterableProductOptionValueProps> {
+  /**
+   * Search through the option values' values.
+   */
+  q?: string
+  /**
+   * The IDs to filter product options values by.
+   */
+  id?: string | string[]
+  /**
+   * The values to filter product option values by.
+   */
+  value?: string | string[]
 }
 
 /**
@@ -1151,6 +1178,17 @@ export interface CreateProductOptionDTO {
   product_id?: string
 }
 
+export interface CreateProductOptionValueDTO {
+  /**
+   * The value of the product option value.
+   */
+  value: string
+  /**
+   * The metadata of the product option value.
+   */
+  metadata?: MetadataType
+}
+
 /**
  * @interface
  *
@@ -1178,6 +1216,17 @@ export interface UpdateProductOptionDTO {
    * The ID of the associated product.
    */
   product_id?: string
+}
+
+export interface UpdateProductOptionValueDTO {
+  /**
+   * The value of the product option value.
+   */
+  value?: string
+  /**
+   * The metadata of the product option value.
+   */
+  metadata?: MetadataType
 }
 
 /**
@@ -1413,9 +1462,9 @@ export interface CreateProductDTO {
    */
   collection_id?: string
   /**
-   * The associated tags to be created or updated.
+   * The tags to be associated with the product.
    */
-  tags?: UpsertProductTagDTO[]
+  tag_ids?: string[]
   /**
    * The product categories to associate with the product.
    */
@@ -1529,9 +1578,9 @@ export interface UpdateProductDTO {
    */
   collection_id?: string | null
   /**
-   * The associated tags to create or update.
+   * The tags to associate with the product
    */
-  tags?: UpsertProductTagDTO[]
+  tag_ids?: string[]
   /**
    * The product categories to associate with the product.
    */

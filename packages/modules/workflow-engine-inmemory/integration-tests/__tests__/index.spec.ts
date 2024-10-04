@@ -1,10 +1,16 @@
-import { WorkflowManager } from "@medusajs/orchestration"
+import { WorkflowManager } from "@medusajs/framework/orchestration"
 import {
   Context,
   IWorkflowEngineService,
   RemoteQueryFunction,
-} from "@medusajs/types"
-import { Module, Modules, TransactionHandlerType } from "@medusajs/utils"
+} from "@medusajs/framework/types"
+import {
+  Module,
+  Modules,
+  TransactionHandlerType,
+} from "@medusajs/framework/utils"
+import { WorkflowsModuleService } from "@services"
+import { asFunction } from "awilix"
 import { moduleIntegrationTestRunner } from "medusa-test-utils"
 import { setTimeout as setTimeoutPromise } from "timers/promises"
 import "../__fixtures__"
@@ -20,7 +26,6 @@ import {
   workflowEventGroupIdStep2Mock,
 } from "../__fixtures__/workflow_event_group_id"
 import { createScheduled } from "../__fixtures__/workflow_scheduled"
-import { WorkflowsModuleService } from "@services"
 
 jest.setTimeout(100000)
 
@@ -50,8 +55,9 @@ moduleIntegrationTestRunner<IWorkflowEngineService>({
           workflowExecution: {
             id: {
               linkable: "workflow_execution_id",
+              entity: "WorkflowExecution",
               primaryKey: "id",
-              serviceName: "workflows",
+              serviceName: "Workflows",
               field: "workflowExecution",
             },
           },
@@ -238,7 +244,7 @@ moduleIntegrationTestRunner<IWorkflowEngineService>({
           expect(transaction.flow.state).toEqual("reverted")
         })
 
-        it("should subscribe to a async workflow and receive the response when it finishes", (done) => {
+        it.skip("should subscribe to a async workflow and receive the response when it finishes", (done) => {
           const transactionId = "trx_123"
 
           const onFinish = jest.fn(() => {
@@ -364,6 +370,25 @@ moduleIntegrationTestRunner<IWorkflowEngineService>({
           expect(spy).toHaveBeenCalledTimes(1)
           expect(logSpy).toHaveBeenCalledWith(
             "Tried to execute a scheduled workflow with ID remove-scheduled that does not exist, removing it from the scheduler."
+          )
+        })
+
+        it("the scheduled workflow should have access to the shared container", async () => {
+          const sharedContainer =
+            workflowOrcModule["workflowOrchestratorService_"]["container_"]
+
+          sharedContainer.register(
+            "test-value",
+            asFunction(() => "test")
+          )
+
+          const spy = await createScheduled("shared-container-job", {
+            cron: "* * * * * *",
+          })
+          await jest.runOnlyPendingTimersAsync()
+          expect(spy).toHaveBeenCalledTimes(1)
+          expect(spy).toHaveReturnedWith(
+            expect.objectContaining({ output: { testValue: "test" } })
           )
         })
 

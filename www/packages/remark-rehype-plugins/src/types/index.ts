@@ -115,11 +115,15 @@ export declare type CrossProjectLinksOptions = {
       path?: string
     }
   }
+  useBaseUrl?: boolean
 }
 
-export declare type TypeListLinkFixerOptions = {
+export declare type ComponentLinkFixerLinkType = "md" | "value"
+
+export declare type ComponentLinkFixerOptions = {
   filePath?: string
   basePath?: string
+  checkLinksType: ComponentLinkFixerLinkType
 }
 
 export declare type LocalLinkOptions = {

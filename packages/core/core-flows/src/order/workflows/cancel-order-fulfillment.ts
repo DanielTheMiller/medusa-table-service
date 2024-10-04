@@ -1,12 +1,20 @@
-import { FulfillmentDTO, OrderDTO, OrderWorkflow } from "@medusajs/types"
-import { MedusaError, Modules } from "@medusajs/utils"
 import {
+  AdditionalData,
+  BigNumberInput,
+  FulfillmentDTO,
+  OrderDTO,
+  OrderWorkflow,
+} from "@medusajs/framework/types"
+import { MedusaError, Modules } from "@medusajs/framework/utils"
+import {
+  WorkflowData,
+  WorkflowResponse,
+  createHook,
   createStep,
   createWorkflow,
   parallelize,
   transform,
-  WorkflowData,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 import { useRemoteQueryStep } from "../../common"
 import { cancelFulfillmentWorkflow } from "../../fulfillment"
 import { adjustInventoryLevelsStep } from "../../inventory"
@@ -16,8 +24,11 @@ import {
   throwIfOrderIsCancelled,
 } from "../utils/order-validation"
 
-const validateOrder = createStep(
-  "validate-order",
+/**
+ * This step validates that an order fulfillment can be canceled.
+ */
+export const cancelOrderFulfillmentValidateOrder = createStep(
+  "cancel-fulfillment-validate-order",
   ({
     order,
     input,
@@ -82,9 +93,8 @@ function prepareInventoryUpdate({
   const inventoryAdjustment: {
     inventory_item_id: string
     location_id: string
-    adjustment: number // TODO: BigNumberInput
+    adjustment: BigNumberInput
   }[] = []
-
   for (const item of fulfillment.items) {
     // if this is `null` this means that item is from variant that has `manage_inventory` false
     if (item.inventory_item_id) {
@@ -102,11 +112,16 @@ function prepareInventoryUpdate({
 }
 
 export const cancelOrderFulfillmentWorkflowId = "cancel-order-fulfillment"
+/**
+ * This workflow cancels an order's fulfillment.
+ */
 export const cancelOrderFulfillmentWorkflow = createWorkflow(
   cancelOrderFulfillmentWorkflowId,
   (
-    input: WorkflowData<OrderWorkflow.CancelOrderFulfillmentWorkflowInput>
-  ): WorkflowData<void> => {
+    input: WorkflowData<
+      OrderWorkflow.CancelOrderFulfillmentWorkflowInput & AdditionalData
+    >
+  ) => {
     const order: OrderDTO & { fulfillments: FulfillmentDTO[] } =
       useRemoteQueryStep({
         entry_point: "orders",
@@ -122,7 +137,7 @@ export const cancelOrderFulfillmentWorkflow = createWorkflow(
         throw_if_key_not_found: true,
       })
 
-    validateOrder({ order, input })
+    cancelOrderFulfillmentValidateOrder({ order, input })
 
     const fulfillment = transform({ input, order }, ({ input, order }) => {
       return order.fulfillments.find((f) => f.id === input.fulfillment_id)!
@@ -148,6 +163,15 @@ export const cancelOrderFulfillmentWorkflow = createWorkflow(
       input: {
         id: input.fulfillment_id,
       },
+    })
+
+    const orderFulfillmentCanceled = createHook("orderFulfillmentCanceled", {
+      fulfillment,
+      additional_data: input.additional_data,
+    })
+
+    return new WorkflowResponse(void 0, {
+      hooks: [orderFulfillmentCanceled],
     })
   }
 )

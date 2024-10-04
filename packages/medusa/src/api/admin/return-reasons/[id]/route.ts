@@ -2,38 +2,42 @@ import {
   deleteReturnReasonsWorkflow,
   updateReturnReasonsWorkflow,
 } from "@medusajs/core-flows"
-import { UpdateOrderReturnReasonDTO } from "@medusajs/types"
+import { AdminReturnReasonResponse, HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
+  MedusaError,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+  refetchEntity,
+} from "@medusajs/framework/http"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<AdminReturnReasonResponse>
 ) => {
-  const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
+  const return_reason = await refetchEntity(
+    "return_reason",
+    req.params.id,
+    req.scope,
+    req.remoteQueryConfig.fields
+  )
 
-  const variables = { id: req.params.id }
-
-  const queryObject = remoteQueryObjectFromString({
-    entryPoint: "return_reason",
-    variables,
-    fields: req.remoteQueryConfig.fields,
-  })
-
-  const [return_reason] = await remoteQuery(queryObject)
+  if (!return_reason) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Return reason with id: ${req.params.id} was not found`
+    )
+  }
 
   res.json({ return_reason })
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<UpdateOrderReturnReasonDTO>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminUpdateReturnReason>,
+  res: MedusaResponse<AdminReturnReasonResponse>
 ) => {
   const workflow = updateReturnReasonsWorkflow(req.scope)
 
@@ -61,7 +65,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminReturnReasonDeleteResponse>
 ) => {
   const { id } = req.params
 

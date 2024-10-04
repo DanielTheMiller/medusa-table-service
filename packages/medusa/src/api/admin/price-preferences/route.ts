@@ -1,14 +1,15 @@
-import { HttpTypes } from "@medusajs/types"
+import { HttpTypes } from "@medusajs/framework/types"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
-import { refetchEntities, refetchEntity } from "../../utils/refetch-entity"
+  refetchEntities,
+  refetchEntity,
+} from "@medusajs/framework/http"
 import { createPricePreferencesWorkflow } from "@medusajs/core-flows"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminPricePreferenceListParams>,
+  res: MedusaResponse<HttpTypes.AdminPricePreferenceListResponse>
 ) => {
   const { rows: price_preferences, metadata } = await refetchEntities(
     "price_preference",
@@ -27,7 +28,7 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<HttpTypes.AdminCreatePricePreference>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminPricePreferenceResponse>
 ) => {
   const workflow = createPricePreferencesWorkflow(req.scope)
   const { result } = await workflow.run({

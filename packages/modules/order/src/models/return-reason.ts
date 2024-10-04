@@ -1,12 +1,15 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
+  DALUtils,
+  Searchable,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
   Entity,
+  Filter,
   ManyToOne,
   OnInit,
   OneToMany,
@@ -34,19 +37,22 @@ const ParentIndex = createPsqlIndexStatementHelper({
   where: "deleted_at IS NOT NULL",
 })
 
-type OptionalOrderProps = "parent_return_reason" | DAL.EntityDateColumns
+type OptionalOrderProps = "parent_return_reason" | DAL.ModelDateColumns
 
 @Entity({ tableName: "return_reason" })
+@Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
 export default class ReturnReason {
   [OptionalProps]?: OptionalOrderProps
 
   @PrimaryKey({ columnType: "text" })
   id: string
 
+  @Searchable()
   @Property({ columnType: "text" })
   @ValueIndex.MikroORMIndex()
   value: string
 
+  @Searchable()
   @Property({ columnType: "text" })
   label: string
 
@@ -64,7 +70,7 @@ export default class ReturnReason {
     cascade: [Cascade.PERSIST],
   })
   parent_return_reason?: Rel<ReturnReason> | null
-
+  Searchable
   @OneToMany(
     () => ReturnReason,
     (return_reason) => return_reason.parent_return_reason,

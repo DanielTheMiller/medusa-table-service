@@ -1,6 +1,12 @@
 import { MedusaContainer, ModuleProvider } from "@medusajs/types"
-import { isString, lowerCaseFirst, promiseAll } from "@medusajs/utils"
-import { Lifetime, asFunction } from "awilix"
+import {
+  dynamicImport,
+  isString,
+  lowerCaseFirst,
+  normalizeImportPathWithSource,
+  promiseAll,
+} from "@medusajs/utils"
+import { asFunction, Lifetime } from "awilix"
 
 export async function moduleProviderLoader({
   container,
@@ -38,7 +44,8 @@ export async function loadModuleProvider(
     loadedProvider = provider.resolve
 
     if (isString(provider.resolve)) {
-      loadedProvider = await import(provider.resolve)
+      const normalizedPath = normalizeImportPathWithSource(provider.resolve)
+      loadedProvider = await dynamicImport(normalizedPath)
     }
   } catch (error) {
     throw new Error(
@@ -54,8 +61,11 @@ export async function loadModuleProvider(
     )
   }
 
-  const services = await promiseAll(
+  return await promiseAll(
     loadedProvider.services.map(async (service) => {
+      // Ask the provider to validate its options
+      await service.validateOptions?.(provider.options)
+
       const name = lowerCaseFirst(service.name)
       if (registerServiceFn) {
         // Used to register the specific type of service in the provider
@@ -77,6 +87,4 @@ export async function loadModuleProvider(
       return service
     })
   )
-
-  return services
 }

@@ -1,7 +1,9 @@
-import { MiddlewareRoute } from "../../../loaders/helpers/routing/types"
-import { validateAndTransformBody } from "../../utils/validate-body"
-import { validateAndTransformQuery } from "../../utils/validate-query"
-import { createBatchBody, createLinkBody } from "../../utils/validators"
+import { MiddlewareRoute } from "@medusajs/framework/http"
+import {
+  validateAndTransformBody,
+  validateAndTransformQuery,
+} from "@medusajs/framework"
+import { createBatchBody } from "../../utils/validators"
 import * as QueryConfig from "./query-config"
 import {
   AdminCreatePriceList,
@@ -9,6 +11,7 @@ import {
   AdminGetPriceListParams,
   AdminGetPriceListPricesParams,
   AdminGetPriceListsParams,
+  AdminRemoveProductsPriceList,
   AdminUpdatePriceList,
   AdminUpdatePriceListPrice,
 } from "./validators"
@@ -60,7 +63,7 @@ export const adminPriceListsRoutesMiddlewares: MiddlewareRoute[] = [
     method: ["POST"],
     matcher: "/admin/price-lists/:id/products",
     middlewares: [
-      validateAndTransformBody(createLinkBody()),
+      validateAndTransformBody(AdminRemoveProductsPriceList),
       validateAndTransformQuery(
         AdminGetPriceListParams,
         QueryConfig.listPriceListQueryConfig

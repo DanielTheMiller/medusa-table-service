@@ -9,7 +9,6 @@ import waitOn from "wait-on"
 import ora, { Ora } from "ora"
 import fs from "fs"
 import path from "path"
-import isEmailImported from "validator/lib/isEmail.js"
 import logMessage from "../utils/log-message.js"
 import createAbortController, {
   isAbortError,
@@ -18,7 +17,6 @@ import { track } from "medusa-telemetry"
 import boxen from "boxen"
 import { emojify } from "node-emoji"
 import ProcessManager from "../utils/process-manager.js"
-import { nanoid } from "nanoid"
 import { displayFactBox, FactBoxOptions } from "../utils/facts.js"
 import { EOL } from "os"
 import { runCloneRepo } from "../utils/clone-repo.js"
@@ -27,13 +25,16 @@ import {
   installNextjsStarter,
   startNextjsStarter,
 } from "../utils/nextjs-utils.js"
+import {
+  getNodeVersion,
+  MIN_SUPPORTED_NODE_VERSION,
+} from "../utils/node-version.js"
 
 const slugify = slugifyType.default
 
 export type CreateOptions = {
   repoUrl?: string
   seed?: boolean
-  boilerplate?: boolean
   skipDb?: boolean
   dbUrl?: string
   browser?: boolean
@@ -46,7 +47,6 @@ export type CreateOptions = {
 export default async ({
   repoUrl = "",
   seed,
-  boilerplate,
   skipDb,
   dbUrl,
   browser,
@@ -55,6 +55,13 @@ export default async ({
   withNextjsStarter = false,
   verbose = false,
 }: CreateOptions) => {
+  const nodeVersion = getNodeVersion()
+  if (nodeVersion < MIN_SUPPORTED_NODE_VERSION) {
+    logMessage({
+      message: `Medusa requires at least v20 of Node.js. You're using v${nodeVersion}. Please install at least v20 and try again: https://nodejs.org/en/download`,
+      type: "error",
+    })
+  }
   track("CREATE_CLI_CMA")
 
   const spinner: Ora = ora()
@@ -68,7 +75,6 @@ export default async ({
     title: "",
     verbose,
   }
-  const dbName = !skipDb && !dbUrl ? `medusa-${nanoid(4)}` : ""
   let isProjectCreated = false
   let isDbInitialized = false
   let printedMessage = false
@@ -96,19 +102,23 @@ export default async ({
   const projectPath = getProjectPath(projectName, directoryPath)
   const installNextjs = withNextjsStarter || (await askForNextjsStarter())
 
-  let { client, dbConnectionString } = !skipDb
+  let dbName = !skipDb && !dbUrl ? `medusa-${slugify(projectName)}` : ""
+
+  let { client, dbConnectionString, ...rest } = !skipDb
     ? await getDbClientAndCredentials({
         dbName,
         dbUrl,
         verbose,
       })
     : { client: null, dbConnectionString: "" }
+  if ("dbName" in rest) {
+    dbName = rest.dbName as string
+  }
   isDbInitialized = true
 
   track("CMA_OPTIONS", {
     repoUrl,
     seed,
-    boilerplate,
     skipDb,
     browser,
     migrations,
@@ -152,7 +162,7 @@ export default async ({
         abortController,
         factBoxOptions,
         verbose,
-        processManager
+        processManager,
       })
     : ""
 
@@ -174,9 +184,9 @@ export default async ({
   try {
     inviteToken = await prepareProject({
       directory: projectPath,
+      dbName,
       dbConnectionString,
       seed,
-      boilerplate,
       spinner,
       processManager,
       abortController,
@@ -289,7 +299,17 @@ function showSuccessMessage(
     message: boxen(
       chalk.green(
         // eslint-disable-next-line prettier/prettier
-        `Change to the \`${projectName}\` directory to explore your Medusa project.${EOL}${EOL}Start your Medusa app again with the following command:${EOL}${EOL}yarn dev${EOL}${EOL}${inviteToken ? `After you start the Medusa app, you can set a password for your admin user with the URL ${getInviteUrl(inviteToken)}${EOL}${EOL}` : ""}${nextjsDirectory?.length ? `The Next.js Starter storefront was installed in the \`${nextjsDirectory}\` directory. Change to that directory and start it with the following command:${EOL}${EOL}npm run dev${EOL}${EOL}` : ""}Check out the Medusa documentation to start your development:${EOL}${EOL}https://docs.medusajs.com/${EOL}${EOL}Star us on GitHub if you like what we're building:${EOL}${EOL}https://github.com/medusajs/medusa/stargazers`
+        `Change to the \`${projectName}\` directory to explore your Medusa project.${EOL}${EOL}Start your Medusa app again with the following command:${EOL}${EOL}yarn dev${EOL}${EOL}${
+          inviteToken
+            ? `After you start the Medusa app, you can set a password for your admin user with the URL ${getInviteUrl(
+                inviteToken
+              )}${EOL}${EOL}`
+            : ""
+        }${
+          nextjsDirectory?.length
+            ? `The Next.js Starter storefront was installed in the \`${nextjsDirectory}\` directory. Change to that directory and start it with the following command:${EOL}${EOL}npm run dev${EOL}${EOL}`
+            : ""
+        }Check out the Medusa documentation to start your development:${EOL}${EOL}https://docs.medusajs.com/${EOL}${EOL}Star us on GitHub if you like what we're building:${EOL}${EOL}https://github.com/medusajs/medusa/stargazers`
       ),
       {
         titleAlignment: "center",

@@ -1,24 +1,18 @@
 import { batchPriceListPricesWorkflow } from "@medusajs/core-flows"
-import { LinkMethodRequest } from "@medusajs/types"
-import { MedusaError } from "@medusajs/utils"
+import { HttpTypes } from "@medusajs/framework/types"
+import { MedusaError } from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../types/routing"
+} from "@medusajs/framework/http"
 import { fetchPriceList, fetchPriceListPriceIdsForProduct } from "../../helpers"
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<LinkMethodRequest>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminLinkPriceListProducts>,
+  res: MedusaResponse<HttpTypes.AdminPriceListResponse>
 ) => {
   const id = req.params.id
-  const { add, remove = [] } = req.validatedBody
-  if (add?.length) {
-    throw new MedusaError(
-      MedusaError.Types.INVALID_DATA,
-      "Adding products directly to a price list is not supported, please use the /admin/price-lists/:id/prices/batch endpoint instead"
-    )
-  }
+  const { remove = [] } = req.validatedBody
 
   if (!remove.length) {
     throw new MedusaError(

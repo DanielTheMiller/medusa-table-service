@@ -2,9 +2,10 @@ import mdx from "@next/mdx"
 import {
   brokenLinkCheckerPlugin,
   localLinksRehypePlugin,
+  prerequisitesLinkFixerPlugin,
   typeListLinkFixerPlugin,
+  workflowDiagramLinkFixerPlugin,
 } from "remark-rehype-plugins"
-import { slugChanges } from "./generated/slug-changes.mjs"
 import mdxPluginOptions from "./mdx-options.mjs"
 
 const withMDX = mdx({
@@ -15,6 +16,18 @@ const withMDX = mdx({
       [brokenLinkCheckerPlugin],
       [localLinksRehypePlugin],
       [typeListLinkFixerPlugin],
+      [
+        workflowDiagramLinkFixerPlugin,
+        {
+          checkLinksType: "value",
+        },
+      ],
+      [
+        prerequisitesLinkFixerPlugin,
+        {
+          checkLinksType: "value",
+        },
+      ],
     ],
     remarkPlugins: mdxPluginOptions.options.remarkPlugins,
     jsx: true,
@@ -29,27 +42,16 @@ const nextConfig = {
   transpilePackages: ["docs-ui"],
 
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || "/v2/resources",
-  async rewrites() {
-    return {
-      fallback: [
-        {
-          source: "/:path*",
-          destination: `${
-            process.env.NEXT_PUBLIC_DOCS_URL || "https://localhost:3001"
-          }/:path*`,
-          basePath: false,
-        },
-      ],
-    }
-  },
-  async redirects() {
-    // redirect original file paths to the rewrite
-    return slugChanges.map((item) => ({
-      source: item.origSlug,
-      destination: item.newSlug,
-      permanent: true,
-    }))
-  },
+  // Redirects shouldn't be necessary anymore since we have remark / rehype
+  // plugins that fix links. But leaving this here in case we need it again.
+  // async redirects() {
+  //   // redirect original file paths to the rewrite
+  //   return slugChanges.map((item) => ({
+  //     source: item.origSlug,
+  //     destination: item.newSlug,
+  //     permanent: true,
+  //   }))
+  // },
 }
 
 export default withMDX(nextConfig)

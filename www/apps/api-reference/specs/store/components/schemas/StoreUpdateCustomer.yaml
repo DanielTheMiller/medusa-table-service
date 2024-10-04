@@ -1,11 +1,6 @@
 type: object
-description: SUMMARY
+description: The details to update in the customer.
 x-schemaName: StoreUpdateCustomer
-required:
-  - company_name
-  - first_name
-  - last_name
-  - phone
 properties:
   company_name:
     type: string

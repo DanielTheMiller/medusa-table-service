@@ -1,17 +1,20 @@
-import { createReturnOrderWorkflow } from "@medusajs/core-flows"
+import { beginReturnOrderWorkflow } from "@medusajs/core-flows"
+import { HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
+  Modules,
+  promiseAll,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
+} from "@medusajs/framework/http"
 import { AdminPostReturnsReqSchemaType } from "./validators"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminOrderFilters>,
+  res: MedusaResponse<HttpTypes.AdminReturnsResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -38,14 +41,39 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminPostReturnsReqSchemaType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminOrderReturnResponse>
 ) => {
-  const input = req.validatedBody as AdminPostReturnsReqSchemaType
+  const input = {
+    ...req.validatedBody,
+    created_by: req.auth_context.actor_id,
+  }
 
-  const workflow = createReturnOrderWorkflow(req.scope)
+  const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
+  const orderModuleService = req.scope.resolve(Modules.ORDER)
+
+  const workflow = beginReturnOrderWorkflow(req.scope)
   const { result } = await workflow.run({
     input,
   })
 
-  res.status(200).json({ return: result })
+  const queryObject = remoteQueryObjectFromString({
+    entryPoint: "return",
+    variables: {
+      id: result.return_id,
+      filters: {
+        ...req.filterableFields,
+      },
+    },
+    fields: req.remoteQueryConfig.fields,
+  })
+
+  const [order, orderReturn] = await promiseAll([
+    orderModuleService.retrieveOrder(result.order_id),
+    remoteQuery(queryObject),
+  ])
+
+  res.json({
+    order,
+    return: orderReturn[0],
+  })
 }

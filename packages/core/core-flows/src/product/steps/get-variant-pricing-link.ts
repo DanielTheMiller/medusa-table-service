@@ -3,17 +3,20 @@ import {
   ContainerRegistrationKeys,
   MedusaError,
   Modules,
-} from "@medusajs/utils"
-import { createStep, StepResponse } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/utils"
+import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 
-type StepInput = {
+export type GetVariantPricingLinkStepInput = {
   ids: string[]
 }
 
 export const getVariantPricingLinkStepId = "get-variant-pricing-link"
+/**
+ * This step retrieves links between a product variant and its linked price sets.
+ */
 export const getVariantPricingLinkStep = createStep(
   getVariantPricingLinkStepId,
-  async (data: StepInput, { container }) => {
+  async (data: GetVariantPricingLinkStepInput, { container }) => {
     if (!data.ids.length) {
       return new StepResponse([])
     }

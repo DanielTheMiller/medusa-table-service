@@ -1,7 +1,7 @@
-import { MedusaContainer } from "@medusajs/modules-sdk"
 import {
   CreatePriceSetDTO,
   IPricingModuleService,
+  MedusaContainer,
   PriceSetDTO,
 } from "@medusajs/types"
 import { Modules } from "@medusajs/utils"
@@ -24,7 +24,7 @@ export const createVariantPriceSet = async ({
 }): Promise<PriceSetDTO> => {
   const remoteLink = container.resolve("remoteLink")
   const pricingModuleService: IPricingModuleService = container.resolve(
-    "pricingModuleService"
+    Modules.PRICING
   )
 
   const priceSet = await pricingModuleService.createPriceSets({

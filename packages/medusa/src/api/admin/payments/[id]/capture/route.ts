@@ -2,13 +2,14 @@ import { capturePaymentWorkflow } from "@medusajs/core-flows"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchPayment } from "../../helpers"
 import { AdminCreatePaymentCaptureType } from "../../validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminCreatePaymentCaptureType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminPaymentResponse>
 ) => {
   const { id } = req.params
 

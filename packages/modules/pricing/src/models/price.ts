@@ -1,11 +1,11 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
   createPsqlIndexStatementHelper,
   DALUtils,
   generateEntityId,
   MikroOrmBigNumberProperty,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -24,7 +24,7 @@ import PriceList from "./price-list"
 import PriceRule from "./price-rule"
 import PriceSet from "./price-set"
 
-type OptionalFields = DAL.SoftDeletableEntityDateColumns
+type OptionalFields = DAL.SoftDeletableModelDateColumns
 
 const tableName = "price"
 const PriceDeletedAtIndex = createPsqlIndexStatementHelper({

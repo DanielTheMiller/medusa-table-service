@@ -1,27 +1,26 @@
 import {
-  AuthenticatedMedusaRequest,
-  MedusaResponse,
-} from "../../../../../../types/routing"
-import {
   deleteCustomerAddressesWorkflow,
   updateCustomerAddressesWorkflow,
 } from "@medusajs/core-flows"
-
+import {
+  AuthenticatedMedusaRequest,
+  MedusaResponse,
+} from "@medusajs/framework/http"
+import { HttpTypes, MedusaContainer } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   MedusaError,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
-import { MedusaContainer } from "@medusajs/modules-sdk"
+} from "@medusajs/framework/utils"
+import { refetchCustomer } from "../../../helpers"
 import {
   StoreGetCustomerAddressParamsType,
   StoreUpdateCustomerAddressType,
 } from "../../../validators"
-import { refetchCustomer } from "../../../helpers"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<StoreGetCustomerAddressParamsType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.StoreCustomerAddressResponse>
 ) => {
   const customerId = req.auth_context.actor_id
 
@@ -47,7 +46,7 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<StoreUpdateCustomerAddressType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.StoreCustomerResponse>
 ) => {
   const id = req.auth_context.actor_id!
   await validateCustomerAddress(req.scope, id, req.params.address_id)
@@ -71,7 +70,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.StoreCustomerAddressDeleteResponse>
 ) => {
   const id = req.auth_context.actor_id
   await validateCustomerAddress(req.scope, id, req.params.address_id)

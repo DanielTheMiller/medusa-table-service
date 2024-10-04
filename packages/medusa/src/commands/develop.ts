@@ -1,11 +1,12 @@
 import boxen from "boxen"
 import { ChildProcess, execSync, fork } from "child_process"
 import chokidar, { FSWatcher } from "chokidar"
-import Store from "medusa-telemetry/dist/store"
+import { Store } from "medusa-telemetry"
 import { EOL } from "os"
 import path from "path"
 
-import Logger from "../loaders/logger"
+import { logger } from "@medusajs/framework/logger"
+import { MEDUSA_CLI_PATH } from "@medusajs/framework"
 
 const defaultConfig = {
   padding: 5,
@@ -13,26 +14,28 @@ const defaultConfig = {
   borderStyle: `double`,
 } as boxen.Options
 
-export default async function ({ port, directory }) {
+export default async function ({ types, directory }) {
   const args = process.argv
+
   const argv =
     process.argv.indexOf("--") !== -1
       ? process.argv.slice(process.argv.indexOf("--") + 1)
       : []
+
   args.shift()
   args.shift()
   args.shift()
+
+  if (types) {
+    args.push("--types")
+  }
 
   /**
    * Re-constructing the path to Medusa CLI to execute the
    * start command.
    */
-  const cliPath = path.resolve(
-    require.resolve("@medusajs/medusa-cli"),
-    "..",
-    "..",
-    "cli.js"
-  )
+
+  const cliPath = path.resolve(MEDUSA_CLI_PATH, "..", "..", "cli.js")
 
   const devServer = {
     childProcess: null as ChildProcess | null,
@@ -57,8 +60,9 @@ export default async function ({ port, directory }) {
         execArgv: argv,
       })
       this.childProcess.on("error", (error) => {
-        Logger.error("Dev server failed to start", error)
-        Logger.info("The server will restart automatically after your changes")
+        // @ts-ignore
+        logger.error("Dev server failed to start", error)
+        logger.info("The server will restart automatically after your changes")
       })
     },
 
@@ -89,30 +93,38 @@ export default async function ({ port, directory }) {
       this.watcher = chokidar.watch(["."], {
         ignoreInitial: true,
         cwd: process.cwd(),
-        ignored: [/(^|[\\/\\])\../, "node_modules", "dist", "src/admin/**/*"],
+        ignored: [
+          /(^|[\\/\\])\../,
+          "node_modules",
+          "dist",
+          "static",
+          "private",
+          "src/admin/**/*",
+          ".medusa/**/*",
+        ],
       })
 
       this.watcher.on("add", (file) => {
-        Logger.info(
+        logger.info(
           `${path.relative(directory, file)} created: Restarting dev server`
         )
         this.restart()
       })
       this.watcher.on("change", (file) => {
-        Logger.info(
+        logger.info(
           `${path.relative(directory, file)} modified: Restarting dev server`
         )
         this.restart()
       })
       this.watcher.on("unlink", (file) => {
-        Logger.info(
+        logger.info(
           `${path.relative(directory, file)} removed: Restarting dev server`
         )
         this.restart()
       })
 
       this.watcher.on("ready", function () {
-        Logger.info(`Watching filesystem to reload dev server on file change`)
+        logger.info(`Watching filesystem to reload dev server on file change`)
       })
     },
   }

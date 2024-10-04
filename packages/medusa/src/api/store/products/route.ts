@@ -2,14 +2,15 @@ import {
   ContainerRegistrationKeys,
   isPresent,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
-import { MedusaRequest, MedusaResponse } from "../../../types/routing"
+} from "@medusajs/framework/utils"
+import { MedusaResponse } from "@medusajs/framework/http"
 import { wrapVariantsWithInventoryQuantity } from "../../utils/middlewares"
-import { StoreGetProductsParamsType } from "./validators"
+import { RequestWithContext, wrapProductsWithTaxPrices } from "./helpers"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
-  req: MedusaRequest<StoreGetProductsParamsType>,
-  res: MedusaResponse
+  req: RequestWithContext<HttpTypes.StoreProductParams>,
+  res: MedusaResponse<HttpTypes.StoreProductListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
   const context: object = {}
@@ -48,6 +49,7 @@ export const GET = async (
     )
   }
 
+  await wrapProductsWithTaxPrices(req, products)
   res.json({
     products,
     count: metadata.count,

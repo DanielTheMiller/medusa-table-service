@@ -1,7 +1,11 @@
-import { Context, OrderTypes } from "@medusajs/types"
-import { MathBN, ReturnStatus, promiseAll } from "@medusajs/utils"
-import { OrderChangeType } from "@types"
-import { ChangeActionType } from "../../utils"
+import { Context, OrderTypes } from "@medusajs/framework/types"
+import {
+  ChangeActionType,
+  MathBN,
+  OrderChangeType,
+  ReturnStatus,
+  promiseAll,
+} from "@medusajs/framework/utils"
 
 function createReturnItems(data) {
   return data.items.map((item) => ({
@@ -12,7 +16,6 @@ function createReturnItems(data) {
     details: {
       reference_id: item.id,
       quantity: item.quantity,
-      metadata: item.metadata,
     },
   }))
 }
@@ -30,7 +33,7 @@ async function createOrderChange(
       return_id: returnEntry.id,
       reference: "return",
       reference_id: returnEntry.id,
-      change_type: OrderChangeType.RETURN,
+      change_type: OrderChangeType.RETURN_RECEIVE,
       description: data.description,
       internal_note: data.internal_note,
       created_by: data.created_by,

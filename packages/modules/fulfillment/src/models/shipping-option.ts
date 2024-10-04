@@ -4,9 +4,9 @@ import {
   generateEntityId,
   Searchable,
   ShippingOptionPriceType,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   BeforeCreate,
   Cascade,
@@ -30,7 +30,7 @@ import ShippingOptionRule from "./shipping-option-rule"
 import ShippingOptionType from "./shipping-option-type"
 import ShippingProfile from "./shipping-profile"
 
-type ShippingOptionOptionalProps = DAL.SoftDeletableEntityDateColumns
+type ShippingOptionOptionalProps = DAL.SoftDeletableModelDateColumns
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
   tableName: "shipping_option",

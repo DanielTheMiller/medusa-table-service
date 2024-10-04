@@ -1,15 +1,12 @@
-import "core-js/stable"
-import "regenerator-runtime/runtime"
-
 import cluster from "cluster"
 import express from "express"
 import { track } from "medusa-telemetry"
 import { scheduleJob } from "node-schedule"
 import os from "os"
 
+import { logger } from "@medusajs/framework/logger"
+import { GracefulShutdownServer, isPresent } from "@medusajs/framework/utils"
 import loaders from "../loaders"
-import Logger from "../loaders/logger"
-import { isPresent, GracefulShutdownServer } from "@medusajs/utils"
 
 const EVERY_SIXTH_HOUR = "0 */6 * * *"
 const CRON_SCHEDULE = EVERY_SIXTH_HOUR
@@ -58,10 +55,10 @@ export default async function ({ port, cpus, directory }) {
         directory,
         expressApp: app,
       })
-      const serverActivity = Logger.activity(`Creating server`)
+      const serverActivity = logger.activity(`Creating server`)
       const server = GracefulShutdownServer.create(
         app.listen(port).on("listening", () => {
-          Logger.success(serverActivity, `Server is ready on port: ${port}`)
+          logger.success(serverActivity, `Server is ready on port: ${port}`)
           track("CLI_START_COMPLETED")
         })
       )

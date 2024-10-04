@@ -1,11 +1,14 @@
-import { MiddlewareRoute } from "../../../loaders/helpers/routing/types"
-import { validateAndTransformBody } from "../../utils/validate-body"
-import { validateAndTransformQuery } from "../../utils/validate-query"
+import { MiddlewareRoute } from "@medusajs/framework/http"
+import {
+  validateAndTransformBody,
+  validateAndTransformQuery,
+} from "@medusajs/framework"
 import * as QueryConfig from "./query-config"
 import {
   AdminCreateReturnReason,
   AdminGetReturnReasonsParams,
   AdminGetReturnReasonsReturnReasonParams,
+  AdminUpdateReturnReason,
 } from "./validators"
 
 export const adminReturnReasonRoutesMiddlewares: MiddlewareRoute[] = [
@@ -34,6 +37,17 @@ export const adminReturnReasonRoutesMiddlewares: MiddlewareRoute[] = [
     matcher: "/admin/return-reasons",
     middlewares: [
       validateAndTransformBody(AdminCreateReturnReason),
+      validateAndTransformQuery(
+        AdminGetReturnReasonsReturnReasonParams,
+        QueryConfig.retrieveTransformQueryConfig
+      ),
+    ],
+  },
+  {
+    method: ["POST"],
+    matcher: "/admin/return-reasons/:id",
+    middlewares: [
+      validateAndTransformBody(AdminUpdateReturnReason),
       validateAndTransformQuery(
         AdminGetReturnReasonsReturnReasonParams,
         QueryConfig.retrieveTransformQueryConfig

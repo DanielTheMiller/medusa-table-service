@@ -2,9 +2,9 @@ import {
   createPsqlIndexStatementHelper,
   DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   BeforeCreate,
   Cascade,
@@ -24,7 +24,7 @@ import FulfillmentSet from "./fulfillment-set"
 import GeoZone from "./geo-zone"
 import ShippingOption from "./shipping-option"
 
-type ServiceZoneOptionalProps = DAL.SoftDeletableEntityDateColumns
+type ServiceZoneOptionalProps = DAL.SoftDeletableModelDateColumns
 
 const deletedAtIndexName = "IDX_service_zone_deleted_at"
 const deletedAtIndexStatement = createPsqlIndexStatementHelper({

@@ -1,5 +1,4 @@
 import { BaseFilterable, OperatorMap } from "../../dal"
-import { BigNumberValue } from "../../totals"
 
 /**
  * The payment collection's status.
@@ -17,6 +16,7 @@ export type BasePaymentCollectionStatus =
  */
 export type BasePaymentSessionStatus =
   | "authorized"
+  | "captured"
   | "pending"
   | "requires_more"
   | "error"
@@ -48,17 +48,22 @@ export interface BasePaymentCollection {
   /**
    * The total amount to be authorized and captured.
    */
-  amount: BigNumberValue
+  amount: number
 
   /**
    * The amount authorized within the associated payment sessions.
    */
-  authorized_amount?: BigNumberValue
+  authorized_amount?: number
+
+  /**
+   * The amount captured within the associated payment sessions.
+   */
+  captured_amount?: number
 
   /**
    * The amount refunded within the associated payments.
    */
-  refunded_amount?: BigNumberValue
+  refunded_amount?: number
 
   /**
    * When the payment collection was completed.
@@ -116,12 +121,12 @@ export interface BasePayment {
   /**
    * The payment's total amount.
    */
-  amount: BigNumberValue
+  amount: number
 
   /**
    * The authorized amount of the payment.
    */
-  authorized_amount?: BigNumberValue
+  authorized_amount?: number
 
   /**
    * The ISO 3 character currency code of the payment.
@@ -181,12 +186,12 @@ export interface BasePayment {
   /**
    * The sum of the associated captures' amounts.
    */
-  captured_amount?: BigNumberValue
+  captured_amount?: number
 
   /**
    * The sum of the associated refunds' amounts.
    */
-  refunded_amount?: BigNumberValue
+  refunded_amount?: number
 
   /**
    * The associated captures.
@@ -229,7 +234,7 @@ export interface BaseCapture {
   /**
    * The captured amount.
    */
-  amount: BigNumberValue
+  amount: number
 
   /**
    * The creation date of the capture.
@@ -260,7 +265,22 @@ export interface BaseRefund {
   /**
    * The refunded amount.
    */
-  amount: BigNumberValue
+  amount: number
+
+  /**
+   * The id of the refund_reason that is associated with the refund
+   */
+  refund_reason_id?: string | null
+
+  /**
+   * The id of the refund_reason that is associated with the refund
+   */
+  refund_reason?: RefundReason | null
+
+  /**
+   * A field to add some additional information about the refund
+   */
+  note?: string | null
 
   /**
    * The creation date of the refund.
@@ -291,7 +311,7 @@ export interface BasePaymentSession {
   /**
    * The amount to authorize.
    */
-  amount: BigNumberValue
+  amount: number
 
   /**
    * The 3 character currency code of the payment session.
@@ -338,6 +358,33 @@ export interface BasePaymentSession {
   payment?: BasePayment
 }
 
+export interface RefundReason {
+  /**
+   * The ID of the refund reason
+   */
+  id: string
+  /**
+   * The label of the refund reason
+   */
+  label: string
+  /**
+   * The description of the refund reason
+   */
+  description?: string | null
+  /**
+   * The metadata of the refund reason
+   */
+  metadata: Record<string, unknown> | null
+  /**
+   * When the refund reason was created
+   */
+  created_at: Date | string
+  /**
+   * When the refund reason was updated
+   */
+  updated_at: Date | string
+}
+
 /**
  * The filters to apply on the retrieved payment collection.
  */
@@ -382,7 +429,7 @@ export interface BasePaymentSessionFilters
   /**
    * Filter the payment sessions by their amount.
    */
-  amount?: BigNumberValue | OperatorMap<BigNumberValue>
+  amount?: number | OperatorMap<number>
 
   /**
    * Filter the payment sessions by the ID of their associated payment provider.
@@ -419,4 +466,8 @@ export interface BasePaymentProviderFilters
   extends BaseFilterable<BasePaymentProviderFilters> {
   id?: string | string[]
   region_id?: string | string[]
+}
+
+export interface BasePaymentFilters extends BaseFilterable<BasePaymentFilters> {
+  id?: string | string[]
 }

@@ -6,20 +6,21 @@ import {
   ContainerRegistrationKeys,
   MedusaError,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchPromotion } from "../helpers"
 import {
   AdminGetPromotionParamsType,
   AdminUpdatePromotionType,
 } from "../validators"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<AdminGetPromotionParamsType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminPromotionResponse>
 ) => {
   const idOrCode = req.params.id
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
@@ -43,19 +44,20 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminUpdatePromotionType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<AdminUpdatePromotionType & AdditionalData>,
+  res: MedusaResponse<HttpTypes.AdminPromotionResponse>
 ) => {
+  const { additional_data, ...rest } = req.validatedBody
   const updatePromotions = updatePromotionsWorkflow(req.scope)
   const promotionsData = [
     {
       id: req.params.id,
-      ...req.validatedBody,
+      ...rest,
     } as any,
   ]
 
   await updatePromotions.run({
-    input: { promotionsData },
+    input: { promotionsData, additional_data },
   })
 
   const promotion = await refetchPromotion(
@@ -69,7 +71,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminPromotionDeleteResponse>
 ) => {
   const id = req.params.id
   const deletePromotions = deletePromotionsWorkflow(req.scope)

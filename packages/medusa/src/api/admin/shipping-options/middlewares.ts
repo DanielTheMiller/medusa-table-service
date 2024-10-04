@@ -1,4 +1,14 @@
-import { MiddlewareRoute } from "../../../loaders/helpers/routing/types"
+import { maybeApplyLinkFilter, MiddlewareRoute } from "@medusajs/framework/http"
+import {
+  validateAndTransformBody,
+  validateAndTransformQuery,
+} from "@medusajs/framework"
+import { createBatchBody } from "../../utils/validators"
+import {
+  listTransformQueryConfig,
+  retrieveRuleTransformQueryConfig,
+  retrieveTransformQueryConfig,
+} from "./query-config"
 import {
   AdminCreateShippingOption,
   AdminCreateShippingOptionRule,
@@ -8,14 +18,6 @@ import {
   AdminUpdateShippingOption,
   AdminUpdateShippingOptionRule,
 } from "./validators"
-import {
-  listTransformQueryConfig,
-  retrieveRuleTransformQueryConfig,
-  retrieveTransformQueryConfig,
-} from "./query-config"
-import { validateAndTransformBody } from "../../utils/validate-body"
-import { validateAndTransformQuery } from "../../utils/validate-query"
-import { createBatchBody } from "../../utils/validators"
 
 export const adminShippingOptionRoutesMiddlewares: MiddlewareRoute[] = [
   {
@@ -25,6 +27,22 @@ export const adminShippingOptionRoutesMiddlewares: MiddlewareRoute[] = [
       validateAndTransformQuery(
         AdminGetShippingOptionsParams,
         listTransformQueryConfig
+      ),
+      maybeApplyLinkFilter({
+        entryPoint: "location_fulfillment_set",
+        resourceId: "fulfillment_set_id",
+        filterableField: "stock_location_id",
+        filterByField: "service_zone.fulfillment_set_id",
+      }),
+    ],
+  },
+  {
+    method: ["GET"],
+    matcher: "/admin/shipping-options/:id",
+    middlewares: [
+      validateAndTransformQuery(
+        AdminGetShippingOptionParams,
+        retrieveTransformQueryConfig
       ),
     ],
   },

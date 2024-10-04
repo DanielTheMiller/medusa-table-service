@@ -1,4 +1,7 @@
 import { OrchestrationUtils } from "@medusajs/utils"
+import { ulid } from "ulid"
+import { createStep } from "./create-step"
+import { StepResponse } from "./helpers/step-response"
 import { StepExecutionContext, WorkflowData } from "./type"
 
 type ConditionFunction<T extends object | WorkflowData> = (
@@ -13,7 +16,7 @@ type ConditionFunction<T extends object | WorkflowData> = (
 type ThenFunc = <ThenResolver extends () => any>(
   resolver: ThenResolver
 ) => ReturnType<ThenResolver> extends WorkflowData<infer ReturnedWorkflowData>
-  ? Partial<WorkflowData<ReturnedWorkflowData>>
+  ? WorkflowData<ReturnedWorkflowData> | undefined
   : ReturnType<ThenResolver>
 
 export function when<T extends object | WorkflowData, Then extends Function>(
@@ -41,16 +44,26 @@ export function when(input, condition) {
     then: (fn) => {
       thenCalled = true
       const ret = fn()
+      let returnStep = ret
 
       const applyCondition =
         global[OrchestrationUtils.SymbolMedusaWorkflowComposerCondition].steps
+
+      if (ret?.__type !== OrchestrationUtils.SymbolWorkflowStep) {
+        const retStep = createStep(
+          "when-then-" + ulid(),
+          () => new StepResponse(ret)
+        )
+        returnStep = retStep()
+      }
 
       for (const step of applyCondition) {
         step.if(input, condition)
       }
 
       delete global[OrchestrationUtils.SymbolMedusaWorkflowComposerCondition]
-      return ret
+
+      return returnStep
     },
   }
 }

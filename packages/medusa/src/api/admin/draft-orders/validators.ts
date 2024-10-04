@@ -1,6 +1,10 @@
 import { z } from "zod"
 import { AddressPayload, BigNumberInput } from "../../utils/common-validators"
-import { createFindParams, createSelectParams } from "../../utils/validators"
+import {
+  createFindParams,
+  createSelectParams,
+  WithAdditionalData,
+} from "../../utils/validators"
 
 export type AdminGetOrderParamsType = z.infer<typeof AdminGetOrderParams>
 export const AdminGetOrderParams = createSelectParams()
@@ -12,7 +16,6 @@ export const AdminGetOrdersParams = createFindParams({
 }).merge(
   z.object({
     id: z.union([z.string(), z.array(z.string())]).optional(),
-    name: z.union([z.string(), z.array(z.string())]).optional(),
     $and: z.lazy(() => AdminGetOrdersParams.array()).optional(),
     $or: z.lazy(() => AdminGetOrdersParams.array()).optional(),
   })
@@ -24,9 +27,8 @@ enum Status {
 
 const ShippingMethod = z.object({
   shipping_method_id: z.string().nullish(),
-  order_id: z.string().nullish(),
   name: z.string(),
-  option_id: z.string(),
+  shipping_option_id: z.string(),
   data: z.record(z.string(), z.unknown()).optional(),
   amount: BigNumberInput,
 })
@@ -49,8 +51,8 @@ const Item = z
     return true
   })
 
-export type AdminCreateDraftOrderType = z.infer<typeof AdminCreateDraftOrder>
-export const AdminCreateDraftOrder = z
+export type AdminCreateDraftOrderType = z.infer<typeof CreateDraftOrder>
+const CreateDraftOrder = z
   .object({
     status: z.nativeEnum(Status).optional(),
     sales_channel_id: z.string().nullish(),
@@ -67,13 +69,19 @@ export const AdminCreateDraftOrder = z
     metadata: z.record(z.unknown()).nullish(),
   })
   .strict()
-  .refine(
-    (data) => {
-      if (!data.email && !data.customer_id) {
-        return false
-      }
 
-      return true
-    },
-    { message: "Either email or customer_id must be provided" }
-  )
+export const AdminCreateDraftOrder = WithAdditionalData(
+  CreateDraftOrder,
+  (schema) => {
+    return schema.refine(
+      (data) => {
+        if (!data.email && !data.customer_id) {
+          return false
+        }
+
+        return true
+      },
+      { message: "Either email or customer_id must be provided" }
+    )
+  }
+)

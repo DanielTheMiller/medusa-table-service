@@ -1,20 +1,25 @@
+import { Modules, ProductWorkflowEvents } from "@medusajs/framework/utils"
 import {
+  WorkflowData,
+  WorkflowResponse,
+  createHook,
   createWorkflow,
   parallelize,
   transform,
-  WorkflowData,
-} from "@medusajs/workflows-sdk"
-import { removeRemoteLinkStep } from "../../common"
+} from "@medusajs/framework/workflows-sdk"
+import { emitEventStep, removeRemoteLinkStep } from "../../common"
 import { deleteProductsStep } from "../steps/delete-products"
 import { getProductsStep } from "../steps/get-products"
-import { Modules } from "@medusajs/utils"
 
-type WorkflowInput = { ids: string[] }
+export type DeleteProductsWorkflowInput = { ids: string[] }
 
 export const deleteProductsWorkflowId = "delete-products"
+/**
+ * This workflow deletes one or more products.
+ */
 export const deleteProductsWorkflow = createWorkflow(
   deleteProductsWorkflowId,
-  (input: WorkflowData<WorkflowInput>): WorkflowData<void> => {
+  (input: WorkflowData<DeleteProductsWorkflowInput>) => {
     const productsToDelete = getProductsStep({ ids: input.ids })
     const variantsToBeDeleted = transform({ productsToDelete }, (data) => {
       return data.productsToDelete
@@ -32,6 +37,23 @@ export const deleteProductsWorkflow = createWorkflow(
       deleteProductsStep(input.ids)
     )
 
-    return deletedProduct
+    const productIdEvents = transform({ input }, ({ input }) => {
+      return input.ids?.map((id) => {
+        return { id }
+      })
+    })
+
+    emitEventStep({
+      eventName: ProductWorkflowEvents.DELETED,
+      data: productIdEvents,
+    })
+
+    const productsDeleted = createHook("productsDeleted", {
+      ids: input.ids,
+    })
+
+    return new WorkflowResponse(deletedProduct, {
+      hooks: [productsDeleted],
+    })
   }
 )

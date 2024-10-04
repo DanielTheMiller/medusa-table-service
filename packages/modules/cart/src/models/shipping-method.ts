@@ -1,11 +1,11 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
-  DALUtils,
-  MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
+  DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+  MikroOrmBigNumberProperty,
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -14,8 +14,8 @@ import {
   Entity,
   Filter,
   ManyToOne,
-  OnInit,
   OneToMany,
+  OnInit,
   OptionalProps,
   PrimaryKey,
   Property,
@@ -28,7 +28,7 @@ import ShippingMethodTaxLine from "./shipping-method-tax-line"
 type OptionalShippingMethodProps =
   | "cart"
   | "is_tax_inclusive"
-  | DAL.SoftDeletableEntityDateColumns
+  | DAL.SoftDeletableModelDateColumns
 
 const CartIdIndex = createPsqlIndexStatementHelper({
   name: "IDX_shipping_method_cart_id",

@@ -1,7 +1,7 @@
 import { moduleIntegrationTestRunner } from "medusa-test-utils"
 
-import { IStockLocationService } from "@medusajs/types"
-import { Module, Modules } from "@medusajs/utils"
+import { IStockLocationService } from "@medusajs/framework/types"
+import { Module, Modules } from "@medusajs/framework/utils"
 import { StockLocationModuleService } from "../../src/services"
 
 jest.setTimeout(100000)
@@ -15,18 +15,38 @@ moduleIntegrationTestRunner<IStockLocationService>({
           service: StockLocationModuleService,
         }).linkable
 
-        expect(Object.keys(linkable)).toEqual(["stockLocation"])
+        expect(Object.keys(linkable)).toEqual([
+          "stockLocationAddress",
+          "stockLocation",
+        ])
 
         Object.keys(linkable).forEach((key) => {
           delete linkable[key].toJSON
         })
 
         expect(linkable).toEqual({
+          stockLocationAddress: {
+            id: {
+              linkable: "stock_location_address_id",
+              entity: "StockLocationAddress",
+              primaryKey: "id",
+              serviceName: "StockLocation",
+              field: "stockLocationAddress",
+            },
+          },
           stockLocation: {
+            id: {
+              field: "stockLocation",
+              entity: "StockLocation",
+              linkable: "stock_location_id",
+              primaryKey: "id",
+              serviceName: "StockLocation",
+            },
             location_id: {
               linkable: "location_id",
+              entity: "StockLocation",
               primaryKey: "location_id",
-              serviceName: "stockLocationService",
+              serviceName: "StockLocation",
               field: "stockLocation",
             },
           },

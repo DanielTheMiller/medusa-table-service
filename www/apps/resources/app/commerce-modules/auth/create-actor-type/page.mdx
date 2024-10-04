@@ -13,7 +13,7 @@ Before creating an actor type, you must define a data model the actor type belon
 The rest of this guide uses this `Manager` data model as an example:
 
 ```ts title="src/modules/manager/models/manager.ts"
-import { model } from "@medusajs/utils"
+import { model } from "@medusajs/framework/utils"
 
 const Manager = model.define("manager", {
   id: model.id().primaryKey(),
@@ -37,10 +37,10 @@ Start by creating a workflow that does two things:
 For example, create the file `src/workflows/create-manager.ts`. with the following content:
 
 export const workflowHighlights = [
-  ["27", "createManagerStep", "Thi step creates a manager."],
-  ["44", "createManagerWorkflow", "The workflow used to create a manager and set its auth identity's actor type."],
-  ["53", "setAuthAppMetadataStep", "Set the actor type of the manager's associated auth identity."],
-  ["55", '"manager"', "The actor type of the manager."]
+  ["21", "createManagerStep", "Thi step creates a manager."],
+  ["38", "createManagerWorkflow", "The workflow used to create a manager and set its auth identity's actor type."],
+  ["45", "setAuthAppMetadataStep", "Set the actor type of the manager's associated auth identity."],
+  ["47", '"manager"', "The actor type of the manager."]
 ]
 
 ```ts title="src/workflows/create-manager.ts" highlights={workflowHighlights}
@@ -48,10 +48,11 @@ import {
   createWorkflow, 
   createStep,
   StepResponse,
-} from "@medusajs/workflows-sdk"
+  WorkflowResponse,
+} from "@medusajs/framework/workflows-sdk"
 import { 
   setAuthAppMetadataStep,
-} from "@medusajs/core-flows"
+} from "@medusajs/medusa/core-flows"
 import ManagerModuleService from "../modules/manager/service"
 
 type CreateManagerWorkflowInput = {
@@ -61,13 +62,6 @@ type CreateManagerWorkflowInput = {
     email: string
   }
   authIdentityId: string
-}
-
-type CreateManagerWorkflowOutput = {
-  id: string
-  first_name: string
-  last_name: string
-  email: string
 }
 
 const createManagerStep = createStep(
@@ -87,11 +81,9 @@ const createManagerStep = createStep(
   }
 )
 
-const createManagerWorkflow = createWorkflow<
-  CreateManagerWorkflowInput, CreateManagerWorkflowOutput
->(
+const createManagerWorkflow = createWorkflow(
   "create-manager",
-  function (input) {
+  function (input: CreateManagerWorkflowInput) {
     const manager = createManagerStep({
       manager: input.manager,
     })
@@ -102,7 +94,7 @@ const createManagerWorkflow = createWorkflow<
       value: manager.id,
     })
 
-    return manager
+    return new WorkflowResponse(manager)
   }
 )
 
@@ -114,7 +106,7 @@ This workflow accepts the manager’s data and the associated auth identity’s 
 The workflow has two steps:
 
 1. Create the manager using the `createManagerStep`.
-2. Set the `app_metadata` property of the associated auth identity using the `setAuthAppMetadataStep` step imported from `@medusajs/core-flows`. You specify the actor type `manager` in the `actorType` property of the step’s input.
+2. Set the `app_metadata` property of the associated auth identity using the `setAuthAppMetadataStep` step imported from `@medusajs/medusa/core-flows`. You specify the actor type `manager` in the `actorType` property of the step’s input.
 
 ---
 
@@ -134,8 +126,8 @@ export const createRouteHighlights = [
 import type { 
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "@medusajs/medusa"
-import { MedusaError } from "@medusajs/utils"
+} from "@medusajs/framework/http"
+import { MedusaError } from "@medusajs/framework/utils"
 import createManagerWorkflow from "../../workflows/create-manager"
 
 type RequestBody = {
@@ -185,15 +177,18 @@ The last step is to apply the `authenticate` middleware on the API routes that r
 To do that, create the file `src/api/middlewares.ts` with the following content:
 
 export const middlewareHighlights = [
-  ["9", "authenticate", "Require the user to be authenticated to access the `/manager` API route when sending a `POST` request."],
-  ["10", "allowUnregistered", "The user doesn't need to be registered to access the API route."],
-  ["17", "authenticate", "Require the user to be authenticated as a manager when accessing `/manager/me` API routes."]
+  ["12", "authenticate", "Require the user to be authenticated to access the `/manager` API route when sending a `POST` request."],
+  ["13", "allowUnregistered", "The user doesn't need to be registered to access the API route."],
+  ["20", "authenticate", "Require the user to be authenticated as a manager when accessing `/manager/me` API routes."]
 ]
 
 ```ts title="src/api/middlewares.ts" highlights={middlewareHighlights}
-import { MiddlewaresConfig, authenticate } from "@medusajs/medusa"
+import { 
+  defineMiddlewares,
+  authenticate,
+} from "@medusajs/medusa"
 
-export const config: MiddlewaresConfig = {
+export default defineMiddlewares({
   routes: [
     {
       matcher: "/manager",
@@ -211,7 +206,7 @@ export const config: MiddlewaresConfig = {
       ],
     },
   ],
-}
+})
 ```
 
 This applies middlewares on two route patterns:
@@ -227,7 +222,7 @@ For example, create the file `src/api/manager/me/route.ts` with the following co
 import { 
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "@medusajs/medusa"
+} from "@medusajs/framework/http"
 import ManagerModuleService from "../../../modules/manager/service"
 
 export async function GET(
@@ -253,10 +248,10 @@ This route is only accessible by authenticated managers. You access the manager�
 
 To authenticate managers:
 
-1. Send a `POST` request to `/auth/manager/emailpass` to create an auth identity for the manager:
+1. Send a `POST` request to `/auth/manager/emailpass/register` to create an auth identity for the manager:
 
 ```bash
-curl -X POST 'http://localhost:9000/auth/manager/emailpass' \
+curl -X POST 'http://localhost:9000/auth/manager/emailpass/register' \
 -H 'Content-Type: application/json' \
 --data-raw '{
     "email": "manager@gmail.com",
@@ -300,3 +295,124 @@ curl 'http://localhost:9000/manager/me' \
 ```
 
 Whenever you want to log in as a manager, use the `/auth/manager/emailpass` API route, as explained in step 3.
+
+---
+
+## Delete User of Actor Type
+
+When you delete a user of the actor type, you must update its auth identity to remove the association to the user.
+
+For example, create the following workflow that deletes a manager and updates its auth identity, create the file `src/workflows/delete-manager.ts` with the following content:
+
+```ts title="src/workflows/delete-manager.ts" collapsibleLines="1-6" expandButtonLabel="Show Imports"
+import {
+  createStep,
+  StepResponse,
+} from "@medusajs/framework/workflows-sdk"
+import ManagerModuleService from "../modules/manager/service"
+
+export type DeleteManagerWorkflow = {
+  id: string
+}
+
+const deleteManagerStep = createStep(
+  "delete-manager-step",
+  async (
+    { id }: DeleteManagerWorkflow, 
+    { container }) => {
+      const managerModuleService: ManagerModuleService = 
+        container.resolve("managerModuleService")
+
+      const manager = await managerModuleService.retrieve(id)
+
+      await managerModuleService.deleteManagers(id)
+
+      return new StepResponse(undefined, { manager })
+    },
+    async ({ manager }, { container }) => {
+      const managerModuleService: ManagerModuleService = 
+        container.resolve("managerModuleService")
+
+      await managerModuleService.createManagers(manager)
+    }
+  )
+```
+
+You add a step that deletes the manager using the `deleteManagers` method of the module's main service. In the compensation function, you create the manager again.
+
+Next, in the same file, add the workflow that deletes a manager:
+
+export const deleteHighlights = [
+  ["30", "manager_id", "If your actor type has a different name, such as vendor, change it to be `{actor_type}_id`."]
+]
+
+```ts title="src/workflows/delete-manager.ts" collapsibleLines="1-15" expandButtonLabel="Show Imports" highlights={deleteHighlights}
+// other imports
+import { MedusaError } from "@medusajs/framework/utils"
+import {
+  WorkflowData,
+  WorkflowResponse,
+  createWorkflow,
+  transform,
+} from "@medusajs/framework/workflows-sdk"
+import { 
+  setAuthAppMetadataStep,
+  useRemoteQueryStep,
+} from "@medusajs/medusa/core-flows"
+
+// ...
+
+export const deleteManagerWorkflow = createWorkflow(
+  "delete-manager",
+  (
+    input: WorkflowData<DeleteManagerWorkflow>
+  ): WorkflowResponse<string> => {
+    deleteManagerStep(input)
+
+    const authIdentities = useRemoteQueryStep({
+      entry_point: "auth_identity",
+      fields: ["id"],
+      variables: {
+        filters: {
+          app_metadata: {
+            // the ID is of the format `{actor_type}_id`.
+            manager_id: input.id,
+          },
+        },
+      },
+    })
+
+    const authIdentity = transform(
+      { authIdentities },
+      ({ authIdentities }) => {
+        const authIdentity = authIdentities[0]
+
+        if (!authIdentity) {
+          throw new MedusaError(
+            MedusaError.Types.NOT_FOUND,
+            "Auth identity not found"
+          )
+        }
+
+        return authIdentity
+      }
+    )
+
+    setAuthAppMetadataStep({
+      authIdentityId: authIdentity.id,
+      actorType: "manager",
+      value: null,
+    })
+
+    return new WorkflowResponse(input.id)
+  }
+)
+```
+
+In the workflow, you:
+
+1. Use the `deleteManagerStep` defined earlier to delete the manager.
+2. Retrieve the auth identity of the manager using Query. To do that, you filter the `app_metadata` property of an auth identity, which holds the user's ID under `{actor_type_name}_id`. So, in this case, it's `manager_id`.
+3. Check that the auth identity exist, then, update the auth identity to remove the ID of the manager from it.
+
+You can use this workflow when deleting a manager, such as in an API route.

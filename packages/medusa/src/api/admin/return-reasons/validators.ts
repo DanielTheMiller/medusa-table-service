@@ -29,10 +29,11 @@ export type AdminGetReturnReasonsReturnReasonParamsType = z.infer<
  * Parameters used to filter and configure the pagination of the retrieved order.
  */
 export const AdminGetReturnReasonsParams = createFindParams({
-  limit: 15,
   offset: 0,
+  limit: 20,
 }).merge(
   z.object({
+    q: z.string().optional(),
     id: z.union([z.string(), z.array(z.string())]).optional(),
     value: z.union([z.string(), z.array(z.string())]).optional(),
     label: z.union([z.string(), z.array(z.string())]).optional(),
@@ -43,8 +44,11 @@ export const AdminGetReturnReasonsParams = createFindParams({
     created_at: createOperatorMap().optional(),
     updated_at: createOperatorMap().optional(),
     deleted_at: createOperatorMap().optional(),
+    $and: z.lazy(() => AdminGetReturnReasonsParams.array()).optional(),
+    $or: z.lazy(() => AdminGetReturnReasonsParams.array()).optional(),
   })
 )
+
 export type AdminGetReturnReasonsParamsType = z.infer<
   typeof AdminGetReturnReasonsParams
 >
@@ -52,7 +56,7 @@ export type AdminGetReturnReasonsParamsType = z.infer<
 export const AdminCreateReturnReason = z.object({
   value: z.string(),
   label: z.string(),
-  descripton: z.string().nullish(),
+  description: z.string().nullish(),
   parent_return_reason_id: z.string().nullish(),
   metadata: z.record(z.unknown()).nullish(),
 })
@@ -63,7 +67,7 @@ export type AdminCreateReturnReasonType = z.infer<
 export const AdminUpdateReturnReason = z.object({
   value: z.string(),
   label: z.string(),
-  descripton: z.string().nullish(),
+  description: z.string().nullish(),
   metadata: z.record(z.unknown()).nullish(),
 })
 export type AdminUpdateReturnReasonType = z.infer<

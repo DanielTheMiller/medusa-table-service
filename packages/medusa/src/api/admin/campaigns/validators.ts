@@ -1,6 +1,10 @@
-import { CampaignBudgetType, isPresent } from "@medusajs/utils"
+import { CampaignBudgetType, isPresent } from "@medusajs/framework/utils"
 import { z } from "zod"
-import { createFindParams, createSelectParams } from "../../utils/validators"
+import {
+  createFindParams,
+  createSelectParams,
+  WithAdditionalData,
+} from "../../utils/validators"
 
 export const AdminGetCampaignParams = createSelectParams()
 
@@ -26,7 +30,7 @@ export const AdminGetCampaignsParams = createFindParams({
   )
   .strict()
 
-export const CreateCampaignBudget = z
+const CreateCampaignBudget = z
   .object({
     type: z.nativeEnum(CampaignBudgetType),
     limit: z.number().nullish(),
@@ -56,8 +60,8 @@ export const UpdateCampaignBudget = z
   })
   .strict()
 
-export type AdminCreateCampaignType = z.infer<typeof AdminCreateCampaign>
-export const AdminCreateCampaign = z
+export type AdminCreateCampaignType = z.infer<typeof CreateCampaign>
+export const CreateCampaign = z
   .object({
     name: z.string(),
     campaign_identifier: z.string(),
@@ -65,17 +69,17 @@ export const AdminCreateCampaign = z
     budget: CreateCampaignBudget.nullish(),
     starts_at: z.coerce.date().nullish(),
     ends_at: z.coerce.date().nullish(),
-    promotions: z.array(z.object({ id: z.string() })).optional(),
   })
   .strict()
+export const AdminCreateCampaign = WithAdditionalData(CreateCampaign)
 
-export type AdminUpdateCampaignType = z.infer<typeof AdminUpdateCampaign>
-export const AdminUpdateCampaign = z.object({
+export type AdminUpdateCampaignType = z.infer<typeof UpdateCampaign>
+export const UpdateCampaign = z.object({
   name: z.string().optional(),
   campaign_identifier: z.string().optional(),
   description: z.string().nullish(),
   budget: UpdateCampaignBudget.optional(),
   starts_at: z.coerce.date().nullish(),
   ends_at: z.coerce.date().nullish(),
-  promotions: z.array(z.object({ id: z.string() })).optional(),
 })
+export const AdminUpdateCampaign = WithAdditionalData(UpdateCampaign)

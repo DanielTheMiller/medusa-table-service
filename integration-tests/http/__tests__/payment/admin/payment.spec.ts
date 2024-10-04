@@ -1,119 +1,340 @@
-import { ModuleRegistrationName } from "@medusajs/utils"
-import { adminHeaders } from "../../../../helpers/create-admin-user"
-import { IPaymentModuleService } from "@medusajs/types"
+import { ClaimType } from "@medusajs/utils"
+import { medusaIntegrationTestRunner } from "medusa-test-utils"
+import {
+  adminHeaders,
+  createAdminUser,
+} from "../../../../helpers/create-admin-user"
+import { createOrderSeeder } from "../../fixtures/order"
 
-const { medusaIntegrationTestRunner } = require("medusa-test-utils")
-const { createAdminUser } = require("../../../../helpers/create-admin-user")
-
-jest.setTimeout(30000)
+jest.setTimeout(50000)
 
 medusaIntegrationTestRunner({
   testSuite: ({ dbConnection, getContainer, api }) => {
-    let paymentModule: IPaymentModuleService
-    let paymentCollection
-    let payment
+    let container
+    let order
 
-    beforeEach(async () => {
-      paymentModule = getContainer().resolve(ModuleRegistrationName.PAYMENT)
-      await createAdminUser(dbConnection, adminHeaders, getContainer())
-
-      const collection = (
+    const createClaim = async ({ order }) => {
+      const claim = (
         await api.post(
-          "/store/payment-collections",
+          "/admin/claims",
           {
-            cart_id: "test-cart",
-            region_id: "test-region",
-            amount: 1000,
-            currency_code: "usd",
+            order_id: order.id,
+            type: ClaimType.REPLACE,
+            description: "Base claim",
           },
           adminHeaders
         )
-      ).data.payment_collection
+      ).data.claim
 
-      paymentCollection = (
-        await api.post(
-          `/store/payment-collections/${collection.id}/payment-sessions`,
-          { provider_id: "pp_system_default" },
-          adminHeaders
-        )
-      ).data.payment_collection
-
-      const lastSession = paymentCollection.payment_sessions[0]
-      // TODO: Try to replace it with user behavior, like completing a cart.
-      await paymentModule.authorizePaymentSession(lastSession.id, {})
-
-      const payments = (
-        await api.get(
-          `/admin/payments?payment_session_id=${lastSession.id}`,
-          adminHeaders
-        )
-      ).data.payments
-      payment = payments[0]
-    })
-
-    it("Captures an authorized payment", async () => {
-      const response = await api.post(
-        `/admin/payments/${payment.id}/capture`,
-        undefined,
+      await api.post(
+        `/admin/claims/${claim.id}/inbound/items`,
+        { items: [{ id: order.items[0].id, quantity: 1 }] },
         adminHeaders
       )
 
-      expect(response.data.payment).toEqual(
-        expect.objectContaining({
-          id: payment.id,
-          captured_at: expect.any(String),
-          captures: [
-            expect.objectContaining({
-              id: expect.any(String),
-              amount: 1000,
-            }),
-          ],
-          refunds: [],
-          amount: 1000,
-        })
+      await api.post(`/admin/claims/${claim.id}/request`, {}, adminHeaders)
+    }
+
+    beforeEach(async () => {
+      container = getContainer()
+      await createAdminUser(dbConnection, adminHeaders, container)
+      const seeders = await createOrderSeeder({ api, container })
+      order = seeders.order
+
+      await api.post(
+        `/admin/orders/${order.id}/fulfillments`,
+        { items: [{ id: order.items[0].id, quantity: 1 }] },
+        adminHeaders
       )
-      expect(response.status).toEqual(200)
     })
 
-    it("Refunds an captured payment", async () => {
+    describe("with outstanding amount due to claim", () => {
+      beforeEach(async () => {
+        await createClaim({ order })
+      })
+
+      it("should capture an authorized payment", async () => {
+        const payment = order.payment_collections[0].payments[0]
+
+        const response = await api.post(
+          `/admin/payments/${payment.id}/capture`,
+          undefined,
+          adminHeaders
+        )
+
+        expect(response.data.payment).toEqual(
+          expect.objectContaining({
+            id: payment.id,
+            captured_at: expect.any(String),
+            captures: [
+              expect.objectContaining({
+                id: expect.any(String),
+                amount: 100,
+              }),
+            ],
+            refunds: [],
+            amount: 100,
+          })
+        )
+        expect(response.status).toEqual(200)
+      })
+
+      it("should throw if capture amount is greater than authorized amount", async () => {
+        const payment = order.payment_collections[0].payments[0]
+
+        const response = await api.post(
+          `/admin/payments/${payment.id}/capture`,
+          { amount: 75 },
+          adminHeaders
+        )
+
+        expect(response.data.payment).toEqual(
+          expect.objectContaining({
+            id: payment.id,
+            captured_at: null, // not fully captured yet
+            captures: [
+              expect.objectContaining({
+                id: expect.any(String),
+                amount: 75,
+              }),
+            ],
+            refunds: [],
+            amount: 100,
+          })
+        )
+        expect(response.status).toEqual(200)
+
+        const errResponse = await api
+          .post(
+            `/admin/payments/${payment.id}/capture`,
+            { amount: 75 },
+            adminHeaders
+          )
+          .catch((e) => e)
+
+        expect(errResponse.response.data.message).toEqual(
+          "You cannot capture more than the authorized amount substracted by what is already captured."
+        )
+      })
+
+      it("should return payment if payment is already fully captured", async () => {
+        const payment = order.payment_collections[0].payments[0]
+
+        const response = await api.post(
+          `/admin/payments/${payment.id}/capture`,
+          undefined,
+          adminHeaders
+        )
+
+        expect(response.data.payment).toEqual(
+          expect.objectContaining({
+            id: payment.id,
+            captured_at: expect.any(String),
+            captures: [
+              expect.objectContaining({
+                id: expect.any(String),
+                amount: 100,
+              }),
+            ],
+            refunds: [],
+            amount: 100,
+          })
+        )
+        expect(response.status).toEqual(200)
+
+        const anotherResponse = await api.post(
+          `/admin/payments/${payment.id}/capture`,
+          undefined,
+          adminHeaders
+        )
+
+        expect(anotherResponse.data.payment).toEqual(
+          expect.objectContaining({
+            id: payment.id,
+            captured_at: expect.any(String),
+            captures: [
+              expect.objectContaining({
+                id: expect.any(String),
+                amount: 100,
+              }),
+            ],
+            refunds: [],
+            amount: 100,
+          })
+        )
+        expect(anotherResponse.status).toEqual(200)
+      })
+
+      it("should refund a captured payment", async () => {
+        const payment = order.payment_collections[0].payments[0]
+
+        await api.post(
+          `/admin/payments/${payment.id}/capture`,
+          undefined,
+          adminHeaders
+        )
+
+        const refundReason = (
+          await api.post(
+            `/admin/refund-reasons`,
+            { label: "test" },
+            adminHeaders
+          )
+        ).data.refund_reason
+
+        // BREAKING: reason is now refund_reason_id
+        const response = await api.post(
+          `/admin/payments/${payment.id}/refund`,
+          {
+            amount: 50,
+            refund_reason_id: refundReason.id,
+            note: "Do not like it",
+          },
+          adminHeaders
+        )
+
+        // BREAKING: Response was `data.refund` in V1 with payment ID, reason, and amount
+        expect(response.status).toEqual(200)
+        expect(response.data.payment).toEqual(
+          expect.objectContaining({
+            id: payment.id,
+            captured_at: expect.any(String),
+            captures: [
+              expect.objectContaining({
+                id: expect.any(String),
+                amount: 100,
+              }),
+            ],
+            refunds: [
+              expect.objectContaining({
+                id: expect.any(String),
+                amount: 50,
+                note: "Do not like it",
+                refund_reason_id: refundReason.id,
+                refund_reason: expect.objectContaining({
+                  label: "test",
+                }),
+              }),
+            ],
+            amount: 100,
+          })
+        )
+      })
+
+      it("should issue multiple refunds", async () => {
+        const payment = order.payment_collections[0].payments[0]
+
+        await api.post(
+          `/admin/payments/${payment.id}/capture`,
+          undefined,
+          adminHeaders
+        )
+
+        const refundReason = (
+          await api.post(
+            `/admin/refund-reasons`,
+            { label: "test" },
+            adminHeaders
+          )
+        ).data.refund_reason
+
+        await api.post(
+          `/admin/payments/${payment.id}/refund`,
+          {
+            amount: 25,
+            refund_reason_id: refundReason.id,
+            note: "Do not like it",
+          },
+          adminHeaders
+        )
+
+        await api.post(
+          `/admin/payments/${payment.id}/refund`,
+          {
+            amount: 25,
+            refund_reason_id: refundReason.id,
+            note: "Do not like it",
+          },
+          adminHeaders
+        )
+
+        const refundedPayment = (
+          await api.get(`/admin/payments/${payment.id}`, adminHeaders)
+        ).data.payment
+
+        expect(refundedPayment).toEqual(
+          expect.objectContaining({
+            id: payment.id,
+            currency_code: "usd",
+            amount: 100,
+            captured_at: expect.any(String),
+            captures: [
+              expect.objectContaining({
+                amount: 100,
+              }),
+            ],
+            refunds: [
+              expect.objectContaining({
+                amount: 25,
+                note: "Do not like it",
+              }),
+              expect.objectContaining({
+                amount: 25,
+                note: "Do not like it",
+              }),
+            ],
+          })
+        )
+      })
+
+      it("should throw if refund exceeds captured total", async () => {
+        const payment = order.payment_collections[0].payments[0]
+
+        await api.post(
+          `/admin/payments/${payment.id}/capture`,
+          undefined,
+          adminHeaders
+        )
+
+        await api.post(
+          `/admin/payments/${payment.id}/refund`,
+          { amount: 25 },
+          adminHeaders
+        )
+
+        const e = await api
+          .post(
+            `/admin/payments/${payment.id}/refund`,
+            { amount: 1000 },
+            adminHeaders
+          )
+          .catch((e) => e)
+
+        expect(e.response.data.message).toEqual(
+          "Cannot refund more than pending difference - 75"
+        )
+      })
+    })
+
+    it("should throw if outstanding amount is not present", async () => {
+      const payment = order.payment_collections[0].payments[0]
+
       await api.post(
         `/admin/payments/${payment.id}/capture`,
         undefined,
         adminHeaders
       )
 
-      // refund
-      const response = await api.post(
-        `/admin/payments/${payment.id}/refund`,
-        {
-          amount: 500,
-          // BREAKING: We should probably introduce reason and notes in V2 too
-          // reason: "return",
-          // note: "Do not like it",
-        },
-        adminHeaders
-      )
+      const e = await api
+        .post(
+          `/admin/payments/${payment.id}/refund`,
+          { amount: 10 },
+          adminHeaders
+        )
+        .catch((e) => e)
 
-      // BREAKING: Response was `data.refund` in V1 with payment ID, reason, and amount
-      expect(response.status).toEqual(200)
-      expect(response.data.payment).toEqual(
-        expect.objectContaining({
-          id: payment.id,
-          captured_at: expect.any(String),
-          captures: [
-            expect.objectContaining({
-              id: expect.any(String),
-              amount: 1000,
-            }),
-          ],
-          refunds: [
-            expect.objectContaining({
-              id: expect.any(String),
-              amount: 500,
-            }),
-          ],
-          amount: 1000,
-        })
+      expect(e.response.data.message).toEqual(
+        "Order does not have an outstanding balance to refund"
       )
     })
   },

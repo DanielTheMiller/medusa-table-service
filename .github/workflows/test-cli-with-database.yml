@@ -8,7 +8,6 @@ jobs:
       NODE_ENV: CI
       REDIS_URL: redis://localhost:6379
       DATABASE_URL: "postgres://postgres:postgres@localhost/cli-test"
-      POSTGRES_URL: "postgres://postgres:postgres@localhost/cli-test"
     services:
       redis:
         image: redis
@@ -60,7 +59,7 @@ jobs:
         working-directory: ../cli-test
 
       - name: Run migrations
-        run: medusa migrations run
+        run: medusa migrations run && medusa links sync
         working-directory: ../cli-test
 
       - name: Create admin user

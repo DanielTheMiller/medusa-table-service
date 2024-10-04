@@ -81,28 +81,23 @@ module.exports = {
         project: [
           "./packages/medusa/tsconfig.json",
 
-          "./packages/admin-next/dashboard/tsconfig.json",
-          "./packages/admin-next/admin-sdk/tsconfig.json",
-          "./packages/admin-next/admin-shared/tsconfig.json",
-          "./packages/admin-next/admin-vite-plugin/tsconfig.json",
+          "./packages/admin/dashboard/tsconfig.json",
+          "./packages/admin/admin-sdk/tsconfig.json",
+          "./packages/admin/admin-shared/tsconfig.json",
+          "./packages/admin/admin-bundler/tsconfig.json",
+          "./packages/admin/admin-vite-plugin/tsconfig.json",
 
-          "./packages/inventory/tsconfig.spec.json",
-          "./packages/stock-location/tsconfig.spec.json",
-
-          "./packages/core-flows/tsconfig.spec.json",
-
-          "./packages/cli/create-medusa-app/tsconfig.spec.json",
-          "./packages/cli/medusa-cli/tsconfig.spec/json",
-          "./packages/cli/medusa-dev-cli/tsconfig.spec.json",
+          "./packages/cli/create-medusa-app/tsconfig.json",
+          "./packages/cli/medusa-cli/tsconfig.spec.json",
           "./packages/cli/oas/medusa-oas-cli/tsconfig.spec.json",
 
           "./packages/core/orchestration/tsconfig.json",
           "./packages/core/workflows-sdk/tsconfig.spec.json",
-          "./packages/core/modules-sdk/tsconfig.spec.json",
-          "./packages/core/js-sdk/tsconfig.spec.json",
-          "./packages/core/types/tsconfig.spec.json",
+          "./packages/core/modules-sdk/tsconfig.json",
+          "./packages/core/js-sdk/tsconfig.json",
+          "./packages/core/types/tsconfig.json",
           "./packages/core/utils/tsconfig.spec.json",
-          "./packages/core/medusa-test-utils/tsconfig.spec.json",
+          "./packages/core/medusa-test-utils/tsconfig.json",
 
           "./packages/modules/product/tsconfig.json",
           "./packages/modules/event-bus-local/tsconfig.spec.json",
@@ -116,6 +111,7 @@ module.exports = {
           "./packages/modules/auth/tsconfig.spec.json",
           "./packages/modules/cart/tsconfig.spec.json",
           "./packages/modules/currency/tsconfig.spec.json",
+          "./packages/modules/index/tsconfig.spec.json",
           "./packages/modules/customer/tsconfig.spec.json",
           "./packages/modules/file/tsconfig.spec.json",
           "./packages/modules/inventory-next/tsconfig.spec.json",
@@ -137,6 +133,8 @@ module.exports = {
           "./packages/modules/providers/file-s3/tsconfig.spec.json",
           "./packages/modules/providers/fulfillment-manual/tsconfig.spec.json",
           "./packages/modules/providers/payment-stripe/tsconfig.spec.json",
+
+          "./packages/framework/tsconfig.json",
         ],
       },
       rules: {
@@ -222,8 +220,8 @@ module.exports = {
     },
     {
       files: [
-        "packages/admin-next/dashboard/**/*.ts",
-        "packages/admin-next/dashboard/**/*.tsx",
+        "packages/admin/dashboard/**/*.ts",
+        "packages/admin/dashboard/**/*.tsx",
       ],
       plugins: ["unused-imports", "react-refresh"],
       extends: [
@@ -238,56 +236,7 @@ module.exports = {
         },
         ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
         sourceType: "module", // Allows for the use of imports
-        project: "./packages/admin-next/dashboard/tsconfig.json",
-      },
-      globals: {
-        __BASE__: "readonly",
-      },
-      env: {
-        browser: true,
-      },
-      rules: {
-        "prettier/prettier": "error",
-        "react/prop-types": "off",
-        "new-cap": "off",
-        "require-jsdoc": "off",
-        "valid-jsdoc": "off",
-        "react-refresh/only-export-components": [
-          "warn",
-          { allowConstantExport: true },
-        ],
-        "no-unused-expressions": "off",
-        "unused-imports/no-unused-imports": "error",
-        "unused-imports/no-unused-vars": [
-          "warn",
-          {
-            vars: "all",
-            varsIgnorePattern: "^_",
-            args: "after-used",
-            argsIgnorePattern: "^_",
-          },
-        ],
-      },
-    },
-    {
-      files: [
-        "packages/admin-next/app/**/*.ts",
-        "packages/admin-next/app/**/*.tsx",
-      ],
-      plugins: ["unused-imports", "react-refresh"],
-      extends: [
-        "plugin:react/recommended",
-        "plugin:react/jsx-runtime",
-        "plugin:react-hooks/recommended",
-      ],
-      parser: "@typescript-eslint/parser",
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-        ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
-        sourceType: "module", // Allows for the use of imports
-        project: "./packages/admin-next/app/tsconfig.json",
+        project: "./packages/admin/dashboard/tsconfig.json",
       },
       globals: {
         __BASE__: "readonly",

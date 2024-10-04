@@ -2,9 +2,9 @@ import {
   createPsqlIndexStatementHelper,
   DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   BeforeCreate,
   Entity,
@@ -18,18 +18,12 @@ import {
 } from "@mikro-orm/core"
 import ShippingOption from "./shipping-option"
 
-type ShippingOptionTypeOptionalProps = DAL.SoftDeletableEntityDateColumns
+type ShippingOptionTypeOptionalProps = DAL.SoftDeletableModelDateColumns
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
   tableName: "shipping_option_type",
   columns: "deleted_at",
   where: "deleted_at IS NOT NULL",
-})
-
-const ShippingOptionIdIndex = createPsqlIndexStatementHelper({
-  tableName: "shipping_option_type",
-  columns: "shipping_option_id",
-  where: "deleted_at IS NULL",
 })
 
 @Entity()

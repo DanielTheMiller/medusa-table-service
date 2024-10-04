@@ -1,12 +1,8 @@
-import "core-js/stable"
-import "regenerator-runtime/runtime"
-
+import { logger } from "@medusajs/framework/logger"
+import { Modules } from "@medusajs/framework/utils"
 import express from "express"
 import { track } from "medusa-telemetry"
-
-import { ModuleRegistrationName } from "@medusajs/utils"
 import loaders from "../loaders"
-import Logger from "../loaders/logger"
 
 export default async function ({
   directory,
@@ -30,21 +26,21 @@ export default async function ({
       expressApp: app,
     })
 
-    const userService = container.resolve(ModuleRegistrationName.USER)
-    const authService = container.resolve(ModuleRegistrationName.AUTH)
+    const userService = container.resolve(Modules.USER)
+    const authService = container.resolve(Modules.AUTH)
 
     const provider = "emailpass"
 
     if (invite) {
       const invite = await userService.createInvites({ email })
 
-      Logger.info(`
+      logger.info(`
       Invite token: ${invite.token}
       Open the invite in Medusa Admin at: [your-admin-url]/invite?token=${invite.token}`)
     } else {
       const user = await userService.createUsers({ email })
 
-      const { authIdentity, error } = await authService.authenticate(provider, {
+      const { authIdentity, error } = await authService.register(provider, {
         body: {
           email,
           password,
@@ -52,12 +48,12 @@ export default async function ({
       })
 
       if (error) {
-        Logger.error(error)
+        logger.error(error)
         process.exit(1)
       }
 
       // We know the authIdentity is not undefined
-      await authService.updateAuthIdentites({
+      await authService.updateAuthIdentities({
         id: authIdentity!.id,
         app_metadata: {
           user_id: user.id,

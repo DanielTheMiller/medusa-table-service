@@ -1,6 +1,6 @@
 import { ITaxModuleService } from "@medusajs/types"
-import { ModuleRegistrationName } from "@medusajs/utils"
 
+import { Modules } from "@medusajs/utils"
 import { medusaIntegrationTestRunner } from "medusa-test-utils"
 import { createAdminUser } from "../../../../helpers/create-admin-user"
 
@@ -20,7 +20,7 @@ medusaIntegrationTestRunner({
 
       beforeAll(async () => {
         appContainer = getContainer()
-        service = appContainer.resolve(ModuleRegistrationName.TAX)
+        service = appContainer.resolve(Modules.TAX)
       })
 
       beforeEach(async () => {
@@ -232,6 +232,29 @@ medusaIntegrationTestRunner({
             }),
           ])
         )
+      })
+
+      it("should fail to create a tax rate without a code", async () => {
+        const errResponse = await api
+          .post(
+            `/admin/tax-regions`,
+            {
+              country_code: "us",
+              default_tax_rate: {
+                rate: 2,
+                name: "default rate",
+              },
+            },
+            adminHeaders
+          )
+          .catch((e) => e)
+
+        expect(errResponse.response.status).toEqual(400)
+        expect(errResponse.response.data).toEqual({
+          message:
+            "Invalid request: Field 'default_tax_rate, code' is required",
+          type: "invalid_data",
+        })
       })
 
       it("can create a tax rate and update it", async () => {

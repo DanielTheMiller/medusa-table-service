@@ -1,7 +1,11 @@
 import { BaseFilterable, OperatorMap } from "../../dal"
-import { BigNumberValue } from "../../totals"
+import { ChangeActionType, OrderChangeStatus } from "../../order"
+import { BaseClaim } from "../claim/common"
+import { FindParams } from "../common"
+import { BaseExchange } from "../exchange/common"
 import { BasePaymentCollection } from "../payment/common"
 import { BaseProduct, BaseProductVariant } from "../product/common"
+import { BaseReturn } from "../return/common"
 
 export interface BaseOrderSummary {
   total: number
@@ -12,16 +16,6 @@ export interface BaseOrderSummary {
   returned_total: number
   return_request_total: number
   write_off_total: number
-  projected_total: number
-  net_total: number
-  net_subtotal: number
-  net_total_tax: number
-  future_total: number
-  future_subtotal: number
-  future_total_tax: number
-  future_projected_total: number
-  balance: number
-  future_balance: number
   paid_total: number
   refunded_total: number
 }
@@ -104,14 +98,15 @@ export interface BaseOrderShippingMethod {
   metadata: Record<string, unknown> | null
   tax_lines?: BaseOrderShippingMethodTaxLine[]
   adjustments?: BaseOrderShippingMethodAdjustment[]
-  original_total: BigNumberValue
-  original_subtotal: BigNumberValue
-  original_tax_total: BigNumberValue
-  total: BigNumberValue
-  subtotal: BigNumberValue
-  tax_total: BigNumberValue
-  discount_total: BigNumberValue
-  discount_tax_total: BigNumberValue
+  original_total: number
+  original_subtotal: number
+  original_tax_total: number
+  total: number
+  detail?: BaseOrderShippingDetail
+  subtotal: number
+  tax_total: number
+  discount_total: number
+  discount_tax_total: number
   created_at: Date | string
   updated_at: Date | string
 }
@@ -121,7 +116,7 @@ export interface BaseOrderLineItem {
   title: string
   subtitle: string | null
   thumbnail: string | null
-  variant?: BaseProductVariant
+  variant?: BaseProductVariant | null
   variant_id: string | null
   product?: BaseProduct
   product_id: string | null
@@ -168,6 +163,7 @@ export interface BaseOrderItemDetail {
   item: BaseOrderLineItem
   quantity: number
   fulfilled_quantity: number
+  delivered_quantity: number
   shipped_quantity: number
   return_requested_quantity: number
   return_received_quantity: number
@@ -178,37 +174,15 @@ export interface BaseOrderItemDetail {
   updated_at: Date
 }
 
-export interface BaseOrderChange {
+export interface BaseOrderShippingDetail {
   id: string
-  order_id: string
-  actions: BaseOrderChangeAction[]
-  status: string
-  requested_by: string | null
-  requested_at: Date | string | null
-  confirmed_by: string | null
-  confirmed_at: Date | string | null
-  declined_by: string | null
-  declined_reason: string | null
-  metadata: Record<string, unknown> | null
-  declined_at: Date | string | null
-  canceled_by: string | null
-  canceled_at: Date | string | null
-  created_at: Date | string
-  updated_at: Date | string
-}
-
-export interface BaseOrderChangeAction {
-  id: string
-  order_change_id: string | null
-  order_change: BaseOrderChange | null
-  order_id: string | null
-  reference: string
-  reference_id: string
-  action: string
-  details: Record<string, unknown> | null
-  internal_note: string | null
-  created_at: Date | string
-  updated_at: Date | string
+  shipping_method_id: string
+  shipping_method: BaseOrderShippingMethod
+  claim_id?: string
+  exchange_id?: string
+  return_id?: string
+  created_at: Date
+  updated_at: Date
 }
 
 export interface BaseOrderTransaction {
@@ -216,7 +190,7 @@ export interface BaseOrderTransaction {
   order_id: string
   amount: number
   currency_code: string
-  reference: string
+  reference: "capture" | "refund"
   reference_id: string
   metadata: Record<string, unknown> | null
   created_at: Date | string
@@ -230,6 +204,7 @@ export interface BaseOrderFulfillment {
   shipped_at: Date | null
   delivered_at: Date | null
   canceled_at: Date | null
+  requires_shipping: boolean
   data: Record<string, unknown> | null
   provider_id: string
   shipping_option_id: string | null
@@ -268,9 +243,9 @@ export interface BaseOrder {
   sales_channel_id: string | null
   email: string | null
   currency_code: string
-  display_id?: string
-  shipping_address?: BaseOrderAddress
-  billing_address?: BaseOrderAddress
+  display_id?: number
+  shipping_address?: BaseOrderAddress | null
+  billing_address?: BaseOrderAddress | null
   items: BaseOrderLineItem[] | null
   shipping_methods: BaseOrderShippingMethod[] | null
   payment_collections?: BasePaymentCollection[]
@@ -279,7 +254,7 @@ export interface BaseOrder {
   fulfillment_status: FulfillmentStatus
   transactions?: BaseOrderTransaction[]
   summary: BaseOrderSummary
-  metadata: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
   created_at: string | Date
   updated_at: string | Date
   original_item_total: number
@@ -306,7 +281,237 @@ export interface BaseOrder {
   original_shipping_tax_total: number
 }
 
-export interface BaseOrderFilters extends BaseFilterable<BaseOrderFilters> {
+export interface BaseOrderFilters
+  extends FindParams,
+    BaseFilterable<BaseOrderFilters> {
   id?: string[] | string | OperatorMap<string | string[]>
   status?: string[] | string | OperatorMap<string | string[]>
+}
+
+export interface BaseOrderChangesFilters
+  extends BaseFilterable<BaseOrderChangesFilters> {
+  id?: string[] | string | OperatorMap<string | string[]>
+  status?: string[] | string | OperatorMap<string | string[]>
+  change_type?: string[] | string | OperatorMap<string | string[]>
+}
+
+export interface BaseOrderChange {
+  /**
+   * The ID of the order change
+   */
+  id: string
+
+  /**
+   * The version of the order change
+   */
+  version: number
+
+  /**
+   * The type of the order change
+   */
+  change_type?: "return" | "exchange" | "claim" | "edit" | "return_request"
+
+  /**
+   * The ID of the associated order
+   */
+  order_id: string
+
+  /**
+   * The ID of the associated return order
+   */
+  return_id: string
+
+  /**
+   * The ID of the associated exchange order
+   */
+  exchange_id: string
+
+  /**
+   * The ID of the associated claim order
+   */
+  claim_id: string
+
+  /**
+   * The associated order
+   *
+   * @expandable
+   */
+  order: BaseOrder
+
+  /**
+   * The associated return order
+   *
+   * @expandable
+   */
+  return_order: BaseReturn
+
+  /**
+   * The associated exchange order
+   *
+   * @expandable
+   */
+  exchange: BaseExchange
+
+  /**
+   * The associated claim order
+   *
+   * @expandable
+   */
+  claim: BaseClaim
+
+  /**
+   * The actions of the order change
+   *
+   * @expandable
+   */
+  actions: BaseOrderChangeAction[]
+
+  /**
+   * The status of the order change
+   */
+  status: OrderChangeStatus
+
+  /**
+   * The requested by of the order change
+   */
+  requested_by: string | null
+
+  /**
+   * When the order change was requested
+   */
+  requested_at: Date | null
+
+  /**
+   * The confirmed by of the order change
+   */
+  confirmed_by: string | null
+
+  /**
+   * When the order change was confirmed
+   */
+  confirmed_at: Date | null
+
+  /**
+   * The declined by of the order change
+   */
+  declined_by: string | null
+
+  /**
+   * The declined reason of the order change
+   */
+  declined_reason: string | null
+
+  /**
+   * The metadata of the order change
+   */
+  metadata: Record<string, unknown> | null
+
+  /**
+   * When the order change was declined
+   */
+  declined_at: Date | null
+
+  /**
+   * The canceled by of the order change
+   */
+  canceled_by: string | null
+
+  /**
+   * When the order change was canceled
+   */
+  canceled_at: Date | null
+
+  /**
+   * When the order change was created
+   */
+  created_at: Date | string
+
+  /**
+   * When the order change was updated
+   */
+  updated_at: Date | string
+}
+
+/**
+ * The order change action details.
+ */
+export interface BaseOrderChangeAction {
+  /**
+   * The ID of the order change action
+   */
+  id: string
+
+  /**
+   * The ID of the associated order change
+   */
+  order_change_id: string | null
+
+  /**
+   * The associated order change
+   *
+   * @expandable
+   */
+  order_change: BaseOrderChange | null
+
+  /**
+   * The ID of the associated order
+   */
+  order_id: string | null
+
+  /**
+   * The ID of the associated return.
+   */
+  return_id: string | null
+
+  /**
+   * The ID of the associated claim.
+   */
+  claim_id: string | null
+
+  /**
+   * The ID of the associated exchange.
+   */
+  exchange_id: string | null
+
+  /**
+   * The associated order
+   *
+   * @expandable
+   */
+  order: BaseOrder | null
+
+  /**
+   * The reference of the order change action
+   */
+  reference: "claim" | "exchange" | "return" | "order_shipping_method"
+
+  /**
+   * The ID of the reference
+   */
+  reference_id: string
+
+  /**
+   * The action of the order change action
+   */
+  action: ChangeActionType
+
+  /**
+   * The details of the order change action
+   */
+  details: Record<string, unknown> | null
+
+  /**
+   * The internal note of the order change action
+   */
+  internal_note: string | null
+
+  /**
+   * When the order change action was created
+   */
+  created_at: Date | string
+
+  /**
+   * When the order change action was updated
+   */
+  updated_at: Date | string
 }

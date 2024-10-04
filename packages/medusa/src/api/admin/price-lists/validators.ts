@@ -1,4 +1,4 @@
-import { PriceListStatus, PriceListType } from "@medusajs/utils"
+import { PriceListStatus, PriceListType } from "@medusajs/framework/utils"
 import { z } from "zod"
 import {
   createFindParams,
@@ -76,3 +76,11 @@ export const AdminUpdatePriceList = z.object({
 })
 
 export type AdminUpdatePriceListType = z.infer<typeof AdminUpdatePriceList>
+
+export const AdminRemoveProductsPriceList = z.object({
+  remove: z.array(z.string()).optional(),
+})
+
+export type AdminRemoveProductsPriceListType = z.infer<
+  typeof AdminRemoveProductsPriceList
+>

@@ -2,14 +2,14 @@ import {
   BigNumberRawValue,
   CampaignBudgetTypeValues,
   DAL,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   BigNumber,
   DALUtils,
   MikroOrmBigNumberProperty,
   PromotionUtils,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
@@ -29,7 +29,7 @@ type OptionalFields =
   | "description"
   | "limit"
   | "used"
-  | DAL.SoftDeletableEntityDateColumns
+  | DAL.SoftDeletableModelDateColumns
 
 @Entity({ tableName: "promotion_campaign_budget" })
 @Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)

@@ -1,4 +1,4 @@
-import { DeleteResponse, PaginatedResponse } from "../../common"
+import { BatchResponse, DeleteResponse, PaginatedResponse } from "../../common"
 import { AdminShippingOption, AdminShippingOptionRule } from "./entities"
 
 export interface AdminShippingOptionResponse {
@@ -12,12 +12,5 @@ export type AdminShippingOptionListResponse = PaginatedResponse<{
 export interface AdminShippingOptionDeleteResponse
   extends DeleteResponse<"shipping_option"> {}
 
-export interface AdminUpdateShippingOptionRulesResponse {
-  created: AdminShippingOptionRule[]
-  updated: AdminShippingOptionRule[]
-  deleted: {
-    ids: string[]
-    object: "shipping_option_rule"
-    deleted: boolean
-  }
-}
+export type AdminUpdateShippingOptionRulesResponse =
+  BatchResponse<AdminShippingOptionRule>

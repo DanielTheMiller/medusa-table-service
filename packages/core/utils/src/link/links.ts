@@ -1,4 +1,4 @@
-import { Modules } from "../modules-sdk"
+import { Modules } from "../modules-sdk/definition"
 import { composeLinkName } from "./compose-link-name"
 
 export const LINKS = {
@@ -43,6 +43,12 @@ export const LINKS = {
     "sales_channel_id",
     Modules.STOCK_LOCATION,
     "location_id"
+  ),
+  LocationFulfillmentProvider: composeLinkName(
+    Modules.STOCK_LOCATION,
+    "stock_location_id",
+    Modules.FULFILLMENT,
+    "fulfillment_provider_id"
   ),
   LocationFulfillmentSet: composeLinkName(
     Modules.STOCK_LOCATION,
@@ -101,6 +107,12 @@ export const LINKS = {
   OrderFulfillment: composeLinkName(
     Modules.ORDER,
     "order_id",
+    Modules.FULFILLMENT,
+    "fulfillment_id"
+  ),
+  ReturnFulfillment: composeLinkName(
+    Modules.ORDER,
+    "return_id",
     Modules.FULFILLMENT,
     "fulfillment_id"
   ),

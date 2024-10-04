@@ -1,6 +1,6 @@
-import { CreateOrderDTO, IOrderModuleService } from "@medusajs/types"
+import { CreateOrderDTO, IOrderModuleService } from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
 import { moduleIntegrationTestRunner } from "medusa-test-utils"
-import { Modules } from "@medusajs/utils"
 
 jest.setTimeout(100000)
 
@@ -132,7 +132,7 @@ moduleIntegrationTestRunner<IOrderModuleService>({
         billing_address: expect.objectContaining({
           id: expect.stringContaining("ordaddr_"),
         }),
-        items: [
+        items: expect.arrayContaining([
           expect.objectContaining({
             id: expect.stringContaining("ordli_"),
             quantity: 1,
@@ -174,7 +174,7 @@ moduleIntegrationTestRunner<IOrderModuleService>({
               version: 1,
             }),
           }),
-        ],
+        ]),
         shipping_methods: [
           expect.objectContaining({
             id: expect.stringContaining("ordsm_"),
@@ -208,7 +208,16 @@ moduleIntegrationTestRunner<IOrderModuleService>({
         })
         const created = await service.createOrders(inpCopy)
 
-        const refund = await service.addTransactions([
+        expect(created.summary).toEqual(
+          expect.objectContaining({
+            transaction_total: 68,
+            pending_difference: -20.10799200799201,
+            paid_total: 68,
+            refunded_total: 0,
+          })
+        )
+
+        const refund = await service.addOrderTransactions([
           {
             order_id: created.id,
             amount: -20,
@@ -226,12 +235,14 @@ moduleIntegrationTestRunner<IOrderModuleService>({
 
         expect(serializedOrder.summary).toEqual(
           expect.objectContaining({
+            transaction_total: 48,
+            pending_difference: -0.10799200799201,
             paid_total: 68,
             refunded_total: 20,
           })
         )
 
-        await service.softDeleteTransactions([refund[0].id])
+        await service.softDeleteOrderTransactions([refund[0].id])
 
         const serializedOrder2 = JSON.parse(
           JSON.stringify(
@@ -243,12 +254,14 @@ moduleIntegrationTestRunner<IOrderModuleService>({
 
         expect(serializedOrder2.summary).toEqual(
           expect.objectContaining({
+            transaction_total: 68,
+            pending_difference: -20.10799200799201,
             paid_total: 68,
             refunded_total: 0,
           })
         )
 
-        await service.addTransactions([
+        await service.addOrderTransactions([
           {
             order_id: created.id,
             amount: -50,
@@ -268,10 +281,12 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           expect.objectContaining({
             paid_total: 68,
             refunded_total: 50,
+            transaction_total: 18,
+            pending_difference: 29.89200799200799,
           })
         )
 
-        await service.restoreTransactions([refund[0].id])
+        await service.restoreOrderTransactions([refund[0].id])
 
         const serializedOrder4 = JSON.parse(
           JSON.stringify(
@@ -285,6 +300,8 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           expect.objectContaining({
             paid_total: 68,
             refunded_total: 70,
+            transaction_total: -2,
+            pending_difference: 49.89200799200799,
           })
         )
       })
@@ -367,7 +384,6 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           {
             select: ["id"],
             relations: ["items"],
-            take: null,
           }
         )
         expect(orders.length).toEqual(1)
@@ -381,7 +397,6 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           {
             select: ["items.quantity"],
             relations: ["items"],
-            take: null,
           }
         )
         expect(orders2.length).toEqual(0)
@@ -397,7 +412,6 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           {
             select: ["id"],
             relations: ["items.detail"],
-            take: null,
           }
         )
         expect(orders3.length).toEqual(1)
@@ -413,7 +427,6 @@ moduleIntegrationTestRunner<IOrderModuleService>({
           {
             select: ["id"],
             relations: ["items.detail"],
-            take: null,
           }
         )
         expect(orders4.length).toEqual(0)

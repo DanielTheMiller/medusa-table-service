@@ -1,8 +1,9 @@
 /**
  * @oas [post] /admin/shipping-options/{id}/rules/batch
  * operationId: PostShippingOptionsIdRulesBatch
- * summary: Add Rules to Shipping Option
- * description: Add a list of rules to a shipping option.
+ * summary: Manage the Rules of a Shipping Option
+ * x-sidebar-summary: Manage Rules
+ * description: Manage the rules of a shipping option to create, update, or delete them.
  * x-authenticated: true
  * parameters:
  *   - name: id
@@ -21,46 +22,16 @@
  *       description: Comma-separated relations that should be expanded in the returned data.
  *   - name: fields
  *     in: query
- *     description: >-
- *       Comma-separated fields that should be included in the returned data.
- *        * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *        * without prefix it will replace the entire default fields.
+ *     description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *       fields. without prefix it will replace the entire default fields.
  *     required: false
  *     schema:
  *       type: string
  *       title: fields
- *       description: >-
- *         Comma-separated fields that should be included in the returned data.
- *          * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *          * without prefix it will replace the entire default fields.
- *   - name: offset
- *     in: query
- *     description: The number of items to skip when retrieving a list.
- *     required: false
- *     schema:
- *       type: number
- *       title: offset
- *       description: The number of items to skip when retrieving a list.
- *   - name: limit
- *     in: query
- *     description: Limit the number of items returned in the list.
- *     required: false
- *     schema:
- *       type: number
- *       title: limit
- *       description: Limit the number of items returned in the list.
- *   - name: order
- *     in: query
- *     description: The field to sort the data by. By default, the sort order is
- *       ascending. To change the order to descending, prefix the field name with
- *       `-`.
- *     required: false
- *     schema:
- *       type: string
- *       title: order
- *       description: The field to sort the data by. By default, the sort order is
- *         ascending. To change the order to descending, prefix the field name with
- *         `-`.
+ *       description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *         fields. without prefix it will replace the entire default fields.
+ *       externalDocs:
+ *         url: "#select-fields-and-relations"
  * security:
  *   - api_token: []
  *   - cookie_auth: []
@@ -70,105 +41,80 @@
  *     application/json:
  *       schema:
  *         type: object
- *         description: SUMMARY
+ *         description: The rules to create, update, or delete.
  *         properties:
  *           create:
  *             type: array
- *             description: The shipping option's create.
+ *             description: The shipping option rules to create.
  *             items:
- *               type: object
- *               description: The create's details.
- *               required:
- *                 - operator
- *                 - attribute
- *                 - value
- *               properties:
- *                 operator:
- *                   type: string
- *                   enum:
- *                     - in
- *                     - eq
- *                     - ne
- *                     - gt
- *                     - gte
- *                     - lt
- *                     - lte
- *                     - nin
- *                 attribute:
- *                   type: string
- *                   title: attribute
- *                   description: The create's attribute.
- *                 value:
- *                   oneOf:
- *                     - type: string
- *                       title: value
- *                       description: The create's value.
- *                     - type: array
- *                       description: The create's value.
- *                       items:
- *                         type: string
- *                         title: value
- *                         description: The value's details.
+ *               $ref: "#/components/schemas/AdminCreateShippingOptionRule"
  *           update:
  *             type: array
- *             description: The shipping option's update.
+ *             description: The shipping option rules to update.
  *             items:
- *               type: object
- *               description: The update's details.
- *               required:
- *                 - id
- *                 - operator
- *                 - attribute
- *                 - value
- *               properties:
- *                 id:
- *                   type: string
- *                   title: id
- *                   description: The update's ID.
- *                 operator:
- *                   type: string
- *                   enum:
- *                     - in
- *                     - eq
- *                     - ne
- *                     - gt
- *                     - gte
- *                     - lt
- *                     - lte
- *                     - nin
- *                 attribute:
- *                   type: string
- *                   title: attribute
- *                   description: The update's attribute.
- *                 value:
- *                   oneOf:
- *                     - type: string
- *                       title: value
- *                       description: The update's value.
- *                     - type: array
- *                       description: The update's value.
- *                       items:
- *                         type: string
- *                         title: value
- *                         description: The value's details.
+ *               $ref: "#/components/schemas/AdminUpdateShippingOptionRule"
  *           delete:
  *             type: array
- *             description: The shipping option's delete.
+ *             description: The shipping option rules to delete.
  *             items:
  *               type: string
  *               title: delete
- *               description: The delete's details.
+ *               description: A rule's ID.
  * x-codeSamples:
  *   - lang: Shell
  *     label: cURL
  *     source: |-
  *       curl -X POST '{backend_url}/admin/shipping-options/{id}/rules/batch' \
- *       -H 'x-medusa-access-token: {api_token}'
+ *       -H 'Authorization: Bearer {access_token}'
  * tags:
  *   - Shipping Options
  * responses:
  *   "200":
  *     description: OK
+ *     content:
+ *       application/json:
+ *         schema:
+ *           type: object
+ *           description: The batch operation's result.
+ *           required:
+ *             - created
+ *             - updated
+ *             - deleted
+ *           properties:
+ *             created:
+ *               type: array
+ *               description: The created shipping option rules.
+ *               items:
+ *                 $ref: "#/components/schemas/AdminShippingOptionRule"
+ *             updated:
+ *               type: array
+ *               description: The updated shipping option rules.
+ *               items:
+ *                 $ref: "#/components/schemas/AdminShippingOptionRule"
+ *             deleted:
+ *               type: object
+ *               description: The details of the deleted shipping option rules.
+ *               required:
+ *                 - ids
+ *                 - object
+ *                 - deleted
+ *               properties:
+ *                 ids:
+ *                   type: array
+ *                   description: The IDs of the deleted shipping option rules.
+ *                   items:
+ *                     type: string
+ *                     title: ids
+ *                     description: A shipping option rule's ID.
+ *                 object:
+ *                   type: string
+ *                   title: object
+ *                   description: The name of the deleted object.
+ *                   default: shipping_option_rule
+ *                 deleted:
+ *                   type: boolean
+ *                   title: deleted
+ *                   description: The deleted's details.
  *   "400":
  *     $ref: "#/components/responses/400_error"
  *   "401":
@@ -181,6 +127,7 @@
  *     $ref: "#/components/responses/invalid_request_error"
  *   "500":
  *     $ref: "#/components/responses/500_error"
+ * x-workflow: batchShippingOptionRulesWorkflow
  * 
 */
 

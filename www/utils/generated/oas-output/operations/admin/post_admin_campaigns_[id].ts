@@ -21,46 +21,16 @@
  *       description: Comma-separated relations that should be expanded in the returned data.
  *   - name: fields
  *     in: query
- *     description: >-
- *       Comma-separated fields that should be included in the returned data.
- *        * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *        * without prefix it will replace the entire default fields.
+ *     description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *       fields. without prefix it will replace the entire default fields.
  *     required: false
  *     schema:
  *       type: string
  *       title: fields
- *       description: >-
- *         Comma-separated fields that should be included in the returned data.
- *          * if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default fields.
- *          * without prefix it will replace the entire default fields.
- *   - name: offset
- *     in: query
- *     description: The number of items to skip when retrieving a list.
- *     required: false
- *     schema:
- *       type: number
- *       title: offset
- *       description: The number of items to skip when retrieving a list.
- *   - name: limit
- *     in: query
- *     description: Limit the number of items returned in the list.
- *     required: false
- *     schema:
- *       type: number
- *       title: limit
- *       description: Limit the number of items returned in the list.
- *   - name: order
- *     in: query
- *     description: The field to sort the data by. By default, the sort order is
- *       ascending. To change the order to descending, prefix the field name with
- *       `-`.
- *     required: false
- *     schema:
- *       type: string
- *       title: order
- *       description: The field to sort the data by. By default, the sort order is
- *         ascending. To change the order to descending, prefix the field name with
- *         `-`.
+ *       description: Comma-separated fields that should be included in the returned data. if a field is prefixed with `+` it will be added to the default fields, using `-` will remove it from the default
+ *         fields. without prefix it will replace the entire default fields.
+ *       externalDocs:
+ *         url: "#select-fields-and-relations"
  * security:
  *   - api_token: []
  *   - cookie_auth: []
@@ -69,13 +39,72 @@
  *   content:
  *     application/json:
  *       schema:
- *         $ref: "#/components/schemas/AdminUpdateCampaign"
+ *         allOf:
+ *           - type: object
+ *             description: The campaign's details.
+ *             required:
+ *               - description
+ *               - starts_at
+ *               - ends_at
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 title: name
+ *                 description: The campaign's name.
+ *               campaign_identifier:
+ *                 type: string
+ *                 title: campaign_identifier
+ *                 description: The campaign's identifier.
+ *               description:
+ *                 type: string
+ *                 title: description
+ *                 description: The campaign's description.
+ *               budget:
+ *                 type: object
+ *                 description: The campaign's budget.
+ *                 required:
+ *                   - limit
+ *                 properties:
+ *                   limit:
+ *                     type: number
+ *                     title: limit
+ *                     description: The campaign budget's limit.
+ *               starts_at:
+ *                 type: string
+ *                 title: starts_at
+ *                 description: The campaign's start date.
+ *                 format: date-time
+ *               ends_at:
+ *                 type: string
+ *                 title: ends_at
+ *                 description: The campaign's end date.
+ *                 format: date-time
+ *               promotions:
+ *                 type: array
+ *                 description: The campaign's promotions.
+ *                 items:
+ *                   type: object
+ *                   description: The promotions to add to the campaign.
+ *                   required:
+ *                     - id
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       title: id
+ *                       description: A promotion's ID.
+ *           - type: object
+ *             description: The campaign's details.
+ *             properties:
+ *               additional_data:
+ *                 type: object
+ *                 description: Pass additional custom data to the API route. This data is passed to the underlying workflow under the `additional_data` parameter.
+ *         description: The campaign's details.
  * x-codeSamples:
  *   - lang: Shell
  *     label: cURL
  *     source: |-
  *       curl -X POST '{backend_url}/admin/campaigns/{id}' \
- *       -H 'x-medusa-access-token: {api_token}' \
+ *       -H 'Authorization: Bearer {access_token}' \
  *       -H 'Content-Type: application/json' \
  *       --data-raw '{
  *         "description": "{value}",
@@ -87,6 +116,10 @@
  * responses:
  *   "200":
  *     description: OK
+ *     content:
+ *       application/json:
+ *         schema:
+ *           $ref: "#/components/schemas/AdminCampaignResponse"
  *   "400":
  *     $ref: "#/components/responses/400_error"
  *   "401":
@@ -99,6 +132,7 @@
  *     $ref: "#/components/responses/invalid_request_error"
  *   "500":
  *     $ref: "#/components/responses/500_error"
+ * x-workflow: updateCampaignsWorkflow
  * 
 */
 

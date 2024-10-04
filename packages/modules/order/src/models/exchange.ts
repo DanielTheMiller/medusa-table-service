@@ -1,15 +1,17 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
+  DALUtils,
   MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
   Collection,
   Entity,
+  Filter,
   ManyToOne,
   OnInit,
   OneToMany,
@@ -19,12 +21,12 @@ import {
   Property,
   Rel,
 } from "@mikro-orm/core"
-import { ExchangeItem, Transaction } from "@models"
+import { OrderExchangeItem, OrderTransaction } from "@models"
 import Order from "./order"
-import OrderShippingMethod from "./order-shipping-method"
+import OrderShipping from "./order-shipping-method"
 import Return from "./return"
 
-type OptionalOrderExchangeProps = DAL.EntityDateColumns
+type OptionalOrderExchangeProps = DAL.ModelDateColumns
 
 const DisplayIdIndex = createPsqlIndexStatementHelper({
   tableName: "order_exchange",
@@ -51,6 +53,7 @@ const ReturnIdIndex = createPsqlIndexStatementHelper({
 })
 
 @Entity({ tableName: "order_exchange" })
+@Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
 export default class OrderExchange {
   [OptionalProps]?: OptionalOrderExchangeProps
 
@@ -74,7 +77,6 @@ export default class OrderExchange {
   @OneToOne({
     entity: () => Return,
     mappedBy: (ret) => ret.exchange,
-    cascade: ["soft-remove"] as any,
     fieldName: "return_id",
     nullable: true,
     owner: true,
@@ -108,24 +110,23 @@ export default class OrderExchange {
   @Property({ columnType: "boolean", default: false })
   allow_backorder: boolean = false
 
-  @OneToMany(() => ExchangeItem, (item) => item.exchange, {
+  @OneToMany(() => OrderExchangeItem, (item) => item.exchange, {
     cascade: [Cascade.PERSIST],
   })
-  additional_items = new Collection<Rel<ExchangeItem>>(this)
+  additional_items = new Collection<Rel<OrderExchangeItem>>(this)
 
-  @OneToMany(
-    () => OrderShippingMethod,
-    (shippingMethod) => shippingMethod.exchange,
-    {
-      cascade: [Cascade.PERSIST],
-    }
-  )
-  shipping_methods = new Collection<Rel<OrderShippingMethod>>(this)
-
-  @OneToMany(() => Transaction, (transaction) => transaction.exchange, {
+  @OneToMany(() => OrderShipping, (shippingMethod) => shippingMethod.exchange, {
     cascade: [Cascade.PERSIST],
   })
-  transactions = new Collection<Transaction>(this)
+  shipping_methods = new Collection<Rel<OrderShipping>>(this)
+
+  @OneToMany(() => OrderTransaction, (transaction) => transaction.exchange, {
+    cascade: [Cascade.PERSIST],
+  })
+  transactions = new Collection<OrderTransaction>(this)
+
+  @Property({ columnType: "text", nullable: true })
+  created_by: string | null = null
 
   @Property({ columnType: "jsonb", nullable: true })
   metadata: Record<string, unknown> | null = null

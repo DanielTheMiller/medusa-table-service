@@ -9,7 +9,7 @@ export const metadata = {
 To register a customer, you implement the following steps:
 
 1. Show the customer a form to enter their details.
-2. Send a `POST` request to the `/auth/customer/emailpass` API route to obtain a JWT token.
+2. Send a `POST` request to the `/auth/customer/emailpass/register` API route to obtain a JWT token.
 3. Send a request to the [Create Customer API route](!api!/store#customers_postcustomers) pass the JWT token in the header.
 
 For example:
@@ -21,14 +21,14 @@ export const fetchHighlights = [
   ["3", "fetch", "Send a request to obtain a JWT token."],
   ["20", "fetch", "Send a request to create the customer."],
   ["27", "token", "Pass as a Bearer token in the authorization header."],
-  ["39", "TODO", "Redirect the customer to the log in page."]
+  ["40", "TODO", "Redirect the customer to the log in page."]
 ]
 
   ```ts highlights={fetchHighlights}
   const handleRegistration = async () => {
     // obtain JWT token
     const { token } = await fetch(
-      `http://localhost:9000/auth/customer/emailpass`,
+      `http://localhost:9000/auth/customer/emailpass/register`,
       {
         credentials: "include",
         method: "POST",
@@ -52,6 +52,7 @@ export const fetchHighlights = [
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
+          "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           first_name: firstName,
@@ -74,7 +75,7 @@ export const highlights = [
   ["22", "fetch", "Send a request to obtain a JWT token."],
   ["39", "fetch", "Send a request to create the customer."],
   ["46", "token", "Pass as a Bearer token in the authorization header."],
-  ["59", "TODO", "Redirect the customer to the log in page."]
+  ["60", "TODO", "Redirect the customer to the log in page."]
 ]
 
   ```tsx highlights={highlights} collapsibleLines="61-100" expandButtonLabel="Show form"
@@ -124,6 +125,7 @@ export const highlights = [
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
+            "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
             first_name: firstName,

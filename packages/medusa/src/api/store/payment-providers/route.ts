@@ -1,18 +1,18 @@
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
+} from "@medusajs/framework/http"
 import {
   ContainerRegistrationKeys,
   MedusaError,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
-import { StoreGetPaymentProvidersParamsType } from "./validators"
+} from "@medusajs/framework/utils"
+import { HttpTypes } from "@medusajs/framework/types"
 
 // TODO: Add more fields to provider, such as default name and maybe logo.
 export const GET = async (
-  req: AuthenticatedMedusaRequest<StoreGetPaymentProvidersParamsType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.StorePaymentProviderFilters>,
+  res: MedusaResponse<HttpTypes.StorePaymentProviderListResponse>
 ) => {
   if (!req.filterableFields.region_id) {
     throw new MedusaError(

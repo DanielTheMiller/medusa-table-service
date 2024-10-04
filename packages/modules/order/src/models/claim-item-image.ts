@@ -1,11 +1,13 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
+  DALUtils,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
+  Filter,
   ManyToOne,
   OnInit,
   OptionalProps,
@@ -15,7 +17,7 @@ import {
 } from "@mikro-orm/core"
 import ClaimItem from "./claim-item"
 
-type OptionalClaimItemImageProps = DAL.EntityDateColumns
+type OptionalClaimItemImageProps = DAL.ModelDateColumns
 
 const ClaimItemImageDeletedAtIndex = createPsqlIndexStatementHelper({
   tableName: "order_claim_item_image",
@@ -30,7 +32,8 @@ const ClaimItemIdIndex = createPsqlIndexStatementHelper({
 })
 
 @Entity({ tableName: "order_claim_item_image" })
-export default class ClaimItemImage {
+@Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
+export default class OrderClaimItemImage {
   [OptionalProps]?: OptionalClaimItemImageProps
 
   @PrimaryKey({ columnType: "text" })
@@ -78,12 +81,12 @@ export default class ClaimItemImage {
   @BeforeCreate()
   onCreate() {
     this.id = generateEntityId(this.id, "climg")
-    this.claim_item_id = this.item?.id
+    this.claim_item_id ??= this.item?.id
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "climg")
-    this.claim_item_id = this.item?.id
+    this.claim_item_id ??= this.item?.id
   }
 }

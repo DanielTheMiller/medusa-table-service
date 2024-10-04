@@ -6,7 +6,6 @@ import {
   deleteLineItemsStepId,
   deleteLineItemsWorkflow,
   findOrCreateCustomerStepId,
-  linkCartAndPaymentCollectionsStepId,
   listShippingOptionsForCartWorkflow,
   refreshPaymentCollectionForCartWorkflow,
   updateLineItemInCartWorkflow,
@@ -27,7 +26,6 @@ import {
 } from "@medusajs/types"
 import {
   ContainerRegistrationKeys,
-  ModuleRegistrationName,
   Modules,
   RuleOperator,
 } from "@medusajs/utils"
@@ -63,24 +61,16 @@ medusaIntegrationTestRunner({
 
       beforeAll(async () => {
         appContainer = getContainer()
-        cartModuleService = appContainer.resolve(ModuleRegistrationName.CART)
-        regionModuleService = appContainer.resolve(
-          ModuleRegistrationName.REGION
-        )
-        scModuleService = appContainer.resolve(
-          ModuleRegistrationName.SALES_CHANNEL
-        )
-        customerModule = appContainer.resolve(ModuleRegistrationName.CUSTOMER)
-        productModule = appContainer.resolve(ModuleRegistrationName.PRODUCT)
-        pricingModule = appContainer.resolve(ModuleRegistrationName.PRICING)
-        paymentModule = appContainer.resolve(ModuleRegistrationName.PAYMENT)
-        inventoryModule = appContainer.resolve(ModuleRegistrationName.INVENTORY)
-        stockLocationModule = appContainer.resolve(
-          ModuleRegistrationName.STOCK_LOCATION
-        )
-        fulfillmentModule = appContainer.resolve(
-          ModuleRegistrationName.FULFILLMENT
-        )
+        cartModuleService = appContainer.resolve(Modules.CART)
+        regionModuleService = appContainer.resolve(Modules.REGION)
+        scModuleService = appContainer.resolve(Modules.SALES_CHANNEL)
+        customerModule = appContainer.resolve(Modules.CUSTOMER)
+        productModule = appContainer.resolve(Modules.PRODUCT)
+        pricingModule = appContainer.resolve(Modules.PRICING)
+        paymentModule = appContainer.resolve(Modules.PAYMENT)
+        inventoryModule = appContainer.resolve(Modules.INVENTORY)
+        stockLocationModule = appContainer.resolve(Modules.STOCK_LOCATION)
+        fulfillmentModule = appContainer.resolve(Modules.FULFILLMENT)
         remoteLink = appContainer.resolve(ContainerRegistrationKeys.REMOTE_LINK)
         remoteQuery = appContainer.resolve(
           ContainerRegistrationKeys.REMOTE_QUERY
@@ -143,6 +133,12 @@ medusaIntegrationTestRunner({
             ],
           })
 
+          await pricingModule.createPricePreferences({
+            attribute: "currency_code",
+            value: "usd",
+            is_tax_inclusive: true,
+          })
+
           await remoteLink.create([
             {
               [Modules.PRODUCT]: {
@@ -200,6 +196,7 @@ medusaIntegrationTestRunner({
                 expect.objectContaining({
                   quantity: 1,
                   unit_price: 3000,
+                  is_tax_inclusive: true,
                 }),
               ]),
             })
@@ -447,6 +444,125 @@ medusaIntegrationTestRunner({
           ])
         })
 
+        it("should pass if variants are out of stock but allow_backorder is true", async () => {
+          const salesChannel = await scModuleService.createSalesChannels({
+            name: "Webshop",
+          })
+
+          const location = await stockLocationModule.createStockLocations({
+            name: "Warehouse",
+          })
+
+          const [product] = await productModule.createProducts([
+            {
+              title: "Test product",
+              variants: [
+                {
+                  title: "Test variant",
+                  allow_backorder: true,
+                },
+              ],
+            },
+          ])
+
+          const inventoryItem = (
+            await api.post(
+              `/admin/inventory-items`,
+              {
+                sku: "inv-1234",
+                location_levels: [
+                  {
+                    location_id: location.id,
+                    stocked_quantity: 2,
+                  },
+                ],
+              },
+              adminHeaders
+            )
+          ).data.inventory_item
+
+          await api.post(
+            `/admin/reservations`,
+            {
+              line_item_id: "line-item-id-1",
+              inventory_item_id: inventoryItem.id,
+              location_id: location.id,
+              description: "test description",
+              quantity: 2,
+            },
+            adminHeaders
+          )
+
+          const region = await regionModuleService.createRegions({
+            name: "US",
+            currency_code: "usd",
+          })
+
+          const priceSet = await pricingModule.createPriceSets({
+            prices: [
+              {
+                amount: 3000,
+                currency_code: "usd",
+              },
+            ],
+          })
+
+          await remoteLink.create([
+            {
+              [Modules.PRODUCT]: {
+                variant_id: product.variants[0].id,
+              },
+              [Modules.PRICING]: {
+                price_set_id: priceSet.id,
+              },
+            },
+            {
+              [Modules.SALES_CHANNEL]: {
+                sales_channel_id: salesChannel.id,
+              },
+              [Modules.STOCK_LOCATION]: {
+                stock_location_id: location.id,
+              },
+            },
+            {
+              [Modules.PRODUCT]: {
+                variant_id: product.variants[0].id,
+              },
+              [Modules.INVENTORY]: {
+                inventory_item_id: inventoryItem.id,
+              },
+            },
+          ])
+
+          const { errors, result } = await createCartWorkflow(appContainer).run(
+            {
+              input: {
+                region_id: region.id,
+                sales_channel_id: salesChannel.id,
+                items: [
+                  {
+                    variant_id: product.variants[0].id,
+                    quantity: 1,
+                  },
+                ],
+              },
+              throwOnError: false,
+            }
+          )
+          expect(errors).toEqual([])
+
+          const cart = await cartModuleService.retrieveCart(result.id, {
+            relations: ["items"],
+          })
+
+          expect(cart.items).toEqual([
+            expect.objectContaining({
+              quantity: 1,
+              variant_id: product.variants[0].id,
+            }),
+          ])
+        })
+
         it("should throw if sales channel is disabled", async () => {
           const salesChannel = await scModuleService.createSalesChannels({
             name: "Webshop",
@@ -596,6 +712,12 @@ medusaIntegrationTestRunner({
             ],
           })
 
+          await pricingModule.createPricePreferences({
+            attribute: "currency_code",
+            value: "usd",
+            is_tax_inclusive: true,
+          })
+
           await remoteLink.create([
             {
               [Modules.PRODUCT]: {
@@ -650,6 +772,7 @@ medusaIntegrationTestRunner({
               items: expect.arrayContaining([
                 expect.objectContaining({
                   unit_price: 3000,
+                  is_tax_inclusive: true,
                   quantity: 1,
                   title: "Test variant",
                 }),
@@ -764,8 +887,7 @@ medusaIntegrationTestRunner({
               action: "use-remote-query",
               handlerType: "invoke",
               error: expect.objectContaining({
-                // TODO: Implement error message handler for Remote Query throw_if_key_not_found
-                message: `productService id not found: prva_foo`,
+                message: `ProductVariant id not found: prva_foo`,
               }),
             },
           ])
@@ -1130,9 +1252,6 @@ medusaIntegrationTestRunner({
           await createPaymentCollectionForCartWorkflow(appContainer).run({
             input: {
               cart_id: cart.id,
-              region_id: defaultRegion.id,
-              currency_code: "dkk",
-              amount: 5000,
             },
             throwOnError: false,
           })
@@ -1169,17 +1288,13 @@ medusaIntegrationTestRunner({
             const workflow =
               createPaymentCollectionForCartWorkflow(appContainer)
 
-            workflow.appendAction(
-              "throw",
-              linkCartAndPaymentCollectionsStepId,
-              {
-                invoke: async function failStep() {
-                  throw new Error(
-                    `Failed to do something after linking cart and payment collection`
-                  )
-                },
-              }
-            )
+            workflow.addAction("throw", {
+              invoke: async function failStep() {
+                throw new Error(
+                  `Failed to do something after linking cart and payment collection`
+                )
+              },
+            })
 
             const region = await regionModuleService.createRegions({
               name: "US",
@@ -1201,9 +1316,6 @@ medusaIntegrationTestRunner({
             const { errors } = await workflow.run({
               input: {
                 cart_id: cart.id,
-                region_id: region.id,
-                currency_code: "usd",
-                amount: 5000,
               },
               throwOnError: false,
             })
@@ -1267,7 +1379,7 @@ medusaIntegrationTestRunner({
 
           const paymentCollection =
             await paymentModule.createPaymentCollections({
-              amount: 5000,
+              amount: 5001,
               currency_code: "dkk",
               region_id: defaultRegion.id,
             })
@@ -1275,7 +1387,7 @@ medusaIntegrationTestRunner({
           const paymentSession = await paymentModule.createPaymentSession(
             paymentCollection.id,
             {
-              amount: 5000,
+              amount: 5001,
               currency_code: "dkk",
               data: {},
               provider_id: "pp_system_default",
@@ -1458,9 +1570,40 @@ medusaIntegrationTestRunner({
           priceSet = await pricingModule.createPriceSets({
             prices: [{ amount: 3000, currency_code: "usd" }],
           })
+
+          await pricingModule.createPricePreferences({
+            attribute: "currency_code",
+            value: "usd",
+            is_tax_inclusive: true,
+          })
         })
 
         it("should add shipping method to cart", async () => {
+          const stockLocation = (
+            await api.post(
+              `/admin/stock-locations`,
+              { name: "test location" },
+              adminHeaders
+            )
+          ).data.stock_location
+
+          await remoteLink.create([
+            {
+              [Modules.STOCK_LOCATION]: {
+                stock_location_id: stockLocation.id,
+              },
+              [Modules.FULFILLMENT]: {
+                fulfillment_set_id: fulfillmentSet.id,
+              },
+            },
+          ])
+
+          await api.post(
+            `/admin/stock-locations/${stockLocation.id}/fulfillment-providers`,
+            { add: ["manual_test-provider"] },
+            adminHeaders
+          )
+
           const shippingOption = await fulfillmentModule.createShippingOptions({
             name: "Test shipping option",
             service_zone_id: fulfillmentSet.service_zones[0].id,
@@ -1526,6 +1669,7 @@ medusaIntegrationTestRunner({
               shipping_methods: [
                 expect.objectContaining({
                   amount: 3000,
+                  is_tax_inclusive: true,
                   name: "Test shipping option",
                 }),
               ],

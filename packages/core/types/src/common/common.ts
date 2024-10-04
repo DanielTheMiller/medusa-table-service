@@ -1,15 +1,3 @@
-import {
-  FindManyOptions,
-  FindOneOptions,
-  FindOperator,
-  FindOptionsSelect,
-  FindOptionsWhere,
-  OrderByCondition,
-} from "typeorm"
-
-import { FindOptionsOrder } from "typeorm/find-options/FindOptionsOrder"
-import { FindOptionsRelations } from "typeorm/find-options/FindOptionsRelations"
-
 /**
  * Prettify complex types to a flat object structure
  */
@@ -59,17 +47,6 @@ export interface SoftDeletableEntity extends BaseEntity {
    * The date an entity's record was deleted.
    */
   deleted_at: Date | null
-}
-
-/**
- * @ignore
- */
-export type Writable<T> = {
-  -readonly [key in keyof T]:
-    | T[key]
-    | FindOperator<T[key]>
-    | FindOperator<T[key][]>
-    | FindOperator<string[]>
 }
 
 /**
@@ -127,48 +104,6 @@ export interface FindConfig<Entity> {
 /**
  * @ignore
  */
-export type ExtendedFindConfig<TEntity> = (
-  | Omit<FindOneOptions<TEntity>, "where" | "relations" | "select">
-  | Omit<FindManyOptions<TEntity>, "where" | "relations" | "select">
-) & {
-  select?: FindOptionsSelect<TEntity>
-  relations?: FindOptionsRelations<TEntity>
-  where: FindOptionsWhere<TEntity> | FindOptionsWhere<TEntity>[]
-  order?: FindOptionsOrder<TEntity>
-  skip?: number
-  take?: number
-}
-
-/**
- * @ignore
- */
-export type QuerySelector<TEntity> = Selector<TEntity> & {
-  q?: string
-}
-
-/**
- * @ignore
- */
-export type TreeQuerySelector<TEntity> = QuerySelector<TEntity> & {
-  include_descendants_tree?: boolean
-}
-
-/**
- * @ignore
- */
-export type Selector<TEntity> = {
-  [key in keyof TEntity]?:
-    | TEntity[key]
-    | TEntity[key][]
-    | DateComparisonOperator
-    | StringComparisonOperator
-    | NumericalComparisonOperator
-    | FindOperator<TEntity[key][] | string | string[]>
-}
-
-/**
- * @ignore
- */
 export type TotalField =
   | "shipping_total"
   | "discount_total"
@@ -179,29 +114,6 @@ export type TotalField =
   | "refundable_amount"
   | "gift_card_total"
   | "gift_card_tax_total"
-
-/**
- * @ignore
- */
-export interface CustomFindOptions<TModel, InKeys extends keyof TModel> {
-  select?: FindManyOptions<TModel>["select"]
-  where?: FindManyOptions<TModel>["where"] & {
-    [P in InKeys]?: TModel[P][]
-  }
-  order?: OrderByCondition
-  skip?: number
-  take?: number
-}
-
-/**
- * @ignore
- */
-export type QueryConfig<TEntity extends BaseEntity> = {
-  deafults?: (keyof TEntity | string)[]
-  allowed?: (keyof TEntity | string)[]
-  defaultLimit?: number
-  isList?: boolean
-}
 
 /**
  * @interface
@@ -339,20 +251,35 @@ export interface NumericalComparisonOperator {
 /**
  * @ignore
  */
-export type Pluralize<Singular extends string> = Singular extends `${infer R}ey`
+export type Pluralize<Singular extends string> = Singular extends `${infer R}ss`
+  ? `${Singular}es`
+  : Singular extends `${infer R}sis`
+  ? `${R}ses`
+  : Singular extends `${infer R}is`
+  ? `${R}ises`
+  : Singular extends `${infer R}s`
+  ? `${Singular}`
+  : Singular extends `${infer R}ey`
   ? `${R}eys`
   : Singular extends `${infer R}y`
   ? `${R}ies`
   : Singular extends `${infer R}es`
   ? `${Singular}`
   : Singular extends
-      | `${infer R}ss`
       | `${infer R}sh`
       | `${infer R}ch`
       | `${infer R}x`
       | `${infer R}z`
       | `${infer R}o`
   ? `${Singular}es`
+  : Singular extends `${infer R}fe`
+  ? `${R}ves`
+  : Singular extends `${infer R}ex` | `${infer R}ix`
+  ? `${R}ices`
+  : Singular extends `${infer R}eau`
+  ? `${R}eaux`
+  : Singular extends `${infer R}ieu`
+  ? `${R}ieux`
   : `${Singular}s`
 
 export type SnakeCase<S extends string> =
@@ -374,4 +301,44 @@ export type MetadataType = Record<string, unknown> | null
 export type RawRounding = {
   value: string
   precision: number
+}
+
+/**
+ * @ignore
+ */
+export type QueryConfig<TEntity> = {
+  /**
+   * Default fields and relations to return
+   */
+  defaults?: (keyof TEntity | string)[]
+  /**
+   * @deprecated Use `defaults` instead
+   */
+  defaultFields?: (keyof TEntity | string)[]
+  /**
+   * @deprecated Use `defaultFields` instead and the relations will be inferred
+   */
+  defaultRelations?: string[]
+  /**
+   * Fields and relations that are allowed to be requested
+   */
+  allowed?: string[]
+  /**
+   * @deprecated Use `allowed` instead
+   */
+  allowedFields?: string[]
+  /**
+   * @deprecated Use `allowedFields` instead and the relations will be inferred
+   */
+  allowedRelations?: string[]
+  defaultLimit?: number
+  isList?: boolean
+}
+
+export type TransformObjectMethodToAsync<T extends object> = {
+  [K in keyof T]: T[K] extends (...args: infer A) => infer R
+    ? (...args: A) => Promise<Awaited<R>>
+    : T[K] extends object
+    ? TransformObjectMethodToAsync<T[K]>
+    : T[K]
 }

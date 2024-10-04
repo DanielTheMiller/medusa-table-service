@@ -18,6 +18,8 @@ export type Operation = OpenAPIV3.OperationObject<{
   responses: ResponsesObject
   parameters: Parameter[]
   "x-featureFlag"?: string
+  "x-workflow"?: string
+  "x-sidebar-summary"?: string
 }>
 
 export type RequestObject = OpenAPIV3.RequestBodyObject & {
@@ -70,9 +72,15 @@ export type ArraySchemaObject = Omit<
 
 export type NonArraySchemaObject = Omit<
   OpenAPIV3.NonArraySchemaObject,
-  "properties" | "anyOf" | "allOf" | "oneOf" | "examples"
+  | "properties"
+  | "anyOf"
+  | "allOf"
+  | "oneOf"
+  | "examples"
+  | "additionalProperties"
 > & {
   properties: PropertiesObject
+  additionalProperties?: SchemaObject
   anyOf?: SchemaObject[]
   allOf?: SchemaObject[]
   oneOf?: SchemaObject[]
@@ -88,6 +96,7 @@ export type SchemaObject = (ArraySchemaObject | NonArraySchemaObject) & {
   "x-featureFlag"?: string
   "x-expandable"?: string
   "x-schemaName"?: string
+  additionalProperties?: SchemaObject
 }
 
 export type PropertiesObject = {

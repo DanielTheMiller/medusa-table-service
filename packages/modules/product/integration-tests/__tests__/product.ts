@@ -8,8 +8,13 @@ import {
   createProductVariants,
 } from "../__fixtures__/product"
 
-import { IProductModuleService, ProductDTO } from "@medusajs/types"
-import { kebabCase, Module, Modules, ProductStatus } from "@medusajs/utils"
+import { IProductModuleService, ProductDTO } from "@medusajs/framework/types"
+import {
+  Module,
+  Modules,
+  ProductStatus,
+  kebabCase,
+} from "@medusajs/framework/utils"
 import { SqlEntityManager } from "@mikro-orm/postgresql"
 import {
   ProductCategoryService,
@@ -65,64 +70,79 @@ moduleIntegrationTestRunner<Service>({
         product: {
           id: {
             linkable: "product_id",
+            entity: "Product",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "product",
           },
         },
         productVariant: {
           id: {
             linkable: "product_variant_id",
+            entity: "ProductVariant",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "productVariant",
+          },
+          variant_id: {
+            field: "productVariant",
+            entity: "ProductVariant",
+            linkable: "variant_id",
+            primaryKey: "variant_id",
+            serviceName: "Product",
           },
         },
         productOption: {
           id: {
             linkable: "product_option_id",
+            entity: "ProductOption",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "productOption",
           },
         },
         productType: {
           id: {
             linkable: "product_type_id",
+            entity: "ProductType",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "productType",
           },
         },
         productImage: {
           id: {
             linkable: "product_image_id",
+            entity: "ProductImage",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "productImage",
           },
         },
         productTag: {
           id: {
             linkable: "product_tag_id",
+            entity: "ProductTag",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "productTag",
           },
         },
         productCollection: {
           id: {
             linkable: "product_collection_id",
+            entity: "ProductCollection",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "productCollection",
           },
         },
         productCategory: {
           id: {
             linkable: "product_category_id",
+            entity: "ProductCategory",
             primaryKey: "id",
-            serviceName: "productService",
+            serviceName: "Product",
             field: "productCategory",
           },
         },

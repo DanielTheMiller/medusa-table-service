@@ -273,9 +273,19 @@ export interface PaymentDTO {
   amount: BigNumberValue
 
   /**
+   * The raw amount of the payment.
+   */
+  raw_amount?: BigNumberValue
+
+  /**
    * The authorized amount of the payment.
    */
   authorized_amount?: BigNumberValue
+
+  /**
+   * The raw authorized amount of the payment.
+   */
+  raw_authorized_amount?: BigNumberValue
 
   /**
    * The ISO 3 character currency code of the payment.
@@ -338,9 +348,19 @@ export interface PaymentDTO {
   captured_amount?: BigNumberValue
 
   /**
+   * The sum of the associated captures' raw amounts.
+   */
+  raw_captured_amount?: BigNumberValue
+
+  /**
    * The sum of the associated refunds' amounts.
    */
   refunded_amount?: BigNumberValue
+
+  /**
+   * The sum of the associated refunds' raw amounts.
+   */
+  raw_refunded_amount?: BigNumberValue
 
   /**
    * The associated captures.
@@ -355,6 +375,11 @@ export interface PaymentDTO {
    * @expandable
    */
   refunds?: RefundDTO[]
+
+  /**
+   * The ID of the associated payment collection.
+   */
+  payment_collection_id: string
 
   /**
    * The associated payment collection.
@@ -478,6 +503,21 @@ export interface RefundDTO {
   amount: BigNumberValue
 
   /**
+   * The id of the refund_reason that is associated with the refund
+   */
+  refund_reason_id?: string | null
+
+  /**
+   * The id of the refund_reason that is associated with the refund
+   */
+  refund_reason?: RefundReasonDTO | null
+
+  /**
+   * A field to add some additional information about the refund
+   */
+  note?: string | null
+
+  /**
    * The creation date of the refund.
    */
   created_at: Date
@@ -539,6 +579,11 @@ export interface PaymentSessionDTO {
   authorized_at?: Date
 
   /**
+   * The ID of the associated payment collection.
+   */
+  payment_collection_id: string
+
+  /**
    * The payment collection the session is associated with.
    *
    * @expandable
@@ -565,7 +610,7 @@ export interface PaymentProviderDTO {
   /**
    * Whether the payment provider is enabled.
    */
-  is_enabled: string
+  is_enabled: boolean
 }
 
 /**
@@ -582,4 +627,39 @@ export interface FilterablePaymentProviderProps
    * Filter by whether the payment provider is enabled.
    */
   is_enabled?: boolean
+}
+
+export interface FilterableRefundReasonProps
+  extends BaseFilterable<FilterableRefundReasonProps> {
+  /**
+   * The IDs to filter the refund reasons by.
+   */
+  id?: string | string[]
+}
+
+export interface RefundReasonDTO {
+  /**
+   * The ID of the refund reason
+   */
+  id: string
+  /**
+   * The label of the refund reason
+   */
+  label: string
+  /**
+   * The description of the refund reason
+   */
+  description?: string | null
+  /**
+   * The metadata of the refund reason
+   */
+  metadata: Record<string, unknown> | null
+  /**
+   * When the refund reason was created
+   */
+  created_at: Date | string
+  /**
+   * When the refund reason was updated
+   */
+  updated_at: Date | string
 }

@@ -18,6 +18,9 @@ medusaIntegrationTestRunner({
     let publishedCollection
 
     let baseType
+    let baseTag1
+    let baseTag2
+    let newTag
 
     beforeEach(async () => {
       await createAdminUser(dbConnection, adminHeaders, getContainer())
@@ -46,6 +49,22 @@ medusaIntegrationTestRunner({
         )
       ).data.product_type
 
+      baseTag1 = (
+        await api.post("/admin/product-tags", { value: "123" }, adminHeaders)
+      ).data.product_tag
+
+      baseTag2 = (
+        await api.post("/admin/product-tags", { value: "456" }, adminHeaders)
+      ).data.product_tag
+
+      newTag = (
+        await api.post(
+          "/admin/product-tags",
+          { value: "new-tag" },
+          adminHeaders
+        )
+      ).data.product_tag
+
       baseProduct = (
         await api.post(
           "/admin/products",
@@ -54,6 +73,7 @@ medusaIntegrationTestRunner({
             collection_id: baseCollection.id,
             // BREAKING: Type input changed from {type: {value: string}} to {type_id: string}
             type_id: baseType.id,
+            tags: [{ id: baseTag1.id }, { id: baseTag2.id }],
           }),
           adminHeaders
         )
@@ -65,7 +85,7 @@ medusaIntegrationTestRunner({
           getProductFixture({
             title: "Proposed product",
             status: "proposed",
-            tags: [{ value: "new-tag" }],
+            tags: [{ id: newTag.id }],
             type_id: baseType.id,
           }),
           adminHeaders
@@ -79,6 +99,7 @@ medusaIntegrationTestRunner({
             title: "Published product",
             status: "published",
             collection_id: publishedCollection.id,
+            tags: [{ id: baseTag1.id }, { id: baseTag2.id }],
           }),
           adminHeaders
         )
@@ -507,7 +528,7 @@ medusaIntegrationTestRunner({
 
         it("returns a list of products with tags", async () => {
           const response = await api.get(
-            `/admin/products?tags[]=${baseProduct.tags[0].id}`,
+            `/admin/products?tag_id[]=${baseProduct.tags[0].id}`,
             adminHeaders
           )
 
@@ -534,7 +555,7 @@ medusaIntegrationTestRunner({
 
         it("returns a list of products with tags in a collection", async () => {
           const response = await api.get(
-            `/admin/products?collection_id[]=${baseCollection.id}&tags[]=${baseProduct.tags[0].id}`,
+            `/admin/products?collection_id[]=${baseCollection.id}&tag_id[]=${baseProduct.tags[0].id}`,
             adminHeaders
           )
 
@@ -1060,7 +1081,7 @@ medusaIntegrationTestRunner({
 
           const variants = (
             await api.get(
-              `/admin/products/${product.id}/variants?fields=%2Binventory_quantity`,
+              `/admin/products/${product.id}/variants?fields=+inventory_quantity`,
               adminHeaders
             )
           ).data.variants
@@ -1068,6 +1089,58 @@ medusaIntegrationTestRunner({
           expect(variants).toEqual([
             expect.objectContaining({
               inventory_quantity: 2,
+            }),
+          ])
+        })
+
+        it("should get product variants filtered by manage_inventory", async () => {
+          const payload = {
+            title: "Test product - 1",
+            handle: "test-1",
+            variants: [
+              {
+                title: "Custom inventory 1",
+                prices: [{ currency_code: "usd", amount: 100 }],
+                manage_inventory: true,
+                inventory_items: [],
+              },
+              {
+                title: "Custom inventory 2",
+                prices: [{ currency_code: "usd", amount: 100 }],
+                manage_inventory: false,
+              },
+            ],
+          }
+
+          const product = (
+            await api.post(`/admin/products`, payload, adminHeaders)
+          ).data.product
+
+          let variants = (
+            await api.get(
+              `/admin/products/${product.id}/variants?manage_inventory=true`,
+              adminHeaders
+            )
+          ).data.variants
+
+          expect(variants).toEqual([
+            expect.objectContaining({
+              title: "Custom inventory 1",
+              product_id: product.id,
+            }),
+          ])
+
+          variants = (
+            await api.get(
+              `/admin/products/${product.id}/variants?manage_inventory=false`,
+              adminHeaders
+            )
+          ).data.variants
+
+          expect(variants).toEqual([
+            expect.objectContaining({
+              title: "Custom inventory 2",
+              product_id: product.id,
             }),
           ])
         })
@@ -1082,6 +1155,7 @@ medusaIntegrationTestRunner({
                 title: "Test create",
                 collection_id: baseCollection.id,
                 type_id: baseType.id,
+                tags: [{ id: baseTag1.id }, { id: baseTag2.id }],
               }),
 
               adminHeaders
@@ -1203,16 +1277,10 @@ medusaIntegrationTestRunner({
                     expect.objectContaining({
                       id: expect.stringMatching(/^optval_*/),
                       value: "large",
-                      option: expect.objectContaining({
-                        title: "size",
-                      }),
                     }),
                     expect.objectContaining({
                       id: expect.stringMatching(/^optval_*/),
                       value: "green",
-                      option: expect.objectContaining({
-                        title: "color",
-                      }),
                     }),
                   ]),
                 }),
@@ -1276,7 +1344,7 @@ medusaIntegrationTestRunner({
             description: "test-product-description",
             images: [{ url: "test-image.png" }, { url: "test-image-2.png" }],
             collection_id: baseCollection.id,
-            tags: [{ value: "123" }, { value: "456" }],
+            tags: [{ id: baseTag1.id }, { id: baseTag2.id }],
             variants: [
               {
                 title: "Test variant",
@@ -1306,7 +1374,7 @@ medusaIntegrationTestRunner({
             description: "test-product-description 1",
             images: [{ url: "test-image.png" }, { url: "test-image-2.png" }],
             collection_id: baseCollection.id,
-            tags: [{ value: "123" }, { value: "456" }],
+            tags: [{ id: baseTag1.id }, { id: baseTag2.id }],
             variants: [
               {
                 title: "Test variant 1",
@@ -1390,10 +1458,23 @@ medusaIntegrationTestRunner({
                 barcode: "test-barcode",
                 ean: "test-ean",
                 upc: "test-upc",
-                // BREAKING: Price updates are no longer supported through the product update endpoint. There is a batch variants endpoint for this purpose
+                prices: [
+                  {
+                    currency_code: "usd",
+                    amount: 200,
+                  },
+                  {
+                    currency_code: "eur",
+                    amount: 65,
+                  },
+                  {
+                    currency_code: "dkk",
+                    amount: 50,
+                  },
+                ],
               },
             ],
-            tags: [{ value: "123" }],
+            tags: [{ id: baseTag1.id }],
             images: [{ url: "test-image-2.png" }],
             status: "published",
           }
@@ -1470,22 +1551,111 @@ medusaIntegrationTestRunner({
                     expect.objectContaining({
                       id: expect.stringMatching(/^optval_*/),
                       value: "large",
-                      option: expect.objectContaining({
-                        title: "size",
-                      }),
                     }),
                   ]),
                   origin_country: null,
                   prices: expect.arrayContaining([
                     expect.objectContaining({
-                      amount: 100,
+                      amount: 200,
                       created_at: expect.any(String),
                       currency_code: "usd",
+                    }),
+                    expect.objectContaining({
+                      amount: 65,
+                      created_at: expect.any(String),
+                      currency_code: "eur",
+                    }),
+                    expect.objectContaining({
+                      amount: 50,
+                      created_at: expect.any(String),
+                      currency_code: "dkk",
                     }),
                   ]),
                   product_id: baseProduct.id,
                   title: "New variant",
                   updated_at: expect.any(String),
+                }),
+              ]),
+            })
+          )
+        })
+
+        it("updates product variants (update price on existing variant, create new variant)", async () => {
+          const payload = {
+            variants: [
+              {
+                id: baseProduct.variants[0].id,
+                prices: [
+                  {
+                    currency_code: "usd",
+                    amount: 200,
+                  },
+                  {
+                    currency_code: "dkk",
+                    amount: 50,
+                  },
+                ],
+              },
+              {
+                title: "New variant",
+                prices: [
+                  {
+                    currency_code: "usd",
+                    amount: 150,
+                  },
+                  {
+                    currency_code: "dkk",
+                    amount: 20,
+                  },
+                ],
+              },
+            ],
+          }
+
+          const response = await api
+            .post(`/admin/products/${baseProduct.id}`, payload, adminHeaders)
+            .catch((err) => {
+              console.log(err)
+            })
+
+          expect(response.status).toEqual(200)
+
+          expect(response.data.product).toEqual(
+            expect.objectContaining({
+              id: baseProduct.id,
+              variants: expect.arrayContaining([
+                expect.objectContaining({
+                  id: baseProduct.variants[0].id,
+                  prices: expect.arrayContaining([
+                    expect.objectContaining({
+                      amount: 200,
+                      created_at: expect.any(String),
+                      currency_code: "usd",
+                    }),
+                    expect.objectContaining({
+                      amount: 50,
+                      created_at: expect.any(String),
+                      currency_code: "dkk",
+                    }),
+                  ]),
+                  product_id: baseProduct.id,
+                }),
+                expect.objectContaining({
+                  id: expect.any(String),
+                  title: "New variant",
+                  prices: expect.arrayContaining([
+                    expect.objectContaining({
+                      amount: 150,
+                      created_at: expect.any(String),
+                      currency_code: "usd",
+                    }),
+                    expect.objectContaining({
+                      amount: 20,
+                      created_at: expect.any(String),
+                      currency_code: "dkk",
+                    }),
+                  ]),
+                  product_id: baseProduct.id,
                 }),
               ]),
             })
@@ -1505,6 +1675,83 @@ medusaIntegrationTestRunner({
 
           expect(response.status).toEqual(200)
           expect(response.data.product.images.length).toEqual(0)
+        })
+
+        it("updating the product without variants keeps the variants and prices intact", async () => {
+          const payload = {
+            title: "Test an update",
+          }
+
+          await api
+            .post(`/admin/products/${baseProduct.id}`, payload, adminHeaders)
+            .catch((err) => {
+              console.log(err)
+            })
+
+          const updatedProduct = (
+            await api.get(`/admin/products/${baseProduct.id}`, adminHeaders)
+          ).data.product
+
+          expect(updatedProduct.variants).toEqual([
+            expect.objectContaining({
+              id: baseProduct.variants[0].id,
+              prices: expect.arrayContaining([
+                expect.objectContaining({
+                  currency_code: "usd",
+                  amount: 100,
+                }),
+                expect.objectContaining({
+                  currency_code: "eur",
+                  amount: 45,
+                }),
+                expect.objectContaining({
+                  currency_code: "dkk",
+                  amount: 30,
+                }),
+              ]),
+            }),
+          ])
+        })
+
+        it("updating the product variants without prices keeps the prices intact", async () => {
+          const payload = {
+            title: "Test an update",
+            variants: baseProduct.variants.map((variant) => ({
+              id: variant.id,
+              title: variant.id,
+            })),
+          }
+
+          await api
+            .post(`/admin/products/${baseProduct.id}`, payload, adminHeaders)
+            .catch((err) => {
+              console.log(err)
+            })
+
+          const updatedProduct = (
+            await api.get(`/admin/products/${baseProduct.id}`, adminHeaders)
+          ).data.product
+
+          expect(updatedProduct.variants).toEqual([
+            expect.objectContaining({
+              id: baseProduct.variants[0].id,
+              title: baseProduct.variants[0].id,
+              prices: expect.arrayContaining([
+                expect.objectContaining({
+                  currency_code: "usd",
+                  amount: 100,
+                }),
+                expect.objectContaining({
+                  currency_code: "eur",
+                  amount: 45,
+                }),
+                expect.objectContaining({
+                  currency_code: "dkk",
+                  amount: 30,
+                }),
+              ]),
+            }),
+          ])
         })
 
         it("updates a product by deleting a field from metadata", async () => {
@@ -1948,6 +2195,63 @@ medusaIntegrationTestRunner({
           )
         })
 
+        it("creates throw when duplicated inventory items", async () => {
+          const inventoryItem1 = (
+            await api.post(
+              `/admin/inventory-items`,
+              { sku: "inventory-1" },
+              adminHeaders
+            )
+          ).data.inventory_item
+
+          const payload = {
+            title: "Test product - 1",
+            handle: "test-1",
+            variants: [
+              {
+                title: "Custom inventory 1",
+                prices: [{ currency_code: "usd", amount: 100 }],
+                manage_inventory: true,
+                inventory_items: [
+                  {
+                    inventory_item_id: inventoryItem1.id,
+                    required_quantity: 4,
+                  },
+                  {
+                    inventory_item_id: inventoryItem1.id,
+                    required_quantity: 2,
+                  },
+                ],
+              },
+              {
+                title: "No inventory",
+                prices: [{ currency_code: "usd", amount: 100 }],
+                manage_inventory: false,
+              },
+              {
+                title: "Default Inventory",
+                prices: [{ currency_code: "usd", amount: 100 }],
+                manage_inventory: true,
+              },
+            ],
+          }
+
+          const error = await api
+            .post(
+              "/admin/products?fields=%2bvariants.inventory_items.inventory.*,%2bvariants.inventory_items.*",
+              payload,
+              adminHeaders
+            )
+            .catch((err) => err)
+
+          expect(error.response.status).toEqual(400)
+          expect(error.response.data.message).toMatch(
+            new RegExp(
+              "Cannot associate duplicate inventory items to variant\\(s\\) \\w+"
+            )
+          )
+        })
+
         it("should throw an error when inventory item does not exist", async () => {
           const payload = {
             title: "Test product - 1",
@@ -2347,9 +2651,6 @@ medusaIntegrationTestRunner({
             updatedProduct.variants.find((v) => v.id === baseVariant.id).options
           ).toEqual([
             expect.objectContaining({
-              option: expect.objectContaining({
-                title: "size",
-              }),
               value: "small",
             }),
           ])
@@ -2379,15 +2680,9 @@ medusaIntegrationTestRunner({
           expect(updatedOptions).toEqual(
             expect.arrayContaining([
               expect.objectContaining({
-                option: expect.objectContaining({
-                  title: "size",
-                }),
                 value: "small",
               }),
               expect.objectContaining({
-                option: expect.objectContaining({
-                  title: "color",
-                }),
                 value: "green",
               }),
             ])

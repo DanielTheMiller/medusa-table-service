@@ -9,11 +9,7 @@ import {
   IStockLocationServiceNext,
   ITaxModuleService,
 } from "@medusajs/types"
-import {
-  ContainerRegistrationKeys,
-  ModuleRegistrationName,
-  Modules,
-} from "@medusajs/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/utils"
 import { medusaIntegrationTestRunner } from "medusa-test-utils"
 import {
   adminHeaders,
@@ -42,21 +38,15 @@ medusaIntegrationTestRunner({
 
     beforeAll(async () => {
       appContainer = getContainer()
-      cartModuleService = appContainer.resolve(ModuleRegistrationName.CART)
-      regionModuleService = appContainer.resolve(ModuleRegistrationName.REGION)
-      scModuleService = appContainer.resolve(
-        ModuleRegistrationName.SALES_CHANNEL
-      )
-      productModule = appContainer.resolve(ModuleRegistrationName.PRODUCT)
-      pricingModule = appContainer.resolve(ModuleRegistrationName.PRICING)
-      inventoryModule = appContainer.resolve(ModuleRegistrationName.INVENTORY)
-      stockLocationModule = appContainer.resolve(
-        ModuleRegistrationName.STOCK_LOCATION
-      )
-      fulfillmentModule = appContainer.resolve(
-        ModuleRegistrationName.FULFILLMENT
-      )
-      taxModule = appContainer.resolve(ModuleRegistrationName.TAX)
+      cartModuleService = appContainer.resolve(Modules.CART)
+      regionModuleService = appContainer.resolve(Modules.REGION)
+      scModuleService = appContainer.resolve(Modules.SALES_CHANNEL)
+      productModule = appContainer.resolve(Modules.PRODUCT)
+      pricingModule = appContainer.resolve(Modules.PRICING)
+      inventoryModule = appContainer.resolve(Modules.INVENTORY)
+      stockLocationModule = appContainer.resolve(Modules.STOCK_LOCATION)
+      fulfillmentModule = appContainer.resolve(Modules.FULFILLMENT)
+      taxModule = appContainer.resolve(Modules.TAX)
       remoteLink = appContainer.resolve(ContainerRegistrationKeys.REMOTE_LINK)
       remoteQuery = appContainer.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
     })
@@ -131,6 +121,16 @@ medusaIntegrationTestRunner({
             ],
           },
         ])
+
+        await api.post(
+          "/admin/price-preferences",
+          {
+            attribute: "currency_code",
+            value: "usd",
+            is_tax_inclusive: true,
+          },
+          adminHeaders
+        )
 
         await remoteLink.create([
           {
@@ -216,7 +216,7 @@ medusaIntegrationTestRunner({
           shipping_methods: [
             {
               name: "test-method",
-              option_id: "test-option",
+              shipping_option_id: "test-option",
               amount: 100,
             },
           ],
@@ -252,13 +252,19 @@ medusaIntegrationTestRunner({
                   variant_option_values: null,
                   requires_shipping: true,
                   is_discountable: true,
-                  is_tax_inclusive: false,
+                  is_tax_inclusive: true,
                   raw_compare_at_unit_price: null,
                   raw_unit_price: expect.objectContaining({
                     value: "3000",
                   }),
                   metadata: {},
-                  tax_lines: [],
+                  tax_lines: [
+                    expect.objectContaining({
+                      code: "US_DEF",
+                      provider_id: "system",
+                      rate: 2,
+                    }),
+                  ],
                   adjustments: [],
                   unit_price: 3000,
                   quantity: 2,
@@ -306,6 +312,7 @@ medusaIntegrationTestRunner({
                     note: "reduced price",
                   },
                   unit_price: 200,
+                  is_tax_inclusive: true,
                   quantity: 1,
                   raw_quantity: expect.objectContaining({
                     value: "1",
@@ -349,9 +356,15 @@ medusaIntegrationTestRunner({
                     value: "100",
                   }),
                   is_tax_inclusive: false,
-                  shipping_option_id: null,
+                  shipping_option_id: "test-option",
                   data: null,
-                  tax_lines: [],
+                  tax_lines: [
+                    expect.objectContaining({
+                      code: "US_DEF",
+                      provider_id: "system",
+                      rate: 2,
+                    }),
+                  ],
                   adjustments: [],
                   amount: 100,
                 }),

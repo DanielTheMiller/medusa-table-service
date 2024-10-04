@@ -1,22 +1,32 @@
-import { BigNumberRawValue } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
   MikroOrmBigNumberProperty,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
   ManyToOne,
   OnInit,
+  OptionalProps,
   PrimaryKey,
   Property,
   Rel,
 } from "@mikro-orm/core"
 import Payment from "./payment"
+import RefundReason from "./refund-reason"
+
+type OptionalProps =
+  | "note"
+  | "refund_reason_id"
+  | "refund_reason"
+  | DAL.ModelDateColumns
 
 @Entity({ tableName: "refund" })
 export default class Refund {
+  [OptionalProps]?: OptionalProps
+
   @PrimaryKey({ columnType: "text" })
   id: string
 
@@ -32,6 +42,23 @@ export default class Refund {
     fieldName: "payment_id",
   })
   payment!: Rel<Payment>
+
+  @Property({ columnType: "text", nullable: true })
+  payment_id: string
+
+  @ManyToOne(() => RefundReason, {
+    columnType: "text",
+    mapToPk: true,
+    fieldName: "refund_reason_id",
+    nullable: true,
+  })
+  refund_reason_id: string | null = null
+
+  @ManyToOne(() => RefundReason, { persist: false, nullable: true })
+  refund_reason: Rel<RefundReason> | null = null
+
+  @Property({ columnType: "text", nullable: true })
+  note: string | null = null
 
   @Property({
     onCreate: () => new Date(),
@@ -63,10 +90,12 @@ export default class Refund {
   @BeforeCreate()
   onCreate() {
     this.id = generateEntityId(this.id, "ref")
+    this.refund_reason_id ??= this.refund_reason?.id || null
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "ref")
+    this.refund_reason_id ??= this.refund_reason?.id || null
   }
 }

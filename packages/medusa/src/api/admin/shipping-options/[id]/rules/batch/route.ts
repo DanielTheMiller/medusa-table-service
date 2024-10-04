@@ -1,23 +1,19 @@
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../../types/routing"
-import { BatchMethodRequest } from "@medusajs/types"
-import {
-  AdminCreateShippingOptionRuleType,
-  AdminUpdateShippingOptionRuleType,
-} from "../../../validators"
+} from "@medusajs/framework/http"
+import { BatchMethodRequest, HttpTypes } from "@medusajs/framework/types"
 import { refetchBatchRules } from "../../../helpers"
 import { batchShippingOptionRulesWorkflow } from "@medusajs/core-flows"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<
     BatchMethodRequest<
-      AdminCreateShippingOptionRuleType,
-      AdminUpdateShippingOptionRuleType
+      HttpTypes.AdminCreateShippingOptionRule,
+      HttpTypes.AdminUpdateShippingOptionRule
     >
   >,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminUpdateShippingOptionRulesResponse>
 ) => {
   const id = req.params.id
   const { result } = await batchShippingOptionRulesWorkflow(req.scope).run({
@@ -37,5 +33,9 @@ export const POST = async (
     req.remoteQueryConfig.fields
   )
 
-  res.status(200).json(batchResults)
+  res
+    .status(200)
+    .json(
+      batchResults as unknown as HttpTypes.AdminUpdateShippingOptionRulesResponse
+    )
 }

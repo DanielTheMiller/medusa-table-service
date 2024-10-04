@@ -14,16 +14,16 @@ In this guide, you’ll find common examples of how you can use the Region Modul
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IRegionModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IRegionModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const regionModuleService: IRegionModuleService = req.scope.resolve(
-    ModuleRegistrationName.REGION
+    Modules.REGION
   )
 
   const region = await regionModuleService.createRegions({
@@ -43,7 +43,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeRegionModule } from "@medusajs/region"
+import { initialize as initializeRegionModule } from "@medusajs/medusa/region"
 
 export async function POST(request: Request) {
   const regionModuleService = await initializeRegionModule()
@@ -70,16 +70,16 @@ export async function POST(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IRegionModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IRegionModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const regionModuleService: IRegionModuleService = req.scope.resolve(
-    ModuleRegistrationName.REGION
+    Modules.REGION
   )
 
   res.json({
@@ -94,7 +94,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeRegionModule } from "@medusajs/region"
+import { initialize as initializeRegionModule } from "@medusajs/medusa/region"
 
 export async function GET(request: Request) {
   const regionModuleService = await initializeRegionModule()
@@ -116,16 +116,16 @@ export async function GET(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IRegionModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IRegionModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const regionModuleService: IRegionModuleService = req.scope.resolve(
-    ModuleRegistrationName.REGION
+    Modules.REGION
   )
 
   const region = await regionModuleService.retrieveRegion("reg_123")
@@ -140,7 +140,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeRegionModule } from "@medusajs/region"
+import { initialize as initializeRegionModule } from "@medusajs/medusa/region"
 
 export async function GET(request: Request) {
   const regionModuleService = await initializeRegionModule()
@@ -162,16 +162,16 @@ export async function GET(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IRegionModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IRegionModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const regionModuleService: IRegionModuleService = req.scope.resolve(
-    ModuleRegistrationName.REGION
+    Modules.REGION
   )
 
   const region = await regionModuleService.updateRegions("reg_123", {
@@ -188,7 +188,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeRegionModule } from "@medusajs/region"
+import { initialize as initializeRegionModule } from "@medusajs/medusa/region"
 
 export async function POST(request: Request) {
   const regionModuleService = await initializeRegionModule()
@@ -212,16 +212,16 @@ export async function POST(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IRegionModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IRegionModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function DELETE(
   req: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const regionModuleService: IRegionModuleService = req.scope.resolve(
-    ModuleRegistrationName.REGION
+    Modules.REGION
   )
 
   await regionModuleService.deleteRegions("reg_123")
@@ -236,7 +236,7 @@ export async function DELETE(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeRegionModule } from "@medusajs/region"
+import { initialize as initializeRegionModule } from "@medusajs/medusa/region"
 
 export async function DELETE(request: Request) {
   const regionModuleService = await initializeRegionModule()

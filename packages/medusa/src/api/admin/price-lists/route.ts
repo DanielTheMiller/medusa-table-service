@@ -2,17 +2,18 @@ import { createPriceListsWorkflow } from "@medusajs/core-flows"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
+} from "@medusajs/framework/http"
 import { fetchPriceList, transformPriceList } from "./helpers"
 import { AdminCreatePriceListType } from "./validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminPriceListListParams>,
+  res: MedusaResponse<HttpTypes.AdminPriceListListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -37,7 +38,7 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminCreatePriceListType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminPriceListResponse>
 ) => {
   const workflow = createPriceListsWorkflow(req.scope)
   const { result } = await workflow.run({

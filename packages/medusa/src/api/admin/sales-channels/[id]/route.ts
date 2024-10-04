@@ -2,20 +2,21 @@ import {
   deleteSalesChannelsWorkflow,
   updateSalesChannelsWorkflow,
 } from "@medusajs/core-flows"
-import { MedusaError } from "@medusajs/utils"
+import { MedusaError } from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchSalesChannel } from "../helpers"
 import {
   AdminGetSalesChannelParamsType,
   AdminUpdateSalesChannelType,
 } from "../validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<AdminGetSalesChannelParamsType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminSalesChannelResponse>
 ) => {
   const salesChannel = await refetchSalesChannel(
     req.params.id,
@@ -35,8 +36,21 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminUpdateSalesChannelType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminSalesChannelResponse>
 ) => {
+  const existingSalesChannel = await refetchSalesChannel(
+    req.params.id,
+    req.scope,
+    ["id"]
+  )
+
+  if (!existingSalesChannel) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Sales channel with id "${req.params.id}" not found`
+    )
+  }
+
   await updateSalesChannelsWorkflow(req.scope).run({
     input: {
       selector: { id: req.params.id },
@@ -54,7 +68,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminSalesChannelDeleteResponse>
 ) => {
   const id = req.params.id
 

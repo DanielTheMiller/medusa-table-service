@@ -39,7 +39,17 @@ module.exports = {
     medusa_v2: enableMedusaV2,
   },
   modules: {
-    [Modules.AUTH]: true,
+    [Modules.AUTH]: {
+      resolve: "@medusajs/auth",
+      options: {
+        providers: [
+          {
+            id: "emailpass",
+            resolve: "@medusajs/auth-emailpass",
+          },
+        ],
+      },
+    },
     [Modules.USER]: {
       scope: "internal",
       resources: "shared",
@@ -102,5 +112,10 @@ module.exports = {
         ],
       },
     },
+    [Modules.INDEX]: process.env.ENABLE_INDEX_MODULE
+      ? {
+          resolve: "@medusajs/index",
+        }
+      : false,
   },
 }

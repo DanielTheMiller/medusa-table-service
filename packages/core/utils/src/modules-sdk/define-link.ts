@@ -1,14 +1,34 @@
 import { LinkModulesExtraFields, ModuleJoinerConfig } from "@medusajs/types"
-import { isObject, pluralize, toPascalCase } from "../common"
-import { composeLinkName } from "../link"
+import { camelToSnakeCase, isObject, pluralize, toPascalCase } from "../common"
+import { composeLinkName } from "../link/compose-link-name"
 
 export const DefineLinkSymbol = Symbol.for("DefineLink")
+
+export interface DefineLinkExport {
+  [DefineLinkSymbol]: boolean
+  serviceName: string
+  entity?: string
+  entryPoint: string
+}
 
 type InputSource = {
   serviceName: string
   field: string
+  entity?: string
+  alias?: string
   linkable: string
   primaryKey: string
+}
+
+type ReadOnlyInputSource = {
+  linkable:
+    | CombinedSource
+    | InputSource
+    | {
+        serviceName: string
+        entity?: string
+      }
+  field?: string
 }
 
 type InputToJson = {
@@ -18,8 +38,17 @@ type InputToJson = {
 type CombinedSource = Record<any, any> & InputToJson
 
 type InputOptions = {
-  source: CombinedSource | InputSource
+  linkable: CombinedSource | InputSource
+  field?: string
   isList?: boolean
+  deleteCascade?: boolean
+}
+
+type Shortcut = {
+  property: string
+  path: string
+  isList?: boolean
+  forwardArguments?: string | string[]
 }
 
 type ExtraOptions = {
@@ -27,98 +56,150 @@ type ExtraOptions = {
     [key: string]: string
   }
   database?: {
-    table: string
+    table?: string
     idPrefix?: string
     extraColumns?: LinkModulesExtraFields
   }
+  readOnly?: boolean
+}
+
+type ReadOnlyExtraOptions = {
+  readOnly: true
+  isList?: boolean
+  shortcut?: Shortcut | Shortcut[]
 }
 
 type DefineLinkInputSource = InputSource | InputOptions | CombinedSource
 
+type DefineReadOnlyLinkInputSource =
+  | ReadOnlyInputSource
+  | InputOptions
+  | CombinedSource
+
 type ModuleLinkableKeyConfig = {
   module: string
+  entity?: string
   key: string
+  field: string
   isList?: boolean
+  deleteCascade?: boolean
   primaryKey: string
   alias: string
-  shortcuts?: {
-    [key: string]: string | { path: string; isList?: boolean }
-  }
+  shortcut?: Shortcut | Shortcut[]
 }
 
 function isInputOptions(input: any): input is InputOptions {
-  return isObject(input) && "source" in input
+  return isObject(input) && input?.["linkable"]
 }
 
 function isInputSource(input: any): input is InputSource {
-  return (isObject(input) && "serviceName" in input) || "toJSON" in input
+  return (isObject(input) && input?.["serviceName"]) || input?.["toJSON"]
 }
 
 function isToJSON(input: any): input is InputToJson {
-  return isObject(input) && "toJSON" in input
+  return isObject(input) && input?.["toJSON"]
 }
 
-export function defineLink(
-  leftService: DefineLinkInputSource,
-  rightService: DefineLinkInputSource,
-  linkServiceOptions?: ExtraOptions
+function buildFieldAlias(fieldAliases?: Shortcut | Shortcut[]) {
+  if (!fieldAliases) {
+    return
+  }
+
+  const fieldAlias = {}
+
+  const shortcuts = Array.isArray(fieldAliases) ? fieldAliases : [fieldAliases]
+  for (const sc of shortcuts) {
+    const fwArgs = sc.forwardArguments
+      ? Array.isArray(sc.forwardArguments)
+        ? sc.forwardArguments
+        : [sc.forwardArguments]
+      : []
+    fieldAlias[sc.property] = {
+      path: sc.path,
+      isList: !!sc.isList,
+      forwardArgumentsOnPath: fwArgs,
+    }
+  }
+
+  return fieldAlias
+}
+
+function prepareServiceConfig(
+  input: DefineLinkInputSource | DefineReadOnlyLinkInputSource
 ) {
-  let serviceAObj = {} as ModuleLinkableKeyConfig
-  let serviceBObj = {} as ModuleLinkableKeyConfig
+  let serviceConfig = {} as ModuleLinkableKeyConfig
 
-  if (isInputSource(leftService)) {
-    const source = isToJSON(leftService) ? leftService.toJSON() : leftService
+  if (isInputSource(input)) {
+    const source = isToJSON(input) ? input.toJSON() : input
 
-    serviceAObj = {
+    serviceConfig = {
       key: source.linkable,
-      alias: source.field,
+      alias: source.alias ?? camelToSnakeCase(source.field ?? ""),
+      field: input.field ?? source.field,
       primaryKey: source.primaryKey,
       isList: false,
+      deleteCascade: false,
       module: source.serviceName,
+      entity: source.entity,
     }
-  } else if (isInputOptions(leftService)) {
-    const source = isToJSON(leftService.source)
-      ? leftService.source.toJSON()
-      : leftService.source
+  } else if (isInputOptions(input)) {
+    const source = isToJSON(input.linkable)
+      ? input.linkable.toJSON()
+      : input.linkable
 
-    serviceAObj = {
+    serviceConfig = {
       key: source.linkable,
-      alias: source.field,
+      alias: source.alias ?? camelToSnakeCase(source.field ?? ""),
+      field: input.field ?? source.field,
       primaryKey: source.primaryKey,
-      isList: leftService.isList ?? false,
+      isList: input.isList ?? false,
+      deleteCascade: input.deleteCascade ?? false,
       module: source.serviceName,
+      entity: source.entity,
     }
   } else {
-    throw new Error("Invalid linkable passed for the first argument")
+    throw new Error(
+      `Invalid linkable passed for the argument\n${JSON.stringify(
+        input,
+        null,
+        2
+      )}`
+    )
   }
 
-  if (isInputSource(rightService)) {
-    const source = isToJSON(rightService) ? rightService.toJSON() : rightService
+  return serviceConfig
+}
 
-    serviceBObj = {
-      key: source.linkable,
-      alias: source.field,
-      primaryKey: source.primaryKey,
-      isList: false,
-      module: source.serviceName,
-    }
-  } else if (isInputOptions(rightService)) {
-    const source = isToJSON(rightService.source)
-      ? rightService.source.toJSON()
-      : rightService.source
+/**
+ * Generate a ModuleJoinerConfig for the link definition on the fly.
+ * All naming, aliases etc are following our conventional naming.
+ *
+ * @param leftService
+ * @param rightService
+ * @param linkServiceOptions
+ */
+export function defineLink(
+  leftService: DefineLinkInputSource | DefineReadOnlyLinkInputSource,
+  rightService: DefineLinkInputSource | DefineReadOnlyLinkInputSource,
+  linkServiceOptions?: ExtraOptions | ReadOnlyExtraOptions
+): DefineLinkExport {
+  const serviceAObj = prepareServiceConfig(leftService)
+  const serviceBObj = prepareServiceConfig(rightService)
 
-    serviceBObj = {
-      key: source.linkable,
-      alias: source.field,
-      primaryKey: source.primaryKey,
-      isList: rightService.isList ?? false,
-      module: source.serviceName,
-    }
-  } else {
-    throw new Error(`Invalid linkable passed for the second argument`)
+  if (linkServiceOptions?.readOnly) {
+    return defineReadOnlyLink(
+      serviceAObj,
+      serviceBObj,
+      linkServiceOptions as ReadOnlyExtraOptions
+    ) as unknown as DefineLinkExport
   }
 
-  const output = { [DefineLinkSymbol]: true, serviceName: "" }
+  const output = {
+    [DefineLinkSymbol]: true,
+    serviceName: "",
+    entity: "",
+    entryPoint: "",
+  }
 
   const register = function (
     modules: ModuleJoinerConfig[]
@@ -131,10 +212,24 @@ export function defineLink(
     )!
 
     if (!serviceAInfo) {
-      throw new Error(`Service ${serviceAObj.module} was not found`)
+      throw new Error(`Service ${serviceAObj.module} was not found. If this is your module, make sure you set isQueryable to true in medusa-config.js:
+        
+${serviceAObj.module}: {
+  // ...
+  definition: {
+    isQueryable: true
+  }
+}`)
     }
     if (!serviceBInfo) {
-      throw new Error(`Service ${serviceBObj.module} was not found`)
+      throw new Error(`Service ${serviceBObj.module} was not found. If this is your module, make sure you set isQueryable to true in medusa-config.js:
+        
+${serviceBObj.module}: {
+  // ...
+  definition: {
+    isQueryable: true
+  }
+}`)
     }
 
     const serviceAKeyEntity = serviceAInfo.linkableKeys?.[serviceAObj.key]
@@ -158,7 +253,7 @@ export function defineLink(
     let aliasAOptions =
       serviceAObj.alias ??
       serviceAAliases.find((a) => {
-        return a.args?.entity == serviceAKeyEntity
+        return a.entity == serviceAKeyEntity
       })?.name
 
     let aliasA = aliasAOptions
@@ -172,10 +267,11 @@ export function defineLink(
       )
     }
 
+    const serviceAObjEntryPoint = camelToSnakeCase(serviceAObj.field)
     const serviceAMethodSuffix = serviceAAliases.find((serviceAlias) => {
       return Array.isArray(serviceAlias.name)
-        ? serviceAlias.name.includes(aliasA)
-        : serviceAlias.name === aliasA
+        ? serviceAlias.name.includes(serviceAObjEntryPoint)
+        : serviceAlias.name === serviceAObjEntryPoint
     })?.args?.methodSuffix
 
     let serviceBAliases = serviceBInfo.alias ?? []
@@ -186,7 +282,7 @@ export function defineLink(
     let aliasBOptions =
       serviceBObj.alias ??
       serviceBAliases.find((a) => {
-        return a.args?.entity == serviceBKeyInfo
+        return a.entity == serviceBKeyInfo
       })?.name
 
     let aliasB = aliasBOptions
@@ -200,10 +296,11 @@ export function defineLink(
       )
     }
 
+    const serviceBObjEntryPoint = camelToSnakeCase(serviceBObj.field)
     const serviceBMethodSuffix = serviceBAliases.find((serviceAlias) => {
       return Array.isArray(serviceAlias.name)
-        ? serviceAlias.name.includes(aliasB)
-        : serviceAlias.name === aliasB
+        ? serviceAlias.name.includes(serviceBObjEntryPoint)
+        : serviceAlias.name === serviceBObjEntryPoint
     })?.args?.methodSuffix
 
     const moduleAPrimaryKeys = serviceAInfo.primaryKeys ?? []
@@ -247,22 +344,19 @@ export function defineLink(
       aliasB
     )
 
+    output.entryPoint = aliasA + "_" + aliasB
+    output.entity = toPascalCase(
+      ["Link", serviceAObj.module, aliasA, serviceBObj.module, aliasB].join("_")
+    )
+
     const linkDefinition: ModuleJoinerConfig = {
       serviceName: output.serviceName,
       isLink: true,
       alias: [
         {
-          name: [aliasA + "_" + aliasB],
+          name: [output.entryPoint],
           args: {
-            entity: toPascalCase(
-              [
-                "Link",
-                serviceAObj.module,
-                aliasA,
-                serviceBObj.module,
-                aliasB,
-              ].join("_")
-            ),
+            entity: output.entity,
           },
         },
       ],
@@ -270,49 +364,59 @@ export function defineLink(
       relationships: [
         {
           serviceName: serviceAObj.module,
+          entity: serviceAObj.entity,
           primaryKey: serviceAPrimaryKey,
           foreignKey: serviceAObj.key,
           alias: aliasA,
           args: {
             methodSuffix: serviceAMethodSuffix,
           },
+          deleteCascade: serviceAObj.deleteCascade,
         },
         {
           serviceName: serviceBObj.module,
+          entity: serviceBObj.entity,
           primaryKey: serviceBPrimaryKey!,
           foreignKey: serviceBObj.key,
           alias: aliasB,
           args: {
             methodSuffix: serviceBMethodSuffix,
           },
+          deleteCascade: serviceBObj.deleteCascade,
         },
       ],
       extends: [
         {
           serviceName: serviceAObj.module,
-          fieldAlias: {
-            [serviceBObj.isList ? pluralize(aliasB) : aliasB]:
-              aliasB + "_link." + aliasB, //plural aliasA
-          },
+          fieldAlias: buildFieldAlias({
+            property: serviceBObj.isList ? pluralize(aliasB) : aliasB,
+            path: aliasB + "_link." + aliasB,
+            isList: serviceBObj.isList,
+            forwardArguments: [aliasB + "_link." + aliasB],
+          }),
           relationship: {
             serviceName: output.serviceName,
+            entity: output.entity,
             primaryKey: serviceAObj.key,
             foreignKey: serviceAPrimaryKey,
-            alias: aliasB + "_link", // plural alias
+            alias: aliasB + "_link",
             isList: serviceBObj.isList,
           },
         },
         {
           serviceName: serviceBObj.module,
-          fieldAlias: {
-            [serviceAObj.isList ? pluralize(aliasA) : aliasA]:
-              aliasA + "_link." + aliasA,
-          },
+          fieldAlias: buildFieldAlias({
+            property: serviceAObj.isList ? pluralize(aliasA) : aliasA,
+            path: aliasA + "_link." + aliasA,
+            isList: serviceAObj.isList,
+            forwardArguments: [aliasA + "_link." + aliasA],
+          }),
           relationship: {
             serviceName: output.serviceName,
+            entity: output.entity,
             primaryKey: serviceBObj.key,
             foreignKey: serviceBPrimaryKey,
-            alias: aliasA + "_link", // plural alias
+            alias: aliasA + "_link",
             isList: serviceAObj.isList,
           },
         },
@@ -334,4 +438,63 @@ export function defineLink(
   global.MedusaModule.setCustomLink(register)
 
   return output
+}
+
+function defineReadOnlyLink(
+  serviceAObj: ModuleLinkableKeyConfig,
+  serviceBObj: ModuleLinkableKeyConfig,
+  readOnlyLinkOptions?: ReadOnlyExtraOptions
+): void {
+  const register = function (
+    modules: ModuleJoinerConfig[]
+  ): ModuleJoinerConfig {
+    const serviceAInfo = modules.find(
+      (mod) => mod.serviceName === serviceAObj.module
+    )!
+    const serviceBInfo = modules.find(
+      (mod) => mod.serviceName === serviceBObj.module
+    )!
+
+    if (!serviceAInfo) {
+      throw new Error(`Service ${serviceAObj.module} was not found. If this is your module, make sure you set isQueryable to true in medusa-config.js:
+        
+${serviceAObj.module}: {
+  // ...
+  definition: {
+    isQueryable: true
+  }
+}`)
+    }
+    if (!serviceBInfo) {
+      throw new Error(`Service ${serviceBObj.module} was not found. If this is your module, make sure you set isQueryable to true in medusa-config.js:
+        
+${serviceBObj.module}: {
+  // ...
+  definition: {
+    isQueryable: true
+  }
+}`)
+    }
+
+    return {
+      isLink: true,
+      isReadOnlyLink: true,
+      extends: [
+        {
+          serviceName: serviceAObj.module,
+          fieldAlias: buildFieldAlias(readOnlyLinkOptions?.shortcut),
+          relationship: {
+            serviceName: serviceBObj.module,
+            entity: serviceBObj.entity,
+            primaryKey: serviceBObj.primaryKey,
+            foreignKey: serviceAObj.field,
+            alias: serviceBObj.alias,
+            isList: readOnlyLinkOptions?.isList ?? serviceAObj.isList,
+          },
+        },
+      ],
+    }
+  }
+
+  global.MedusaModule.setCustomLink(register)
 }

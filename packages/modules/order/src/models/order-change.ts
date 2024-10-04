@@ -1,30 +1,33 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
   createPsqlIndexStatementHelper,
+  DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+  OrderChangeStatus,
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
   Collection,
   Entity,
   Enum,
+  Filter,
   ManyToOne,
-  OnInit,
   OneToMany,
+  OnInit,
   OptionalProps,
   PrimaryKey,
   Property,
   Rel,
 } from "@mikro-orm/core"
-import { OrderChangeStatus, OrderChangeType } from "@types"
+import {} from "@types"
 import OrderClaim from "./claim"
 import OrderExchange from "./exchange"
 import Order from "./order"
 import OrderChangeAction from "./order-change-action"
 import Return from "./return"
 
-type OptionalLineItemProps = DAL.EntityDateColumns
+type OptionalLineItemProps = DAL.ModelDateColumns
 
 const OrderIdIndex = createPsqlIndexStatementHelper({
   tableName: "order_change",
@@ -56,12 +59,6 @@ const OrderChangeStatusIndex = createPsqlIndexStatementHelper({
   where: "deleted_at IS NOT NULL",
 })
 
-const OrderChangeTypeIndex = createPsqlIndexStatementHelper({
-  tableName: "order_change",
-  columns: "change_type",
-  where: "deleted_at IS NOT NULL",
-})
-
 const DeletedAtIndex = createPsqlIndexStatementHelper({
   tableName: "order_change",
   columns: "deleted_at",
@@ -75,6 +72,7 @@ const VersionIndex = createPsqlIndexStatementHelper({
 })
 
 @Entity({ tableName: "order_change" })
+@Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
 @VersionIndex.MikroORMIndex()
 export default class OrderChange {
   [OptionalProps]?: OptionalLineItemProps
@@ -109,6 +107,7 @@ export default class OrderChange {
 
   @ManyToOne(() => Return, {
     persist: false,
+    nullable: true,
   })
   return: Rel<Return>
 
@@ -124,6 +123,7 @@ export default class OrderChange {
 
   @ManyToOne(() => OrderClaim, {
     persist: false,
+    nullable: true,
   })
   claim: OrderClaim
 
@@ -139,6 +139,7 @@ export default class OrderChange {
 
   @ManyToOne(() => OrderExchange, {
     persist: false,
+    nullable: true,
   })
   exchange: OrderExchange
 
@@ -146,12 +147,11 @@ export default class OrderChange {
   @VersionIndex.MikroORMIndex()
   version: number
 
-  @Enum({ items: () => OrderChangeType, nullable: true })
-  @OrderChangeTypeIndex.MikroORMIndex()
-  change_type: OrderChangeType | null = null
+  @Property({ columnType: "text", nullable: true })
+  change_type: string | null = null
 
   @OneToMany(() => OrderChangeAction, (action) => action.order_change, {
-    cascade: [Cascade.PERSIST, "sotf-remove" as Cascade],
+    cascade: [Cascade.PERSIST, "soft-remove" as Cascade],
   })
   actions = new Collection<Rel<OrderChangeAction>>(this)
 
@@ -211,7 +211,7 @@ export default class OrderChange {
     columnType: "timestamptz",
     nullable: true,
   })
-  canceled_at?: Date
+  canceled_at?: Date | null = null
 
   @Property({
     onCreate: () => new Date(),

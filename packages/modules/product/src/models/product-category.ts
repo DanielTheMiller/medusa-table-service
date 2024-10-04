@@ -4,7 +4,7 @@ import {
   createPsqlIndexStatementHelper,
   generateEntityId,
   kebabCase,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Collection,
@@ -111,6 +111,9 @@ class ProductCategory {
   @Index({ name: "IDX_product_category_deleted_at" })
   @Property({ columnType: "timestamptz", nullable: true })
   deleted_at?: Date
+
+  @Property({ columnType: "jsonb", nullable: true })
+  metadata: Record<string, unknown> | null = null
 
   @ManyToMany(() => Product, (product) => product.categories)
   products = new Collection<Product>(this)

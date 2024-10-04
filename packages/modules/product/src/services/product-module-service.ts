@@ -6,7 +6,7 @@ import {
   ModuleJoinerConfig,
   ModulesSdkTypes,
   ProductTypes,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   Image as ProductImage,
   Product,
@@ -18,7 +18,7 @@ import {
   ProductType,
   ProductVariant,
 } from "@models"
-import { ProductCategoryService, ProductService } from "@services"
+import { ProductCategoryService } from "@services"
 
 import {
   arrayDifference,
@@ -32,11 +32,12 @@ import {
   MedusaContext,
   MedusaError,
   MedusaService,
+  Modules,
   ProductStatus,
   promiseAll,
   removeUndefined,
   toHandle,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   ProductCollectionEventData,
   ProductCollectionEvents,
@@ -55,7 +56,7 @@ import { joinerConfig } from "./../joiner-config"
 
 type InjectedDependencies = {
   baseRepository: DAL.RepositoryService
-  productService: ProductService
+  productService: ModulesSdkTypes.IMedusaInternalService<any, any>
   productVariantService: ModulesSdkTypes.IMedusaInternalService<any, any>
   productTagService: ModulesSdkTypes.IMedusaInternalService<any>
   productCategoryService: ProductCategoryService
@@ -64,7 +65,7 @@ type InjectedDependencies = {
   productTypeService: ModulesSdkTypes.IMedusaInternalService<any>
   productOptionService: ModulesSdkTypes.IMedusaInternalService<any>
   productOptionValueService: ModulesSdkTypes.IMedusaInternalService<any>
-  eventBusModuleService?: IEventBusModuleService
+  [Modules.EVENT_BUS]?: IEventBusModuleService
 }
 
 export default class ProductModuleService
@@ -81,6 +82,9 @@ export default class ProductModuleService
     ProductOption: {
       dto: ProductTypes.ProductOptionDTO
     }
+    ProductOptionValue: {
+      dto: ProductTypes.ProductOptionValueDTO
+    }
     ProductTag: {
       dto: ProductTypes.ProductTagDTO
     }
@@ -95,6 +99,7 @@ export default class ProductModuleService
     ProductCategory,
     ProductCollection,
     ProductOption,
+    ProductOptionValue,
     ProductTag,
     ProductType,
     ProductVariant,
@@ -102,7 +107,7 @@ export default class ProductModuleService
   implements ProductTypes.IProductModuleService
 {
   protected baseRepository_: DAL.RepositoryService
-  protected readonly productService_: ProductService
+  protected readonly productService_: ModulesSdkTypes.IMedusaInternalService<Product>
   protected readonly productVariantService_: ModulesSdkTypes.IMedusaInternalService<ProductVariant>
   protected readonly productCategoryService_: ProductCategoryService
   protected readonly productTagService_: ModulesSdkTypes.IMedusaInternalService<ProductTag>
@@ -125,7 +130,7 @@ export default class ProductModuleService
       productTypeService,
       productOptionService,
       productOptionValueService,
-      eventBusModuleService,
+      [Modules.EVENT_BUS]: eventBusModuleService,
     }: InjectedDependencies,
     protected readonly moduleDeclaration: InternalModuleDeclaration
   ) {
@@ -161,7 +166,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductVariantDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   @EmitEvents()
   async createProductVariants(
     data:
@@ -182,7 +187,7 @@ export default class ProductModuleService
     return Array.isArray(data) ? createdVariants : createdVariants[0]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async createVariants_(
     data: ProductTypes.CreateProductVariantDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -199,7 +204,6 @@ export default class ProductModuleService
         product_id: [...new Set<string>(data.map((v) => v.product_id!))],
       },
       {
-        take: null,
         relations: ["values"],
       },
       sharedContext
@@ -230,7 +234,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductVariantDTO>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   @EmitEvents()
   async upsertProductVariants(
     data:
@@ -278,7 +282,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductVariantDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   @EmitEvents()
   async updateProductVariants(
     idOrSelector: string | ProductTypes.FilterableProductVariantProps,
@@ -312,7 +316,7 @@ export default class ProductModuleService
     return isString(idOrSelector) ? updatedVariants[0] : updatedVariants
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateVariants_(
     data: UpdateProductVariantInput[],
     @MedusaContext() sharedContext: Context = {}
@@ -321,7 +325,7 @@ export default class ProductModuleService
     const variantIdsToUpdate = data.map(({ id }) => id)
     const variants = await this.productVariantService_.list(
       { id: variantIdsToUpdate },
-      { take: null },
+      {},
       sharedContext
     )
     if (variants.length !== data.length) {
@@ -349,7 +353,7 @@ export default class ProductModuleService
           new Set(variantsWithProductId.map((v) => v.product_id!))
         ),
       },
-      { take: null, relations: ["values"] },
+      { relations: ["values"] },
       sharedContext
     )
 
@@ -391,7 +395,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductTagDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   @EmitEvents()
   async createProductTags(
     data: ProductTypes.CreateProductTagDTO[] | ProductTypes.CreateProductTagDTO,
@@ -422,7 +426,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductTagDTO>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   @EmitEvents()
   async upsertProductTags(
     data: ProductTypes.UpsertProductTagDTO[] | ProductTypes.UpsertProductTagDTO,
@@ -472,7 +476,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductTagDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   @EmitEvents()
   async updateProductTags(
     idOrSelector: string | ProductTypes.FilterableProductTagProps,
@@ -524,7 +528,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductTypeDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createProductTypes(
     data:
       | ProductTypes.CreateProductTypeDTO[]
@@ -551,7 +555,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductTypeDTO>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async upsertProductTypes(
     data:
       | ProductTypes.UpsertProductTypeDTO[]
@@ -594,7 +598,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductTypeDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateProductTypes(
     idOrSelector: string | ProductTypes.FilterableProductTypeProps,
     data: ProductTypes.UpdateProductTypeDTO,
@@ -640,7 +644,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductOptionDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createProductOptions(
     data:
       | ProductTypes.CreateProductOptionDTO[]
@@ -658,7 +662,7 @@ export default class ProductModuleService
     return Array.isArray(data) ? createdOptions : createdOptions[0]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async createOptions_(
     data: ProductTypes.CreateProductOptionDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -694,7 +698,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductOptionDTO>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async upsertProductOptions(
     data:
       | ProductTypes.UpsertProductOptionDTO[]
@@ -739,7 +743,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductOptionDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateProductOptions(
     idOrSelector: string | ProductTypes.FilterableProductOptionProps,
     data: ProductTypes.UpdateProductOptionDTO,
@@ -771,7 +775,7 @@ export default class ProductModuleService
     return isString(idOrSelector) ? updatedOptions[0] : updatedOptions
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateOptions_(
     data: UpdateProductOptionInput[],
     @MedusaContext() sharedContext: Context = {}
@@ -786,7 +790,7 @@ export default class ProductModuleService
 
     const dbOptions = await this.productOptionService_.list(
       { id: data.map(({ id }) => id) },
-      { take: null, relations: ["values"] },
+      { relations: ["values"] },
       sharedContext
     )
 
@@ -854,7 +858,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductCollectionDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createProductCollections(
     data:
       | ProductTypes.CreateProductCollectionDTO[]
@@ -873,15 +877,18 @@ export default class ProductModuleService
 
     await this.eventBusModuleService_?.emit<ProductCollectionEventData>(
       collections.map(({ id }) => ({
-        eventName: ProductCollectionEvents.COLLECTION_CREATED,
+        name: ProductCollectionEvents.COLLECTION_CREATED,
         data: { id },
-      }))
+      })),
+      {
+        internal: true,
+      }
     )
 
     return Array.isArray(data) ? createdCollections : createdCollections[0]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async createCollections_(
     data: ProductTypes.CreateProductCollectionDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -910,7 +917,7 @@ export default class ProductModuleService
     data: ProductTypes.UpsertProductCollectionDTO,
     sharedContext?: Context
   ): Promise<ProductTypes.ProductCollectionDTO>
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async upsertProductCollections(
     data:
       | ProductTypes.UpsertProductCollectionDTO[]
@@ -946,18 +953,24 @@ export default class ProductModuleService
     if (created.length) {
       await this.eventBusModuleService_?.emit<ProductCollectionEventData>(
         created.map(({ id }) => ({
-          eventName: ProductCollectionEvents.COLLECTION_CREATED,
+          name: ProductCollectionEvents.COLLECTION_CREATED,
           data: { id },
-        }))
+        })),
+        {
+          internal: true,
+        }
       )
     }
 
     if (updated.length) {
       await this.eventBusModuleService_?.emit<ProductCollectionEventData>(
         updated.map(({ id }) => ({
-          eventName: ProductCollectionEvents.COLLECTION_UPDATED,
+          name: ProductCollectionEvents.COLLECTION_UPDATED,
           data: { id },
-        }))
+        })),
+        {
+          internal: true,
+        }
       )
     }
 
@@ -976,7 +989,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductCollectionDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateProductCollections(
     idOrSelector: string | ProductTypes.FilterableProductCollectionProps,
     data: ProductTypes.UpdateProductCollectionDTO,
@@ -1016,15 +1029,18 @@ export default class ProductModuleService
 
     await this.eventBusModuleService_?.emit<ProductCollectionEventData>(
       updatedCollections.map(({ id }) => ({
-        eventName: ProductCollectionEvents.COLLECTION_UPDATED,
+        name: ProductCollectionEvents.COLLECTION_UPDATED,
         data: { id },
-      }))
+      })),
+      {
+        internal: true,
+      }
     )
 
     return isString(idOrSelector) ? updatedCollections[0] : updatedCollections
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateCollections_(
     data: UpdateCollectionInput[],
     @MedusaContext() sharedContext: Context = {}
@@ -1101,7 +1117,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductCategoryDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   @EmitEvents()
   async createProductCategories(
     data:
@@ -1139,7 +1155,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductCategoryDTO>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   @EmitEvents()
   async upsertProductCategories(
     data:
@@ -1207,7 +1223,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductCategoryDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   @EmitEvents()
   async updateProductCategories(
     idOrSelector: string | ProductTypes.FilterableProductTypeProps,
@@ -1265,7 +1281,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createProducts(
     data: ProductTypes.CreateProductDTO[] | ProductTypes.CreateProductDTO,
     @MedusaContext() sharedContext: Context = {}
@@ -1279,9 +1295,12 @@ export default class ProductModuleService
 
     await this.eventBusModuleService_?.emit<ProductEventData>(
       createdProducts.map(({ id }) => ({
-        eventName: ProductEvents.PRODUCT_CREATED,
+        name: ProductEvents.PRODUCT_CREATED,
         data: { id },
-      }))
+      })),
+      {
+        internal: true,
+      }
     )
 
     return Array.isArray(data) ? createdProducts : createdProducts[0]
@@ -1296,7 +1315,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductDTO>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async upsertProducts(
     data: ProductTypes.UpsertProductDTO[] | ProductTypes.UpsertProductDTO,
     @MedusaContext() sharedContext: Context = {}
@@ -1327,18 +1346,24 @@ export default class ProductModuleService
     if (created.length) {
       await this.eventBusModuleService_?.emit<ProductEventData>(
         created.map(({ id }) => ({
-          eventName: ProductEvents.PRODUCT_CREATED,
+          name: ProductEvents.PRODUCT_CREATED,
           data: { id },
-        }))
+        })),
+        {
+          internal: true,
+        }
       )
     }
 
     if (updated.length) {
       await this.eventBusModuleService_?.emit<ProductEventData>(
         updated.map(({ id }) => ({
-          eventName: ProductEvents.PRODUCT_UPDATED,
+          name: ProductEvents.PRODUCT_UPDATED,
           data: { id },
-        }))
+        })),
+        {
+          internal: true,
+        }
       )
     }
 
@@ -1357,7 +1382,7 @@ export default class ProductModuleService
     sharedContext?: Context
   ): Promise<ProductTypes.ProductDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateProducts(
     idOrSelector: string | ProductTypes.FilterableProductProps,
     data: ProductTypes.UpdateProductDTO,
@@ -1390,15 +1415,18 @@ export default class ProductModuleService
 
     await this.eventBusModuleService_?.emit<ProductEventData>(
       updatedProducts.map(({ id }) => ({
-        eventName: ProductEvents.PRODUCT_UPDATED,
+        name: ProductEvents.PRODUCT_UPDATED,
         data: { id },
-      }))
+      })),
+      {
+        internal: true,
+      }
     )
 
     return isString(idOrSelector) ? updatedProducts[0] : updatedProducts
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async createProducts_(
     data: ProductTypes.CreateProductDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -1464,7 +1492,7 @@ export default class ProductModuleService
     return productData
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateProducts_(
     data: UpdateProductInput[],
     @MedusaContext() sharedContext: Context = {}
@@ -1524,7 +1552,7 @@ export default class ProductModuleService
           if (product.variants?.length) {
             allOptions = await this.productOptionService_.list(
               { product_id: upsertedProduct.id },
-              { take: null, relations: ["values"] },
+              { relations: ["values"] },
               sharedContext
             )
           }
@@ -1571,7 +1599,7 @@ export default class ProductModuleService
     if (productData.handle && !isValidHandle(productData.handle)) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        "Invalid product handle. It must contain URL safe characters"
+        `Invalid product handle '${productData.handle}'. It must contain URL safe characters`
       )
     }
   }
@@ -1609,37 +1637,34 @@ export default class ProductModuleService
       productData.discountable = false
     }
 
-    if (productData.tags?.length && productData.tags.some((t) => !t.id)) {
-      const dbTags = await this.productTagService_.list(
-        {
-          value: productData.tags
-            .map((t) => t.value)
-            .filter((v) => !!v) as string[],
-        },
-        { take: null },
+    if (productData.options?.length) {
+      const dbOptions = await this.productOptionService_.list(
+        { product_id: productData.id },
+        { relations: ["values"] },
         sharedContext
       )
 
-      productData.tags = productData.tags.map((tag) => {
-        const dbTag = dbTags.find((t) => t.value === tag.value)
+      ;(productData as any).options = productData.options?.map((option) => {
+        const dbOption = dbOptions.find((o) => o.title === option.title)
         return {
-          ...tag,
-          ...(dbTag ? { id: dbTag.id } : {}),
+          title: option.title,
+          values: option.values?.map((value) => {
+            const dbValue = dbOption?.values?.find((val) => val.value === value)
+            return {
+              value: value,
+              ...(dbValue ? { id: dbValue.id } : {}),
+            }
+          }),
+          ...(dbOption ? { id: dbOption.id } : {}),
         }
       })
     }
 
-    if (productData.options?.length) {
-      ;(productData as any).options = productData.options?.map((option) => {
-        return {
-          title: option.title,
-          values: option.values?.map((value) => {
-            return {
-              value: value,
-            }
-          }),
-        }
-      })
+    if (productData.tag_ids) {
+      ;(productData as any).tags = productData.tag_ids.map((cid) => ({
+        id: cid,
+      }))
+      delete productData.tag_ids
     }
 
     if (productData.category_ids) {
@@ -1700,7 +1725,10 @@ export default class ProductModuleService
     const variantsWithOptions = variants.map((variant: any) => {
       const variantOptions = Object.entries(variant.options ?? {}).map(
         ([key, val]) => {
-          const option = options.find((o) => o.title === key)
+          const option = options.find(
+            (o) => o.title === key && o.product_id === variant.product_id
+          )
+
           const optionValue = option?.values?.find(
             (v: any) => (v.value?.value ?? v.value) === val
           )

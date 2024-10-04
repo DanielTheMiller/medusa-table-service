@@ -1,18 +1,18 @@
 import { Context, LoadedModule, MedusaContainer } from "@medusajs/types"
 import {
-  createMedusaContainer,
-  isDefined,
-  isString,
   MedusaContext,
   MedusaContextType,
   MedusaError,
   MedusaModuleType,
+  createMedusaContainer,
+  isDefined,
+  isString,
 } from "@medusajs/utils"
 import { asValue } from "awilix"
 import {
-  DistributedTransaction,
   DistributedTransactionEvent,
   DistributedTransactionEvents,
+  DistributedTransactionType,
   TransactionFlow,
   TransactionModelOptions,
   TransactionOrchestrator,
@@ -59,10 +59,15 @@ export class LocalWorkflow {
       )
     }
 
-    this.flow = new OrchestratorBuilder(globalWorkflow.flow_)
+    const workflow = {
+      ...globalWorkflow,
+      orchestrator: TransactionOrchestrator.clone(globalWorkflow.orchestrator),
+    }
+
+    this.flow = new OrchestratorBuilder(workflow.flow_)
     this.workflowId = workflowId
-    this.workflow = globalWorkflow
-    this.handlers = new Map(globalWorkflow.handlers_)
+    this.workflow = workflow
+    this.handlers = new Map(workflow.handlers_)
 
     this.resolveContainer(modulesLoaded)
   }
@@ -80,8 +85,8 @@ export class LocalWorkflow {
       container = createMedusaContainer()
 
       for (const mod of modulesLoaded || []) {
-        const registrationName = mod.__definition.registrationName
-        container.register(registrationName, asValue(mod))
+        const keyName = mod.__definition.key
+        container.register(keyName, asValue(mod))
       }
     }
 
@@ -96,8 +101,8 @@ export class LocalWorkflow {
     // eslint-disable-next-line
     const this_ = this
     const originalResolver = container.resolve
-    container.resolve = function (registrationName, opts) {
-      const resolved = originalResolver(registrationName, opts)
+    container.resolve = function (keyName, opts) {
+      const resolved = originalResolver(keyName, opts)
       if (resolved?.constructor?.__type !== MedusaModuleType) {
         return resolved
       }
@@ -141,11 +146,11 @@ export class LocalWorkflow {
     this.workflow = {
       id: this.workflowId,
       flow_: finalFlow,
-      orchestrator: new TransactionOrchestrator(
-        this.workflowId,
-        finalFlow,
-        customOptions
-      ),
+      orchestrator: new TransactionOrchestrator({
+        id: this.workflowId,
+        definition: finalFlow,
+        options: customOptions,
+      }),
       options: customOptions,
       handler: WorkflowManager.buildHandlers(this.handlers),
       handlers_: this.handlers,
@@ -167,7 +172,7 @@ export class LocalWorkflow {
     idempotencyKey,
   }: {
     orchestrator: TransactionOrchestrator
-    transaction?: DistributedTransaction
+    transaction?: DistributedTransactionType
     subscribe?: DistributedTransactionEvents
     idempotencyKey?: string
   }) {
@@ -281,6 +286,13 @@ export class LocalWorkflow {
           eventWrapperMap.get("onCompensateStepFailure")
         )
       }
+
+      if (subscribe?.onStepSkipped) {
+        transaction.on(
+          DistributedTransactionEvent.STEP_SKIPPED,
+          eventWrapperMap.get("onStepSkipped")
+        )
+      }
     }
 
     if (transaction) {
@@ -375,7 +387,7 @@ export class LocalWorkflow {
   }
 
   async cancel(
-    transactionOrTransactionId: string | DistributedTransaction,
+    transactionOrTransactionId: string | DistributedTransactionType,
     context?: Context,
     subscribe?: DistributedTransactionEvents
   ) {
@@ -404,7 +416,7 @@ export class LocalWorkflow {
     response?: unknown,
     context?: Context,
     subscribe?: DistributedTransactionEvents
-  ): Promise<DistributedTransaction> {
+  ): Promise<DistributedTransactionType> {
     this.medusaContext = context
     const { handler, orchestrator } = this.workflow
 
@@ -431,7 +443,7 @@ export class LocalWorkflow {
     error?: Error | any,
     context?: Context,
     subscribe?: DistributedTransactionEvents
-  ): Promise<DistributedTransaction> {
+  ): Promise<DistributedTransactionType> {
     this.medusaContext = context
     const { handler, orchestrator } = this.workflow
 

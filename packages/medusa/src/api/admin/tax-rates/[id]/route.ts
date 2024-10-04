@@ -4,22 +4,33 @@ import {
 } from "@medusajs/core-flows"
 import {
   ContainerRegistrationKeys,
+  MedusaError,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchTaxRate } from "../helpers"
 import {
   AdminGetTaxRateParamsType,
   AdminUpdateTaxRateType,
 } from "../validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminUpdateTaxRateType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminTaxRateResponse>
 ) => {
+  const existingTaxRate = await refetchTaxRate(req.params.id, req.scope, ["id"])
+
+  if (!existingTaxRate) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Tax rate with id "${req.params.id}" not found`
+    )
+  }
+
   await updateTaxRatesWorkflow(req.scope).run({
     input: {
       selector: { id: req.params.id },
@@ -37,7 +48,7 @@ export const POST = async (
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<AdminGetTaxRateParamsType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminTaxRateResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
   const variables = { id: req.params.id }
@@ -54,7 +65,7 @@ export const GET = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminTaxRateDeleteResponse>
 ) => {
   const id = req.params.id
   await deleteTaxRatesWorkflow(req.scope).run({

@@ -2,6 +2,7 @@ import {
   Constructor,
   IModuleService,
   InternalModuleDeclaration,
+  LoaderOptions,
   Logger,
   MedusaContainer,
   ModuleExports,
@@ -13,6 +14,7 @@ import {
   createMedusaContainer,
   defineJoinerConfig,
   DmlEntity,
+  dynamicImport,
   MedusaModuleType,
   ModulesSdkUtils,
   toMikroOrmEntities,
@@ -20,7 +22,7 @@ import {
 import { asFunction, asValue } from "awilix"
 import { statSync } from "fs"
 import { readdir } from "fs/promises"
-import { join, resolve } from "path"
+import { dirname, join, resolve } from "path"
 import { MODULE_RESOURCE_TYPE } from "../../types"
 
 type ModuleResource = {
@@ -32,35 +34,45 @@ type ModuleResource = {
   normalizedPath: string
 }
 
-export async function loadInternalModule(
-  container: MedusaContainer,
-  resolution: ModuleResolution,
-  logger: Logger,
-  migrationOnly?: boolean,
-  loaderOnly?: boolean
-): Promise<{ error?: Error } | void> {
-  const registrationName = !loaderOnly
-    ? resolution.definition.registrationName
-    : resolution.definition.registrationName + "__loaderOnly"
+type MigrationFunction = (
+  options: LoaderOptions<any>,
+  moduleDeclaration?: InternalModuleDeclaration
+) => Promise<void>
 
-  const { resources } =
-    resolution.moduleDeclaration as InternalModuleDeclaration
-
-  let loadedModule: ModuleExports
+export async function resolveModuleExports({
+  resolution,
+}: {
+  resolution: ModuleResolution
+}): Promise<
+  | (ModuleExports & {
+      discoveryPath: string
+    })
+  | { error: any }
+> {
+  let resolvedModuleExports: ModuleExports
   try {
-    // When loading manually, we pass the exports to be loaded, meaning that we do not need to import the package to find
-    // the exports. This is useful when a package export an initialize function which will bootstrap itself and therefore
-    // does not need to import the package that is currently being loaded as it would create a
-    // circular reference.
-    const modulePath = resolution.resolutionPath as string
-
     if (resolution.moduleExports) {
       // TODO:
       // If we want to benefit from the auto load mechanism, even if the module exports is provided, we need to ask for the module path
-      loadedModule = resolution.moduleExports
+      resolvedModuleExports = resolution.moduleExports
+      resolvedModuleExports.discoveryPath = resolution.resolutionPath as string
     } else {
-      loadedModule = await import(modulePath)
-      loadedModule = (loadedModule as any).default
+      const module = await dynamicImport(resolution.resolutionPath as string)
+
+      if ("discoveryPath" in module) {
+        const reExportedLoadedModule = await dynamicImport(module.discoveryPath)
+        const discoveryPath = module.discoveryPath
+        resolvedModuleExports = reExportedLoadedModule.default
+        resolvedModuleExports.discoveryPath = discoveryPath as string
+      } else {
+        resolvedModuleExports = (module as { default: ModuleExports }).default
+        resolvedModuleExports.discoveryPath =
+          resolution.resolutionPath as string
+      }
+    }
+
+    return resolvedModuleExports as ModuleExports & {
+      discoveryPath: string
     }
   } catch (error) {
     if (
@@ -76,20 +88,42 @@ export async function loadInternalModule(
 
     return { error }
   }
+}
+
+export async function loadInternalModule(
+  container: MedusaContainer,
+  resolution: ModuleResolution,
+  logger: Logger,
+  migrationOnly?: boolean,
+  loaderOnly?: boolean
+): Promise<{ error?: Error } | void> {
+  const keyName = !loaderOnly
+    ? resolution.definition.key
+    : resolution.definition.key + "__loaderOnly"
+
+  const { resources } =
+    resolution.moduleDeclaration as InternalModuleDeclaration
+
+  const loadedModule = await resolveModuleExports({ resolution })
+
+  if ("error" in loadedModule) {
+    return loadedModule
+  }
 
   let moduleResources = {} as ModuleResource
 
-  if (resolution.resolutionPath) {
-    moduleResources = await loadResources(
-      resolution,
+  if (loadedModule.discoveryPath) {
+    moduleResources = await loadResources({
+      moduleResolution: resolution,
+      discoveryPath: loadedModule.discoveryPath,
       logger,
-      loadedModule?.loaders ?? []
-    )
+      loadedModuleLoaders: loadedModule?.loaders,
+    })
   }
 
   if (!loadedModule?.service && !moduleResources.moduleService) {
     container.register({
-      [registrationName]: asValue(undefined),
+      [keyName]: asValue(undefined),
     })
 
     return {
@@ -106,8 +140,9 @@ export async function loadInternalModule(
     const moduleService = {
       __joinerConfig: moduleService_.prototype.__joinerConfig,
     }
+
     container.register({
-      [registrationName]: asValue(moduleService),
+      [keyName]: asValue(moduleService),
     })
     return
   }
@@ -133,6 +168,15 @@ export async function loadInternalModule(
     )
   }
 
+  if (resolution.definition.__passSharedContainer) {
+    localContainer.register(
+      "sharedContainer",
+      asFunction(() => {
+        return container
+      })
+    )
+  }
+
   const loaders = moduleResources.loaders ?? loadedModule?.loaders ?? []
   const error = await runLoaders(loaders, {
     container,
@@ -140,7 +184,7 @@ export async function loadInternalModule(
     logger,
     resolution,
     loaderOnly,
-    registrationName,
+    keyName,
   })
 
   if (error) {
@@ -150,7 +194,7 @@ export async function loadInternalModule(
   const moduleService = moduleResources.moduleService ?? loadedModule.service
 
   container.register({
-    [registrationName]: asFunction((cradle) => {
+    [keyName]: asFunction((cradle) => {
       ;(moduleService as any).__type = MedusaModuleType
       return new moduleService(
         localContainer.cradle,
@@ -162,7 +206,7 @@ export async function loadInternalModule(
 
   if (loaderOnly) {
     // The expectation is only to run the loader as standalone, so we do not need to register the service and we need to cleanup all services
-    const service = container.resolve<IModuleService>(registrationName)
+    const service = container.resolve<IModuleService>(keyName)
     await service.__hooks?.onApplicationPrepareShutdown?.()
     await service.__hooks?.onApplicationShutdown?.()
   }
@@ -171,27 +215,35 @@ export async function loadInternalModule(
 export async function loadModuleMigrations(
   resolution: ModuleResolution,
   moduleExports?: ModuleExports
-): Promise<[Function | undefined, Function | undefined]> {
-  let loadedModule: ModuleExports
-  try {
-    loadedModule =
-      moduleExports ?? (await import(resolution.resolutionPath as string))
+): Promise<{
+  runMigrations?: MigrationFunction
+  revertMigration?: MigrationFunction
+  generateMigration?: MigrationFunction
+}> {
+  const loadedModule = await resolveModuleExports({
+    resolution: { ...resolution, moduleExports },
+  })
 
+  if ("error" in loadedModule) {
+    throw loadedModule.error
+  }
+
+  try {
     let runMigrations = loadedModule.runMigrations
     let revertMigration = loadedModule.revertMigration
+    let generateMigration = loadedModule.generateMigration
 
-    // Generate migration scripts if they are not present
     if (!runMigrations || !revertMigration) {
-      const moduleResources = await loadResources(
-        resolution,
-        console as unknown as Logger,
-        loadedModule?.loaders ?? []
-      )
+      const moduleResources = await loadResources({
+        moduleResolution: resolution,
+        discoveryPath: loadedModule.discoveryPath,
+        loadedModuleLoaders: loadedModule?.loaders,
+      })
 
       const migrationScriptOptions = {
         moduleName: resolution.definition.key,
         models: moduleResources.models,
-        pathToMigrations: moduleResources.normalizedPath + "/migrations",
+        pathToMigrations: join(moduleResources.normalizedPath, "migrations"),
       }
 
       runMigrations ??= ModulesSdkUtils.buildMigrationScript(
@@ -201,11 +253,15 @@ export async function loadModuleMigrations(
       revertMigration ??= ModulesSdkUtils.buildRevertMigrationScript(
         migrationScriptOptions
       )
+
+      generateMigration ??= ModulesSdkUtils.buildGenerateMigrationScript(
+        migrationScriptOptions
+      )
     }
 
-    return [runMigrations, revertMigration]
+    return { runMigrations, revertMigration, generateMigration }
   } catch {
-    return [undefined, undefined]
+    return {}
   }
 }
 
@@ -237,21 +293,28 @@ async function importAllFromDir(path: string) {
   })
 
   return (
-    await Promise.all(filesToLoad.map((filePath) => import(filePath)))
+    await Promise.all(filesToLoad.map((filePath) => dynamicImport(filePath)))
   ).flatMap((value) => {
     return Object.values(value)
   })
 }
 
-export async function loadResources(
-  moduleResolution: ModuleResolution,
-  logger: Logger = console as unknown as Logger,
+export async function loadResources({
+  moduleResolution,
+  discoveryPath,
+  logger,
+  loadedModuleLoaders,
+}: {
+  moduleResolution: ModuleResolution
+  discoveryPath: string
+  logger?: Logger
   loadedModuleLoaders?: ModuleLoaderFunction[]
-): Promise<ModuleResource> {
-  let modulePath = moduleResolution.resolutionPath as string
-  let normalizedPath = modulePath
-    .replace("index.js", "")
-    .replace("index.ts", "")
+}): Promise<ModuleResource> {
+  logger ??= console as unknown as Logger
+  loadedModuleLoaders ??= []
+
+  const modulePath = discoveryPath
+  let normalizedPath = dirname(require.resolve(modulePath))
   normalizedPath = resolve(normalizedPath)
 
   try {
@@ -260,7 +323,9 @@ export async function loadResources(
     }
 
     const [moduleService, services, models, repositories] = await Promise.all([
-      import(modulePath).then((moduleExports) => moduleExports.default.service),
+      dynamicImport(modulePath).then((moduleExports) => {
+        return moduleExports.default.service
+      }),
       importAllFromDir(resolve(normalizedPath, "services")).catch(
         defaultOnFail
       ),
@@ -325,14 +390,7 @@ export async function loadResources(
 
 async function runLoaders(
   loaders: Function[] = [],
-  {
-    localContainer,
-    container,
-    logger,
-    resolution,
-    loaderOnly,
-    registrationName,
-  }
+  { localContainer, container, logger, resolution, loaderOnly, keyName }
 ): Promise<void | { error: Error }> {
   try {
     for (const loader of loaders) {
@@ -348,7 +406,7 @@ async function runLoaders(
     }
   } catch (err) {
     container.register({
-      [registrationName]: asValue(undefined),
+      [keyName]: asValue(undefined),
     })
 
     return {

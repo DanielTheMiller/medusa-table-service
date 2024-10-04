@@ -1,10 +1,10 @@
 import {
-  AuthTypes,
   AuthenticationInput,
-  AuthIdentityProviderService,
   AuthenticationResponse,
-} from "@medusajs/types"
-import { MedusaError } from "@medusajs/utils"
+  AuthIdentityProviderService,
+  AuthTypes,
+} from "@medusajs/framework/types"
+import { MedusaError } from "@medusajs/framework/utils"
 import { AuthProviderRegistrationPrefix } from "@types"
 
 type InjectedDependencies = {
@@ -40,6 +40,24 @@ export default class AuthProviderService {
   ): Promise<AuthenticationResponse> {
     const providerHandler = this.retrieveProviderRegistration(provider)
     return await providerHandler.authenticate(auth, authIdentityProviderService)
+  }
+
+  async register(
+    provider: string,
+    auth: AuthenticationInput,
+    authIdentityProviderService: AuthIdentityProviderService
+  ): Promise<AuthenticationResponse> {
+    const providerHandler = this.retrieveProviderRegistration(provider)
+    return await providerHandler.register(auth, authIdentityProviderService)
+  }
+
+  async update(
+    provider: string,
+    data: Record<string, unknown>,
+    authIdentityProviderService: AuthIdentityProviderService
+  ): Promise<AuthenticationResponse> {
+    const providerHandler = this.retrieveProviderRegistration(provider)
+    return await providerHandler.update(data, authIdentityProviderService)
   }
 
   async validateCallback(

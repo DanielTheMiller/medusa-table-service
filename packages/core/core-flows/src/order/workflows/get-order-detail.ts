@@ -1,10 +1,11 @@
-import { OrderDTO, OrderDetailDTO } from "@medusajs/types"
-import { deduplicate } from "@medusajs/utils"
+import { OrderDTO, OrderDetailDTO } from "@medusajs/framework/types"
+import { deduplicate } from "@medusajs/framework/utils"
 import {
   WorkflowData,
+  WorkflowResponse,
   createWorkflow,
   transform,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 import { useRemoteQueryStep } from "../../common"
 import {
   getLastFulfillmentStatus,
@@ -12,6 +13,9 @@ import {
 } from "../utils/aggregate-status"
 
 export const getOrderDetailWorkflowId = "get-order-detail"
+/**
+ * This workflow retrieves an order's details.
+ */
 export const getOrderDetailWorkflow = createWorkflow(
   getOrderDetailWorkflowId,
   (
@@ -19,7 +23,7 @@ export const getOrderDetailWorkflow = createWorkflow(
       fields: string[]
       order_id: string
     }>
-  ): WorkflowData<OrderDetailDTO> => {
+  ): WorkflowResponse<OrderDetailDTO> => {
     const fields = transform(input, ({ fields }) => {
       return deduplicate([
         ...fields,
@@ -51,6 +55,6 @@ export const getOrderDetailWorkflow = createWorkflow(
       return order_
     })
 
-    return aggregatedOrder
+    return new WorkflowResponse(aggregatedOrder)
   }
 )

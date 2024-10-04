@@ -1,5 +1,5 @@
-import { DAL } from "@medusajs/types"
-import { generateEntityId } from "@medusajs/utils"
+import { DAL } from "@medusajs/framework/types"
+import { generateEntityId } from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -14,7 +14,7 @@ import {
 import Customer from "./customer"
 import CustomerGroup from "./customer-group"
 
-type OptionalGroupProps = "customer_group" | "customer" | DAL.EntityDateColumns // TODO: To be revisited when more clear
+type OptionalGroupProps = "customer_group" | "customer" | DAL.ModelDateColumns // TODO: To be revisited when more clear
 
 @Entity({ tableName: "customer_group_customer" })
 export default class CustomerGroupCustomer {

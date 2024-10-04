@@ -2,20 +2,17 @@ import { createPromotionsWorkflow } from "@medusajs/core-flows"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchPromotion } from "./helpers"
-import {
-  AdminCreatePromotionType,
-  AdminGetPromotionsParamsType,
-} from "./validators"
+import { AdditionalData, HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest<AdminGetPromotionsParamsType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminGetPromotionsParams>,
+  res: MedusaResponse<HttpTypes.AdminPromotionListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -39,14 +36,17 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminCreatePromotionType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<
+    HttpTypes.AdminCreatePromotion & AdditionalData
+  >,
+  res: MedusaResponse<HttpTypes.AdminPromotionResponse>
 ) => {
+  const { additional_data, ...rest } = req.validatedBody
   const createPromotions = createPromotionsWorkflow(req.scope)
-  const promotionsData = [req.validatedBody] as any
+  const promotionsData = [rest] as any
 
   const { result } = await createPromotions.run({
-    input: { promotionsData },
+    input: { promotionsData, additional_data },
   })
 
   const promotion = await refetchPromotion(

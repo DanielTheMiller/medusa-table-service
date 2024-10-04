@@ -12,12 +12,14 @@ export const defaultAdminOrderFields = [
 export const defaultAdminRetrieveOrderFields = [
   "id",
   "display_id",
+  "region_id",
   "status",
   "version",
   "summary",
   "total",
   "subtotal",
   "tax_total",
+  "order_change",
   "discount_total",
   "discount_tax_total",
   "original_total",
@@ -32,7 +34,7 @@ export const defaultAdminRetrieveOrderFields = [
   "shipping_subtotal",
   "shipping_tax_total",
   "original_shipping_tax_total",
-  "original_shipping_tax_subtotal",
+  "original_shipping_subtotal",
   "original_shipping_total",
   "created_at",
   "updated_at",
@@ -48,6 +50,35 @@ export const defaultAdminRetrieveOrderFields = [
   "*shipping_methods.tax_lines",
   "*shipping_methods.adjustments",
   "*payment_collections",
+  "*payment_collections.payments",
+  "*payment_collections.payments.refunds",
+]
+
+export const defaultAdminRetrieveOrderChangesFields = [
+  "id",
+  "order_id",
+  "return_id",
+  "claim_id",
+  "exchange_id",
+  "version",
+  "change_type",
+  "*actions",
+  "description",
+  "status",
+  "internal_note",
+  "created_by",
+  "requested_by",
+  "requested_at",
+  "confirmed_by",
+  "confirmed_at",
+  "declined_by",
+  "declined_reason",
+  "metadata",
+  "declined_at",
+  "canceled_by",
+  "canceled_at",
+  "created_at",
+  "updated_at",
 ]
 
 export const retrieveTransformQueryConfig = {
@@ -59,4 +90,9 @@ export const listTransformQueryConfig = {
   defaults: defaultAdminOrderFields,
   defaultLimit: 20,
   isList: true,
+}
+
+export const retrieveOrderChangesTransformQueryConfig = {
+  defaultFields: defaultAdminRetrieveOrderChangesFields,
+  isList: false,
 }

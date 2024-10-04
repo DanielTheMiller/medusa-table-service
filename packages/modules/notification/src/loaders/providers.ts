@@ -1,10 +1,14 @@
-import { moduleProviderLoader } from "@medusajs/modules-sdk"
-import { LoaderOptions, ModuleProvider, ModulesSdkTypes } from "@medusajs/types"
+import { moduleProviderLoader } from "@medusajs/framework/modules-sdk"
+import {
+  LoaderOptions,
+  ModuleProvider,
+  ModulesSdkTypes,
+} from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   lowerCaseFirst,
   promiseAll,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { NotificationProvider } from "@models"
 import { NotificationProviderService } from "@services"
 import {
@@ -104,7 +108,7 @@ async function syncDatabaseProviders({
         providerService.update(
           providersToDisable.map((p) => ({
             id: p.id,
-            update: { is_enabled: false },
+            is_enabled: false,
           }))
         )
       )

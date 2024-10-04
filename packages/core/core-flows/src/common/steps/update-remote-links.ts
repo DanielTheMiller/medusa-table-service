@@ -1,12 +1,16 @@
-import { LinkDefinition, RemoteLink } from "@medusajs/modules-sdk"
-import { ContainerRegistrationKeys, MedusaError } from "@medusajs/utils"
-import { createStep, StepResponse } from "@medusajs/workflows-sdk"
+import { RemoteLink } from "@medusajs/framework/modules-sdk"
+import { LinkDefinition } from "@medusajs/framework/types"
+import {
+  ContainerRegistrationKeys,
+  MedusaError,
+} from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
 export const updateRemoteLinksStepId = "update-remote-links-step"
 export const updateRemoteLinksStep = createStep(
   updateRemoteLinksStepId,
   async (data: LinkDefinition[], { container }) => {
-    if (!data.length) {
+    if (!data?.length) {
       return new StepResponse([], [])
     }
 

@@ -1,24 +1,27 @@
 import {
   WorkflowData,
+  WorkflowResponse,
   createWorkflow,
   transform,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 import { createInventoryItemsStep } from "../steps"
 
-import { InventoryTypes } from "@medusajs/types"
+import { InventoryTypes } from "@medusajs/framework/types"
 import { createInventoryLevelsWorkflow } from "./create-inventory-levels"
 
 type LocationLevelWithoutInventory = Omit<
   InventoryTypes.CreateInventoryLevelInput,
   "inventory_item_id"
 >
-interface WorkflowInput {
+export interface CreateInventoryItemsWorkflowInput {
   items: (InventoryTypes.CreateInventoryItemInput & {
     location_levels?: LocationLevelWithoutInventory[]
   })[]
 }
 
-const buildLocationLevelMapAndItemData = (data: WorkflowInput) => {
+const buildLocationLevelMapAndItemData = (
+  data: CreateInventoryItemsWorkflowInput
+) => {
   data.items = data.items ?? []
   const inventoryItems: InventoryTypes.CreateInventoryItemInput[] = []
   // Keep an index to location levels mapping to inject the created inventory item
@@ -42,7 +45,6 @@ const buildInventoryLevelsInput = (data: {
   items: InventoryTypes.InventoryItemDTO[]
 }) => {
   const inventoryLevels: InventoryTypes.CreateInventoryLevelInput[] = []
-  let index = 0
 
   // The order of the input is critical to accurately create location levels for
   // the right inventory item
@@ -65,9 +67,12 @@ const buildInventoryLevelsInput = (data: {
 }
 
 export const createInventoryItemsWorkflowId = "create-inventory-items-workflow"
+/**
+ * This workflow creates one or more inventory items.
+ */
 export const createInventoryItemsWorkflow = createWorkflow(
   createInventoryItemsWorkflowId,
-  (input: WorkflowData<WorkflowInput>) => {
+  (input: WorkflowData<CreateInventoryItemsWorkflowInput>) => {
     const { locationLevelMap, inventoryItems } = transform(
       input,
       buildLocationLevelMapAndItemData
@@ -81,6 +86,6 @@ export const createInventoryItemsWorkflow = createWorkflow(
 
     createInventoryLevelsWorkflow.runAsStep(inventoryLevelsInput)
 
-    return items
+    return new WorkflowResponse(items)
   }
 )

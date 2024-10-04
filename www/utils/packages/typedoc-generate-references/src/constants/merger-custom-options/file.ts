@@ -20,10 +20,10 @@ const fileOptions: FormattingOptionsType = {
 Start by creating a new directory for your module. For example, \`src/modules/my-file\`.`,
       `## 2. Create the File Provider Service
 
-Create the file \`src/modules/my-file/service.ts\` that holds the implementation of the module's main service. It must extend the \`AbstractFileProviderService\` class imported from \`@medusajs/utils\`:
+Create the file \`src/modules/my-file/service.ts\` that holds the implementation of the module's main service. It must extend the \`AbstractFileProviderService\` class imported from \`@medusajs/framework/utils\`:
 
 \`\`\`ts title="src/modules/my-file/service.ts"
-import { AbstractFileProviderService } from "@medusajs/utils"
+import { AbstractFileProviderService } from "@medusajs/framework/utils"
 
 class MyFileProviderService extends AbstractFileProviderService {
   // TODO implement methods
@@ -39,17 +39,16 @@ Create the file \`src/modules/my-file/index.ts\` with the following content:
 
 \`\`\`ts title="src/modules/my-file/index.ts"
 import MyFileProviderService from "./service"
-import { Module } from "@medusajs/utils"
 
-export default Module("my-file", {
-  service: MyFileProviderService,
-})
+export default {
+  services: [MyFileProviderService],
+}
 \`\`\`
 
-This exports the module's definition, indicating that the \`MyFileProviderService\` is the main service of the module.`,
+This exports the module's definition, indicating that the \`MyFileProviderService\` is the module's service.`,
       `## 4. Use Module
 
-To use your File Provider Module, add it to the \`providers\` array of the File Module:
+To use your File Module Provider, add it to the \`providers\` array of the File Module:
 
 <Note>
 
@@ -58,7 +57,7 @@ The File Module accepts one provider only.
 </Note>
 
 \`\`\`js title="medusa-config.js"
-import { Modules } from "@medusajs/utils"
+const { Modules } = require("@medusajs/framework/utils")
 
 // ...
 
@@ -66,7 +65,7 @@ module.exports = defineConfig({
   // ...
   modules: {
     [Modules.FILE]: {
-      resolve: "@medusajs/file",
+      resolve: "@medusajs/framework/file",
       options: {
         providers: [
           {
@@ -82,6 +81,10 @@ module.exports = defineConfig({
   }
 })
 \`\`\`
+`,
+      `## 5. Test it Out
+
+To test out your file provider, use the Medusa Admin or the [Upload API route](https://docs.medusajs.com/v2/api/admin#uploads_postuploads) to upload a file.
 `,
     ],
   },

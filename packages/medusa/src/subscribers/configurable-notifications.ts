@@ -1,9 +1,9 @@
-import { INotificationModuleService } from "@medusajs/types"
+import { INotificationModuleService } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
-  ModuleRegistrationName,
+  Modules,
   promiseAll,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { get } from "lodash"
 import { SubscriberArgs, SubscriberConfig } from "../types/subscribers"
 
@@ -44,17 +44,16 @@ const configAsMap = handlerConfig.reduce(
 )
 
 export default async function configurableNotifications({
-  data,
-  eventName,
+  event,
   container,
 }: SubscriberArgs<any>) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const notificationService: INotificationModuleService = container.resolve(
-    ModuleRegistrationName.NOTIFICATION
+    Modules.NOTIFICATION
   )
 
-  const handlers = configAsMap[eventName] ?? []
-  const payload = data.data
+  const handlers = configAsMap[event.name] ?? []
+  const payload = event.data
 
   await promiseAll(
     handlers.map(async (handler) => {
@@ -75,7 +74,7 @@ export default async function configurableNotifications({
         await notificationService.createNotifications(notificationData)
       } catch (err) {
         logger.error(
-          `Failed to send notification for ${eventName}`,
+          `Failed to send notification for ${event.name}`,
           err.message
         )
       }

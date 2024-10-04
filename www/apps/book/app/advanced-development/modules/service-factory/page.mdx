@@ -1,4 +1,4 @@
-import { Table } from "docs-ui"
+import { Tabs, TabsContent, TabsContentWrapper, TabsList, TabsTriggerVertical } from "docs-ui"
 
 export const metadata = {
   title: `${pageNumber} Service Factory`,
@@ -12,11 +12,11 @@ In this chapter, you’ll learn about what the service factory is and how to use
 
 Medusa provides a service factory that your module’s main service can extend.
 
-The service factory generates data management methods for your data models, so you don't have to implement these methods manually.
+The service factory generates data management methods for your data models in the database, so you don't have to implement these methods manually.
 
 <Note title="Extend the service factory when" type="success">
 
-- Your service provides data-management functionalities of your data models.
+Your service provides data-management functionalities of your data models.
 
 </Note>
 
@@ -34,7 +34,7 @@ export const highlights = [
 ]
 
 ```ts title="src/modules/hello/service.ts" highlights={highlights}
-import { MedusaService } from "@medusajs/utils"
+import { MedusaService } from "@medusajs/framework/utils"
 import MyCustom from "./models/my-custom"
 
 class HelloModuleService extends MedusaService({
@@ -54,124 +54,228 @@ In the example above, since the `HelloModuleService` extends `MedusaService`, it
 
 ### Generated Methods
 
-The service factory generates data-management methods for each of the data models provided in the first parameter.
+The service factory generates methods to manage the records of each of the data models provided in the first parameter in the database.
 
-The method's names are the operation's name, suffixed by the data model's name.
+The method's names are the operation's name, suffixed by the data model's key in the object parameter passed to `MedusaService`.
 
-For example, the following methods are generated for the code snippet above:
-
-<Table>
-  <Table.Header>
-    <Table.Row>
-      <Table.HeaderCell>Method</Table.HeaderCell>
-      <Table.HeaderCell>Description</Table.HeaderCell>
-    </Table.Row>
-  </Table.Header>
-  <Table.Body>
-    <Table.Row>
-      <Table.Cell>
-      
-      `listMyCustoms`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Retrieves an array of records based on filters and pagination configurations.
-
-      </Table.Cell>
-    </Table.Row>
-    <Table.Row>
-      <Table.Cell>
-      
-      `listAndCountMyCustoms`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Retrieves a tuple of an array of records and the total count of available records based on the filters and pagination configurations provided.
-
-      </Table.Cell>
-    </Table.Row>
-    <Table.Row>
-      <Table.Cell>
-      
-      `retrieveMyCustom`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Retrieves a record by its ID.
-
-      </Table.Cell>
-    </Table.Row>
-    <Table.Row>
-      <Table.Cell>
-      
-      `createMyCustoms`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Create and retrieve records of the data model.
-
-      </Table.Cell>
-    </Table.Row>
-    <Table.Row>
-      <Table.Cell>
-      
-      `updateMyCustoms`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Update and retrieve records of the data model.
-
-      </Table.Cell>
-    </Table.Row>
-    <Table.Row>
-      <Table.Cell>
-      
-      `deleteMyCustoms`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Deletes records by an ID or filter.
-
-      </Table.Cell>
-    </Table.Row>
-    <Table.Row>
-      <Table.Cell>
-      
-      `softDeleteMyCustoms`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Soft-deletes records using an array of IDs or an object of filters.
-
-      </Table.Cell>
-    </Table.Row>
-    <Table.Row>
-      <Table.Cell>
-      
-      `restoreMyCustoms`
-
-      </Table.Cell>
-      <Table.Cell>
-      
-      Restores soft-deleted records using an array of IDs or an object of filters.
-
-      </Table.Cell>
-    </Table.Row>
-  </Table.Body>
-</Table>
+For example, the following methods are generated for the service above:
 
 <Note>
 
-Except for the `retrieve` method, the suffixed data model's name is plural.
+Find a complete reference of each of the methods in [this documentation](!resources!/service-factory-reference)
 
 </Note>
+
+<Tabs defaultValue="listMyCustoms" layoutType="vertical" className="mt-2">
+  <TabsList>
+    <TabsTriggerVertical value="listMyCustoms">listMyCustoms</TabsTriggerVertical>
+    <TabsTriggerVertical value="listAndCountMyCustoms">listAndCount</TabsTriggerVertical>
+    <TabsTriggerVertical value="retrieveMyCustom">retrieveMyCustom</TabsTriggerVertical>
+    <TabsTriggerVertical value="createMyCustoms">createMyCustoms</TabsTriggerVertical>
+    <TabsTriggerVertical value="updateMyCustoms">updateMyCustoms</TabsTriggerVertical>
+    <TabsTriggerVertical value="deleteMyCustoms">deleteMyCustoms</TabsTriggerVertical>
+    <TabsTriggerVertical value="softDeleteMyCustoms">softDeleteMyCustoms</TabsTriggerVertical>
+    <TabsTriggerVertical value="restoreMyCustoms">restoreMyCustoms</TabsTriggerVertical>
+  </TabsList>
+  <TabsContentWrapper className="[&_h3]:!mt-0">
+    <TabsContent value="listMyCustoms">
+
+    ### listMyCustoms
+
+    This method retrieves an array of records based on filters and pagination configurations.
+
+    For example:
+
+    ```ts
+    const myCustoms = await helloModuleService
+      .listMyCustoms()
+
+    // with filters
+    const myCustoms = await helloModuleService
+      .listMyCustoms({
+        id: ["123"]
+      })
+    ```
+
+    </TabsContent>
+    <TabsContent value="listAndCountMyCustoms">
+
+    ### listAndCountMyCustoms
+
+    This method retrieves a tuple of an array of records and the total count of available records based on the filters and pagination configurations provided.
+
+    For example:
+
+    ```ts
+    const [
+      myCustoms, 
+      count
+    ] = await helloModuleService.listAndCountMyCustoms()
+
+    // with filters
+    const [
+      myCustoms, 
+      count
+    ] = await helloModuleService.listAndCountMyCustoms({
+      id: ["123"]
+    })
+    ```
+
+    </TabsContent>
+    <TabsContent value="retrieveMyCustom">
+
+    ### retrieveMyCustom
+
+    This method retrieves a record by its ID.
+
+    For example:
+
+    ```ts
+    const myCustom = await helloModuleService
+      .retrieveMyCustom("123")
+    ```
+
+    </TabsContent>
+    <TabsContent value="createMyCustoms">
+
+    ### createMyCustoms
+
+    This method creates and retrieves records of the data model.
+
+    For example:
+
+    ```ts
+    const myCustom = await helloModuleService
+      .createMyCustoms({
+        name: "test"
+      })
+
+    // create multiple
+    const myCustoms = await helloModuleService
+      .createMyCustoms([
+        {
+          name: "test"
+        },
+        {
+          name: "test 2"
+        },
+      ])
+    ```
+
+    </TabsContent>
+    <TabsContent value="updateMyCustoms">
+
+    ### updateMyCustoms
+
+    This method updates and retrieves records of the data model.
+
+    For example:
+
+    ```ts
+    const myCustom = await helloModuleService
+      .updateMyCustoms({
+        id: "123",
+        name: "test"
+      })
+
+    // update multiple
+    const myCustoms = await helloModuleService
+      .updateMyCustoms([
+        {
+          id: "123",
+          name: "test"
+        },
+        {
+          id: "321",
+          name: "test 2"
+        },
+      ])
+
+    // use filters
+    const myCustoms = await helloModuleService
+      .updateMyCustoms([
+        {
+          selector: {
+            id: ["123", "321"]
+          },
+          data: {
+            name: "test"
+          }
+        },
+      ])
+    ```
+
+    </TabsContent>
+    <TabsContent value="deleteMyCustoms">
+
+    ### deleteMyCustoms
+
+    This method deletes records by an ID or filter.
+
+    For example:
+
+    ```ts
+    await helloModuleService.deleteMyCustoms("123")
+
+    // delete multiple
+    await helloModuleService.deleteMyCustoms([
+      "123", "321"
+    ])
+
+    // use filters
+    await helloModuleService.deleteMyCustoms({
+      selector: {
+        id: ["123", "321"]
+      }
+    })
+    ```
+
+    </TabsContent>
+    <TabsContent value="softDeleteMyCustoms">
+
+    ### softDeleteMyCustoms
+
+    This method soft-deletes records using an array of IDs or an object of filters.
+
+    For example:
+
+    ```ts
+    await helloModuleService.softDeleteMyCustoms("123")
+
+    // soft-delete multiple
+    await helloModuleService.softDeleteMyCustoms([
+      "123", "321"
+    ])
+
+    // use filters
+    await helloModuleService.softDeleteMyCustoms({
+      id: ["123", "321"]
+    })
+    ```
+
+    </TabsContent>
+    <TabsContent value="restoreMyCustoms">
+
+    ### restoreMyCustoms
+
+    This method restores soft-deleted records using an array of IDs or an object of filters.
+
+    For example:
+
+    ```ts
+    await helloModuleService.restoreMyCustoms([
+      "123", "321"
+    ])
+
+    // use filters
+    await helloModuleService.restoreMyCustoms({
+      id: ["123", "321"]
+    })
+    ```
+
+    </TabsContent>
+  </TabsContentWrapper>
+</Tabs>
 
 ### Using a Constructor
 
@@ -180,7 +284,7 @@ If you implement the `constructor` of your service, make sure to call `super` pa
 For example:
 
 ```ts highlights={[["8"]]}
-import { MedusaService } from "@medusajs/utils"
+import { MedusaService } from "@medusajs/framework/utils"
 import MyCustom from "./models/my-custom"
 
 class HelloModuleService extends MedusaService({

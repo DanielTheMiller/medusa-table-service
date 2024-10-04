@@ -8,7 +8,7 @@ import {
   ModuleJoinerConfig,
   RestoreReturn,
   SoftDeleteReturn,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   CommonEvents,
   InjectManager,
@@ -18,25 +18,26 @@ import {
   MapToConfig,
   MedusaContext,
   MedusaError,
+  Modules,
   ModulesSdkUtils,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { LinkService } from "@services"
 import { shouldForceTransaction } from "../utils"
 
 type InjectedDependencies = {
   baseRepository: DAL.RepositoryService
   linkService: LinkService<any>
-  eventBusModuleService?: IEventBusModuleService
   primaryKey: string | string[]
   foreignKey: string
   extraFields: string[]
   entityName: string
   serviceName: string
+  [Modules.EVENT_BUS]?: IEventBusModuleService
 }
 
-export default class LinkModuleService<TLink> implements ILinkModule {
+export default class LinkModuleService implements ILinkModule {
   protected baseRepository_: DAL.RepositoryService
-  protected readonly linkService_: LinkService<TLink>
+  protected readonly linkService_: LinkService<any>
   protected readonly eventBusModuleService_?: IEventBusModuleService
   protected readonly entityName_: string
   protected readonly serviceName_: string
@@ -48,12 +49,12 @@ export default class LinkModuleService<TLink> implements ILinkModule {
     {
       baseRepository,
       linkService,
-      eventBusModuleService,
       primaryKey,
       foreignKey,
       extraFields,
       entityName,
       serviceName,
+      [Modules.EVENT_BUS]: eventBusModuleService,
     }: InjectedDependencies,
     readonly moduleDeclaration: InternalModuleDeclaration
   ) {
@@ -115,7 +116,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
     })
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async retrieve(
     primaryKeyData: string | string[],
     foreignKeyData: string,
@@ -138,7 +139,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
     return entry[0]
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async list(
     filters: Record<string, unknown> = {},
     config: FindConfig<unknown> = {},
@@ -150,10 +151,10 @@ export default class LinkModuleService<TLink> implements ILinkModule {
 
     const rows = await this.linkService_.list(filters, config, sharedContext)
 
-    return await this.baseRepository_.serialize<object[]>(rows)
+    return rows.map((row) => row.toJSON())
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async listAndCount(
     filters: Record<string, unknown> = {},
     config: FindConfig<unknown> = {},
@@ -169,7 +170,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
       sharedContext
     )
 
-    return [await this.baseRepository_.serialize<object[]>(rows), count]
+    return [rows.map((row) => row.toJSON()), count]
   }
 
   @InjectTransactionManager(shouldForceTransaction, "baseRepository_")
@@ -207,7 +208,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
 
     await this.eventBusModuleService_?.emit<Record<string, unknown>>(
       (data as { id: unknown }[]).map(({ id }) => ({
-        eventName: this.entityName_ + "." + CommonEvents.ATTACHED,
+        name: this.entityName_ + "." + CommonEvents.ATTACHED,
         metadata: {
           source: this.serviceName_,
           action: CommonEvents.ATTACHED,
@@ -218,7 +219,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
       }))
     )
 
-    return await this.baseRepository_.serialize<object[]>(links)
+    return links.map((row) => row.toJSON())
   }
 
   @InjectTransactionManager(shouldForceTransaction, "baseRepository_")
@@ -243,7 +244,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
 
     const links = await this.linkService_.dismiss(data, sharedContext)
 
-    return await this.baseRepository_.serialize<object[]>(links)
+    return links.map((row) => row.toJSON())
   }
 
   @InjectTransactionManager(shouldForceTransaction, "baseRepository_")
@@ -258,7 +259,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
     const allData = Array.isArray(data) ? data : [data]
     await this.eventBusModuleService_?.emit<Record<string, unknown>>(
       allData.map(({ id }) => ({
-        eventName: this.entityName_ + "." + CommonEvents.DETACHED,
+        name: this.entityName_ + "." + CommonEvents.DETACHED,
         metadata: {
           source: this.serviceName_,
           action: CommonEvents.DETACHED,
@@ -307,7 +308,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
 
     await this.eventBusModuleService_?.emit<Record<string, unknown>>(
       (deletedEntities as { id: string }[]).map(({ id }) => ({
-        eventName: this.entityName_ + "." + CommonEvents.DETACHED,
+        name: this.entityName_ + "." + CommonEvents.DETACHED,
         metadata: {
           source: this.serviceName_,
           action: CommonEvents.DETACHED,
@@ -365,7 +366,7 @@ export default class LinkModuleService<TLink> implements ILinkModule {
 
     await this.eventBusModuleService_?.emit<Record<string, unknown>>(
       (restoredEntities as { id: string }[]).map(({ id }) => ({
-        eventName: this.entityName_ + "." + CommonEvents.ATTACHED,
+        name: this.entityName_ + "." + CommonEvents.ATTACHED,
         metadata: {
           source: this.serviceName_,
           action: CommonEvents.ATTACHED,

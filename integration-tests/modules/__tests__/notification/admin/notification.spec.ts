@@ -4,10 +4,7 @@ import {
   INotificationModuleService,
   Logger,
 } from "@medusajs/types"
-import {
-  ContainerRegistrationKeys,
-  ModuleRegistrationName,
-} from "@medusajs/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/utils"
 import { TestEventUtils, medusaIntegrationTestRunner } from "medusa-test-utils"
 
 jest.setTimeout(50000)
@@ -19,7 +16,7 @@ medusaIntegrationTestRunner({
       let logger: Logger
 
       beforeAll(async () => {
-        service = getContainer().resolve(ModuleRegistrationName.NOTIFICATION)
+        service = getContainer().resolve(Modules.NOTIFICATION)
         logger = getContainer().resolve(ContainerRegistrationKeys.LOGGER)
       })
 
@@ -91,14 +88,18 @@ medusaIntegrationTestRunner({
         it("should throw an exception if there is no provider for the channel", async () => {
           const notification = {
             to: "test@medusajs.com",
+            template: "order-created",
             channel: "sms",
           } as CreateNotificationDTO
 
           const error = await service
             .createNotifications(notification)
             .catch((e) => e)
+
+          const [notificationResult] = await service.listNotifications()
+
           expect(error.message).toEqual(
-            "Could not find a notification provider for channel: sms"
+            `Could not find a notification provider for channel: sms for notification id ${notificationResult.id}`
           )
         })
 
@@ -162,7 +163,7 @@ medusaIntegrationTestRunner({
       describe("Configurable notification subscriber", () => {
         let eventBus: IEventBusModuleService
         beforeAll(async () => {
-          eventBus = getContainer().resolve(ModuleRegistrationName.EVENT_BUS)
+          eventBus = getContainer().resolve(Modules.EVENT_BUS)
         })
 
         it("should successfully sent a notification when an order is created (based on configuration)", async () => {
@@ -173,7 +174,7 @@ medusaIntegrationTestRunner({
           const logSpy = jest.spyOn(logger, "info")
 
           await eventBus.emit({
-            eventName: "order.created",
+            name: "order.created",
             data: {
               order: {
                 id: "1234",
@@ -185,7 +186,7 @@ medusaIntegrationTestRunner({
 
           const notifications = await service.listNotifications()
 
-          expect(logSpy).toHaveBeenLastCalledWith(
+          expect(logSpy).toHaveBeenCalledWith(
             `Attempting to send a notification to: 'test@medusajs.com' on the channel: 'email' with template: 'order-created-template' and data: '{\"order_id\":\"1234\"}'`
           )
           expect(notifications).toHaveLength(1)

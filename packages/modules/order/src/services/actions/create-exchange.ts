@@ -2,16 +2,16 @@ import {
   Context,
   CreateOrderChangeActionDTO,
   OrderTypes,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
+  ChangeActionType,
+  OrderChangeType,
   ReturnStatus,
   getShippingMethodsTotals,
   isString,
   promiseAll,
-} from "@medusajs/utils"
-import { ExchangeItem, OrderExchange, Return, ReturnItem } from "@models"
-import { OrderChangeType } from "@types"
-import { ChangeActionType } from "../../utils"
+} from "@medusajs/framework/utils"
+import { OrderExchange, OrderExchangeItem, Return, ReturnItem } from "@models"
 
 function createExchangeAndReturnEntities(em, data, order) {
   const exchangeReference = em.create(OrderExchange, {
@@ -49,8 +49,6 @@ function createReturnItems(
       reference_id: returnReference.id,
       details: {
         reference_id: item.id,
-        return_id: returnReference.id,
-        exchange_id: exchangeReference.id,
         quantity: item.quantity,
         metadata: item.metadata,
       },
@@ -77,8 +75,8 @@ async function processAdditionalItems(
   sharedContext
 ) {
   const itemsToAdd: any[] = []
-  const additionalNewItems: ExchangeItem[] = []
-  const additionalItems: ExchangeItem[] = []
+  const additionalNewItems: OrderExchangeItem[] = []
+  const additionalItems: OrderExchangeItem[] = []
   data.additional_items?.forEach((item) => {
     const hasItem = item.id
       ? order.items.find((o) => o.item.id === item.id)
@@ -93,14 +91,14 @@ async function processAdditionalItems(
         reference_id: exchangeReference.id,
         details: {
           reference_id: item.id,
-          exchange_id: exchangeReference.id,
           quantity: item.quantity,
+          unit_price: item.unit_price ?? hasItem.item.unit_price,
           metadata: item.metadata,
         },
       })
 
       additionalItems.push(
-        em.create(ExchangeItem, {
+        em.create(OrderExchangeItem, {
           item_id: item.id,
           quantity: item.quantity,
           note: item.note,
@@ -112,8 +110,9 @@ async function processAdditionalItems(
       itemsToAdd.push(item)
 
       additionalNewItems.push(
-        em.create(ExchangeItem, {
+        em.create(OrderExchangeItem, {
           quantity: item.quantity,
+          unit_price: item.unit_price,
           note: item.note,
           metadata: item.metadata,
           is_additional_item: true,
@@ -122,14 +121,16 @@ async function processAdditionalItems(
     }
   })
 
-  const createItems = await service.lineItemService_.create(
+  const createItems = await service.orderLineItemService_.create(
     itemsToAdd,
     sharedContext
   )
 
   createItems.forEach((item, index) => {
     const addedItem = itemsToAdd[index]
+
     additionalNewItems[index].item_id = item.id
+
     actions.push({
       action: ChangeActionType.ITEM_ADD,
       exchange_id: exchangeReference.id,
@@ -140,6 +141,7 @@ async function processAdditionalItems(
         reference_id: item.id,
         exchange_id: exchangeReference.id,
         quantity: addedItem.quantity,
+        unit_price: item.unit_price,
         metadata: addedItem.metadata,
       },
     })
@@ -159,7 +161,7 @@ async function processShippingMethods(
     let shippingMethodId
 
     if (!isString(shippingMethod)) {
-      const methods = await service.createShippingMethods(
+      const methods = await service.createOrderShippingMethods(
         [
           {
             ...shippingMethod,
@@ -174,7 +176,7 @@ async function processShippingMethods(
       shippingMethodId = shippingMethod
     }
 
-    const method = await service.retrieveShippingMethod(
+    const method = await service.retrieveOrderShippingMethod(
       shippingMethodId,
       { relations: ["tax_lines", "adjustments"] },
       sharedContext
@@ -205,7 +207,7 @@ async function processReturnShipping(
   let returnShippingMethodId
 
   if (!isString(data.return_shipping)) {
-    const methods = await service.createShippingMethods(
+    const methods = await service.createOrderShippingMethods(
       [
         {
           ...data.return_shipping,
@@ -221,7 +223,7 @@ async function processReturnShipping(
     returnShippingMethodId = data.return_shipping
   }
 
-  const method = await service.retrieveShippingMethod(
+  const method = await service.retrieveOrderShippingMethod(
     returnShippingMethodId,
     { relations: ["tax_lines", "adjustments"] },
     sharedContext

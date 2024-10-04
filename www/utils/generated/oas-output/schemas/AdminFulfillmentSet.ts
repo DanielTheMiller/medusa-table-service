@@ -1,12 +1,13 @@
 /**
  * @schema AdminFulfillmentSet
  * type: object
- * description: The fulfillment set's details.
+ * description: The service zone's fulfillment set.
  * x-schemaName: AdminFulfillmentSet
  * required:
  *   - id
  *   - name
  *   - type
+ *   - location
  *   - service_zones
  *   - created_at
  *   - updated_at
@@ -24,6 +25,8 @@
  *     type: string
  *     title: type
  *     description: The fulfillment set's type.
+ *   location:
+ *     $ref: "#/components/schemas/AdminStockLocation"
  *   service_zones:
  *     type: array
  *     description: The fulfillment set's service zones.

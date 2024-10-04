@@ -15,7 +15,7 @@ import {
 } from "@medusajs/types"
 import {
   ContainerRegistrationKeys,
-  ModuleRegistrationName,
+  Modules,
   RuleOperator,
   remoteQueryObjectFromString,
 } from "@medusajs/utils"
@@ -32,7 +32,7 @@ async function createShippingOptionFixture({
   shippingProfile,
 }) {
   const regionService = container.resolve(
-    ModuleRegistrationName.REGION
+    Modules.REGION
   ) as IRegionModuleService
 
   const [region] = await regionService.createRegions([
@@ -122,7 +122,7 @@ medusaIntegrationTestRunner({
 
     beforeAll(() => {
       container = getContainer()
-      service = container.resolve(ModuleRegistrationName.FULFILLMENT)
+      service = container.resolve(Modules.FULFILLMENT)
     })
 
     describe("Fulfillment workflows", () => {
@@ -151,6 +151,35 @@ medusaIntegrationTestRunner({
             },
           ],
         })
+
+        const stockLocationModule = container.resolve(Modules.STOCK_LOCATION)
+
+        const location = await stockLocationModule.createStockLocations({
+          name: "Europe",
+        })
+
+        const remoteLink = container.resolve(
+          ContainerRegistrationKeys.REMOTE_LINK
+        )
+
+        await remoteLink.create([
+          {
+            [Modules.STOCK_LOCATION]: {
+              stock_location_id: location.id,
+            },
+            [Modules.FULFILLMENT]: {
+              fulfillment_set_id: fulfillmentSet.id,
+            },
+          },
+          {
+            [Modules.STOCK_LOCATION]: {
+              stock_location_id: location.id,
+            },
+            [Modules.FULFILLMENT]: {
+              fulfillment_provider_id: "manual_test-provider",
+            },
+          },
+        ])
       })
 
       it("should create, update and delete rules in batch", async () => {

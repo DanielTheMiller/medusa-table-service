@@ -8,23 +8,23 @@ export const metadata = {
 
 The Local File Module Provider stores files uploaded to your Medusa application in the `/uploads` directory.
 
----
+<Note type="warning">
 
-## Install the Local File Module
-
-<Note>
-
-The Local File Module is installed by default in your application.
+The Local File Module Provider is only for development purposes. Use the [S3 File Module Provider](../s3/page.mdx) in production instead.
 
 </Note>
 
-To install the Local File Module Provider, run the following command in the directory of your Medusa application:
+---
 
-```bash npm2yarn
-npm install @medusajs/file-local-next
-```
+## Register the Local File Module
 
-Next, add the module into the `providers` array of the File Module:
+<Note>
+
+The Local File Module Provider is registered by default in your application.
+
+</Note>
+
+Add the module into the `providers` array of the File Module:
 
 <Note>
 
@@ -33,7 +33,7 @@ The File Module accepts one provider only.
 </Note>
 
 ```js title="medusa-config.js"
-import { Modules } from "@medusajs/utils"
+const { Modules } = require("@medusajs/framework/utils")
 
 // ...
 
@@ -41,11 +41,11 @@ module.exports = {
   // ...
   modules: {
     [Modules.FILE]: {
-      resolve: "@medusajs/file",
+      resolve: "@medusajs/medusa/file",
       options: {
         providers: [
           {
-            resolve: "@medusajs/file-local-next",
+            resolve: "@medusajs/medusa/file-local-next",
             id: "local",
             options: {
               // provider options...
@@ -77,29 +77,29 @@ module.exports = {
       </Table.Cell>
       <Table.Cell>
       
-      The directory to upload files to.
+      The directory to upload files to. Medusa exposes the content of the `static` directory publically. If you change the directory, it must be served and publically accessible.
       
       </Table.Cell>
       <Table.Cell>
       
-      `uploads`
+      `static`
       
       </Table.Cell>
     </Table.Row>
     <Table.Row>
       <Table.Cell>
       
-      `upload_dir`
+      `backend_url`
       
       </Table.Cell>
       <Table.Cell>
       
-      The URL of the Medusa application.
+      The URL that serves the files.
       
       </Table.Cell>
       <Table.Cell>
       
-      `http://localhost:9000`
+      `http://localhost:9000/static`
       
       </Table.Cell>
     </Table.Row>

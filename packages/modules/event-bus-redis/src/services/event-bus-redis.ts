@@ -1,13 +1,17 @@
-import { InternalModuleDeclaration } from "@medusajs/modules-sdk"
-import { Logger, Message, MessageBody } from "@medusajs/types"
+import {
+  Event,
+  InternalModuleDeclaration,
+  Logger,
+  Message,
+} from "@medusajs/framework/types"
 import {
   AbstractEventBusModuleService,
   isPresent,
   promiseAll,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { BulkJobOptions, Queue, Worker } from "bullmq"
 import { Redis } from "ioredis"
-import { BullJob, EventBusRedisModuleOptions } from "../types"
+import { BullJob, EventBusRedisModuleOptions, Options } from "../types"
 
 type InjectedDependencies = {
   logger: Logger
@@ -16,7 +20,7 @@ type InjectedDependencies = {
 
 type IORedisEventType<T = unknown> = {
   name: string
-  data: MessageBody<T>
+  data: Omit<Event<T>, "name"> // See comment in `buildEvents` method
   opts: BulkJobOptions
 }
 
@@ -83,7 +87,7 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
 
   private buildEvents<T>(
     eventsData: Message<T>[],
-    options: BulkJobOptions = {}
+    options: Options = {}
   ): IORedisEventType<T>[] {
     const opts = {
       // default options
@@ -95,16 +99,22 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
     }
 
     return eventsData.map((eventData) => {
-      const { options, ...eventBody } = eventData
+      // We want to preserve event data + metadata. However, bullmq only allows for a single data field.
+      // Therefore, upon adding jobs to the queue we will serialize the event data and metadata into a single field
+      // and upon processing the job, we will deserialize it back into the original format expected by the subscribers.
+      const event = {
+        data: eventData.data,
+        metadata: eventData.metadata,
+      }
 
       return {
-        name: eventData.eventName,
-        data: eventBody,
+        data: event,
+        name: eventData.name,
         opts: {
           // options for event group
           ...opts,
           // options for a particular event
-          ...options,
+          ...eventData.options,
         },
       }
     })
@@ -112,12 +122,12 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
 
   /**
    * Emit a single or number of events
-   * @param {Message} data - the data to send to the subscriber.
-   * @param {BulkJobOptions} data - the options to add to bull mq
+   * @param eventsData
+   * @param options
    */
   async emit<T = unknown>(
     eventsData: Message<T> | Message<T>[],
-    options: BulkJobOptions & { groupedEventsTTL?: number } = {}
+    options: Options = {}
   ): Promise<void> {
     let eventsDataArray = Array.isArray(eventsData) ? eventsData : [eventsData]
 
@@ -136,10 +146,10 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
 
     for (const event of eventsToGroup) {
       const groupId = event.metadata?.eventGroupId!
-      const array = groupEventsMap.get(groupId) ?? []
+      const groupEvents = groupEventsMap.get(groupId) ?? []
 
-      array.push(event)
-      groupEventsMap.set(groupId, array)
+      groupEvents.push(event)
+      groupEventsMap.set(groupId, groupEvents)
     }
 
     const promises: Promise<unknown>[] = []
@@ -159,7 +169,7 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
       // This will be helpful in preventing stale data from staying in redis for too long
       // in the event the module fails to cleanup events. For long running workflows, setting a much higher
       // TTL or even skipping the TTL would be required
-      this.setExpire(groupId, groupedEventsTTL)
+      void this.setExpire(groupId, groupedEventsTTL)
 
       const eventsData = this.buildEvents(events, options)
 
@@ -219,8 +229,8 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
    * @return resolves to the results of the subscriber calls.
    */
   worker_ = async <T>(job: BullJob<T>): Promise<unknown> => {
-    const { eventName, data } = job.data
-    const eventSubscribers = this.eventToSubscribersMap.get(eventName) || []
+    const { data, name, opts } = job
+    const eventSubscribers = this.eventToSubscribersMap.get(name) || []
     const wildcardSubscribers = this.eventToSubscribersMap.get("*") || []
 
     const allSubscribers = eventSubscribers.concat(wildcardSubscribers)
@@ -240,25 +250,34 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
 
     const isFinalAttempt = currentAttempt === configuredAttempts
 
-    if (isRetry) {
-      if (isFinalAttempt) {
-        this.logger_.info(`Final retry attempt for ${eventName}`)
-      }
+    if (!opts.internal) {
+      if (isRetry) {
+        if (isFinalAttempt) {
+          this.logger_.info(`Final retry attempt for ${name}`)
+        }
 
-      this.logger_.info(
-        `Retrying ${eventName} which has ${eventSubscribers.length} subscribers (${subscribersInCurrentAttempt.length} of them failed)`
-      )
-    } else {
-      this.logger_.info(
-        `Processing ${eventName} which has ${eventSubscribers.length} subscribers`
-      )
+        this.logger_.info(
+          `Retrying ${name} which has ${eventSubscribers.length} subscribers (${subscribersInCurrentAttempt.length} of them failed)`
+        )
+      } else {
+        this.logger_.info(
+          `Processing ${name} which has ${eventSubscribers.length} subscribers`
+        )
+      }
     }
 
     const completedSubscribersInCurrentAttempt: string[] = []
 
     const subscribersResult = await Promise.all(
       subscribersInCurrentAttempt.map(async ({ id, subscriber }) => {
-        return await subscriber(data, eventName)
+        // De-serialize the event data and metadata from a single field into the original format expected by the subscribers
+        const event = {
+          name,
+          data: data.data,
+          metadata: data.metadata,
+        }
+
+        return await subscriber(event)
           .then(async (data) => {
             // For every subscriber that completes successfully, add their id to the list of completed subscribers
             completedSubscribersInCurrentAttempt.push(id)
@@ -266,7 +285,7 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
           })
           .catch((err) => {
             this.logger_.warn(
-              `An error occurred while processing ${eventName}: ${err}`
+              `An error occurred while processing ${name}: ${err}`
             )
             return err
           })
@@ -294,20 +313,20 @@ export default class RedisEventBusService extends AbstractEventBusModuleService 
 
       await job.updateData(job.data)
 
-      const errorMessage = `One or more subscribers of ${eventName} failed. Retrying...`
+      const errorMessage = `One or more subscribers of ${name} failed. Retrying...`
 
       this.logger_.warn(errorMessage)
 
-      return Promise.reject(Error(errorMessage))
+      throw Error(errorMessage)
     }
 
     if (didSubscribersFail && !isFinalAttempt) {
       // If retrying is not configured, we log a warning to allow server admins to recover manually
       this.logger_.warn(
-        `One or more subscribers of ${eventName} failed. Retrying is not configured. Use 'attempts' option when emitting events.`
+        `One or more subscribers of ${name} failed. Retrying is not configured. Use 'attempts' option when emitting events.`
       )
     }
 
-    return Promise.resolve(subscribersResult)
+    return subscribersResult
   }
 }

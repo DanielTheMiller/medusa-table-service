@@ -1,6 +1,9 @@
-import { ModulesDefinition } from "@medusajs/modules-sdk"
-import { FulfillmentSetDTO, IFulfillmentModuleService } from "@medusajs/types"
-import { Module, Modules } from "@medusajs/utils"
+import { ModulesDefinition } from "@medusajs/framework/modules-sdk"
+import {
+  FulfillmentSetDTO,
+  IFulfillmentModuleService,
+} from "@medusajs/framework/types"
+import { Module, Modules } from "@medusajs/framework/utils"
 import { FulfillmentModuleService, FulfillmentProviderService } from "@services"
 import {
   initModules,
@@ -10,6 +13,8 @@ import {
 import { resolve } from "path"
 import { createFullDataStructure } from "../../__fixtures__"
 import { FulfillmentProviderServiceFixtures } from "../../__fixtures__/providers"
+
+jest.setTimeout(60000)
 
 let moduleOptions = {
   providers: [
@@ -34,7 +39,6 @@ async function list(
   const finalConfig = {
     relations: [
       "service_zones.geo_zones",
-      "service_zones.shipping_options.shipping_profile",
       "service_zones.shipping_options.provider",
       "service_zones.shipping_options.type",
       "service_zones.shipping_options.rules",
@@ -109,10 +113,18 @@ moduleIntegrationTestRunner({
         }).linkable
 
         expect(Object.keys(linkable)).toEqual([
-          "fulfillment",
+          "fulfillmentAddress",
+          "fulfillmentItem",
+          "fulfillmentLabel",
+          "fulfillmentProvider",
           "fulfillmentSet",
-          "shippingOption",
+          "fulfillment",
+          "geoZone",
+          "serviceZone",
           "shippingOptionRule",
+          "shippingOptionType",
+          "shippingOption",
+          "shippingProfile",
         ])
 
         Object.keys(linkable).forEach((key) => {
@@ -120,36 +132,112 @@ moduleIntegrationTestRunner({
         })
 
         expect(linkable).toEqual({
-          fulfillment: {
+          fulfillmentAddress: {
             id: {
-              linkable: "fulfillment_id",
+              linkable: "fulfillment_address_id",
+              entity: "FulfillmentAddress",
               primaryKey: "id",
-              serviceName: "fulfillment",
-              field: "fulfillment",
+              serviceName: "Fulfillment",
+              field: "fulfillmentAddress",
+            },
+          },
+          fulfillmentItem: {
+            id: {
+              linkable: "fulfillment_item_id",
+              entity: "FulfillmentItem",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "fulfillmentItem",
+            },
+          },
+          fulfillmentLabel: {
+            id: {
+              linkable: "fulfillment_label_id",
+              entity: "FulfillmentLabel",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "fulfillmentLabel",
+            },
+          },
+          fulfillmentProvider: {
+            id: {
+              linkable: "fulfillment_provider_id",
+              entity: "FulfillmentProvider",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "fulfillmentProvider",
             },
           },
           fulfillmentSet: {
             id: {
               linkable: "fulfillment_set_id",
+              entity: "FulfillmentSet",
               primaryKey: "id",
-              serviceName: "fulfillment",
+              serviceName: "Fulfillment",
               field: "fulfillmentSet",
             },
           },
-          shippingOption: {
+          fulfillment: {
             id: {
-              linkable: "shipping_option_id",
+              linkable: "fulfillment_id",
+              entity: "Fulfillment",
               primaryKey: "id",
-              serviceName: "fulfillment",
-              field: "shippingOption",
+              serviceName: "Fulfillment",
+              field: "fulfillment",
+            },
+          },
+          geoZone: {
+            id: {
+              linkable: "geo_zone_id",
+              entity: "GeoZone",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "geoZone",
+            },
+          },
+          serviceZone: {
+            id: {
+              linkable: "service_zone_id",
+              entity: "ServiceZone",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "serviceZone",
             },
           },
           shippingOptionRule: {
             id: {
               linkable: "shipping_option_rule_id",
+              entity: "ShippingOptionRule",
               primaryKey: "id",
-              serviceName: "fulfillment",
+              serviceName: "Fulfillment",
               field: "shippingOptionRule",
+            },
+          },
+          shippingOptionType: {
+            id: {
+              linkable: "shipping_option_type_id",
+              entity: "ShippingOptionType",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "shippingOptionType",
+            },
+          },
+          shippingOption: {
+            id: {
+              linkable: "shipping_option_id",
+              entity: "ShippingOption",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "shippingOption",
+            },
+          },
+          shippingProfile: {
+            id: {
+              linkable: "shipping_profile_id",
+              entity: "ShippingProfile",
+              primaryKey: "id",
+              serviceName: "Fulfillment",
+              field: "shippingProfile",
             },
           },
         })
@@ -298,7 +386,7 @@ moduleIntegrationTestRunner({
          */
 
         await service.restoreFulfillmentSets([fulfillmentSets[0].id])
-        const restoredFulfillmentSets = await list(service)
+        const restoredFulfillmentSets = await list(service, {})
         expectSoftDeleted(restoredFulfillmentSets)
       })
     }),

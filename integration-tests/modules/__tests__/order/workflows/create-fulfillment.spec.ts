@@ -15,8 +15,8 @@ import {
   StockLocationDTO,
 } from "@medusajs/types"
 import {
+  BigNumber,
   ContainerRegistrationKeys,
-  ModuleRegistrationName,
   Modules,
   remoteQueryObjectFromString,
 } from "@medusajs/utils"
@@ -26,20 +26,17 @@ jest.setTimeout(500000)
 
 const env = { MEDUSA_FF_MEDUSA_V2: true }
 const providerId = "manual_test-provider"
+const variantSkuWithInventory = "test-variant"
 let inventoryItem
 
 async function prepareDataFixtures({ container }) {
-  const fulfillmentService = container.resolve(
-    ModuleRegistrationName.FULFILLMENT
-  )
-  const salesChannelService = container.resolve(
-    ModuleRegistrationName.SALES_CHANNEL
-  )
+  const fulfillmentService = container.resolve(Modules.FULFILLMENT)
+  const salesChannelService = container.resolve(Modules.SALES_CHANNEL)
   const stockLocationModule: IStockLocationService = container.resolve(
-    ModuleRegistrationName.STOCK_LOCATION
+    Modules.STOCK_LOCATION
   )
-  const productModule = container.resolve(ModuleRegistrationName.PRODUCT)
-  const inventoryModule = container.resolve(ModuleRegistrationName.INVENTORY)
+  const productModule = container.resolve(Modules.PRODUCT)
+  const inventoryModule = container.resolve(Modules.INVENTORY)
 
   const shippingProfile = await fulfillmentService.createShippingProfiles({
     name: "test",
@@ -63,7 +60,7 @@ async function prepareDataFixtures({ container }) {
   })
 
   const regionService = container.resolve(
-    ModuleRegistrationName.REGION
+    Modules.REGION
   ) as IRegionModuleService
 
   const [region] = await regionService.createRegions([
@@ -96,7 +93,7 @@ async function prepareDataFixtures({ container }) {
       variants: [
         {
           title: "Test variant",
-          sku: "test-variant",
+          sku: variantSkuWithInventory,
         },
         {
           title: "Test variant no inventory management",
@@ -121,6 +118,17 @@ async function prepareDataFixtures({ container }) {
   ])
 
   const remoteLink = container.resolve(ContainerRegistrationKeys.REMOTE_LINK)
+
+  await remoteLink.create([
+    {
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: location.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_provider_id: "manual_test-provider",
+      },
+    },
+  ])
 
   await remoteLink.create([
     {
@@ -213,17 +221,16 @@ async function prepareDataFixtures({ container }) {
 }
 
 async function createOrderFixture({ container, product, location }) {
-  const orderService: IOrderModuleService = container.resolve(
-    ModuleRegistrationName.ORDER
-  )
+  const orderService: IOrderModuleService = container.resolve(Modules.ORDER)
   let order = await orderService.createOrders({
-    region_id: "test_region_idclear",
+    region_id: "test_region_id",
     email: "foo@bar.com",
     items: [
       {
         title: "Custom Item 2",
         variant_sku: product.variants[0].sku,
         variant_title: product.variants[0].title,
+        variant_id: product.variants[0].id,
         quantity: 1,
         unit_price: 50,
         adjustments: [
@@ -296,7 +303,7 @@ async function createOrderFixture({ container, product, location }) {
     customer_id: "joe",
   })
 
-  const inventoryModule = container.resolve(ModuleRegistrationName.INVENTORY)
+  const inventoryModule = container.resolve(Modules.INVENTORY)
 
   const reservation = await inventoryModule.createReservationItems([
     {
@@ -341,11 +348,16 @@ medusaIntegrationTestRunner({
         location = fixtures.location
         product = fixtures.product
 
-        orderService = container.resolve(ModuleRegistrationName.ORDER)
+        orderService = container.resolve(Modules.ORDER)
       })
 
       it("should create a order fulfillment and cancel it", async () => {
+        const inventoryModule = container.resolve(Modules.INVENTORY)
+
         const order = await createOrderFixture({ container, product, location })
+        const itemWithInventory = order.items!.find(
+          (o) => o.variant_sku === variantSkuWithInventory
+        )!
 
         // Create a fulfillment
         const createOrderFulfillmentData: OrderWorkflow.CreateOrderFulfillmentWorkflowInput =
@@ -354,7 +366,7 @@ medusaIntegrationTestRunner({
             created_by: "user_1",
             items: [
               {
-                id: order.items![0].id,
+                id: itemWithInventory.id,
                 quantity: 1,
               },
             ],
@@ -386,14 +398,17 @@ medusaIntegrationTestRunner({
 
         const [orderFulfill] = await remoteQuery(remoteQueryObject)
 
-        expect(orderFulfill.fulfillments).toHaveLength(1)
-        expect(orderFulfill.items[0].detail.fulfilled_quantity).toEqual(1)
+        let orderFulfillItemWithInventory = orderFulfill.items!.find(
+          (o) => o.variant_sku === variantSkuWithInventory
+        )!
 
-        const inventoryModule = container.resolve(
-          ModuleRegistrationName.INVENTORY
+        expect(orderFulfill.fulfillments).toHaveLength(1)
+        expect(orderFulfillItemWithInventory.detail.fulfilled_quantity).toEqual(
+          1
         )
+
         const reservation = await inventoryModule.listReservationItems({
-          line_item_id: order.items![0].id,
+          line_item_id: itemWithInventory.id,
         })
         expect(reservation).toHaveLength(0)
 
@@ -401,7 +416,7 @@ medusaIntegrationTestRunner({
           inventoryItem.id,
           [location.id]
         )
-        expect(stockAvailability).toEqual(1)
+        expect(stockAvailability).toEqual(new BigNumber(1))
 
         // Cancel the fulfillment
         const cancelFulfillmentData: OrderWorkflow.CancelOrderFulfillmentWorkflowInput =
@@ -434,16 +449,20 @@ medusaIntegrationTestRunner({
           remoteQueryObjectFulfill
         )
 
+        orderFulfillItemWithInventory = orderFulfillAfterCancelled.items!.find(
+          (o) => o.variant_sku === variantSkuWithInventory
+        )!
+
         expect(orderFulfillAfterCancelled.fulfillments).toHaveLength(1)
-        expect(
-          orderFulfillAfterCancelled.items[0].detail.fulfilled_quantity
-        ).toEqual(0)
+        expect(orderFulfillItemWithInventory.detail.fulfilled_quantity).toEqual(
+          0
+        )
 
         const stockAvailabilityAfterCancelled =
           await inventoryModule.retrieveStockedQuantity(inventoryItem.id, [
             location.id,
           ])
-        expect(stockAvailabilityAfterCancelled).toEqual(2)
+        expect(stockAvailabilityAfterCancelled.valueOf()).toEqual(2)
       })
 
       it("should revert an order fulfillment when it fails and recreate it when tried again", async () => {
@@ -506,9 +525,7 @@ medusaIntegrationTestRunner({
         expect(orderFulfill.fulfillments).toHaveLength(1)
         expect(orderFulfill.items[0].detail.fulfilled_quantity).toEqual(1)
 
-        const inventoryModule = container.resolve(
-          ModuleRegistrationName.INVENTORY
-        )
+        const inventoryModule = container.resolve(Modules.INVENTORY)
         const reservation = await inventoryModule.listReservationItems({
           line_item_id: order.items![0].id,
         })
@@ -518,7 +535,7 @@ medusaIntegrationTestRunner({
           inventoryItem.id,
           [location.id]
         )
-        expect(stockAvailability).toEqual(1)
+        expect(stockAvailability.valueOf()).toEqual(1)
       })
     })
   },

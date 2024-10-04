@@ -14,16 +14,16 @@ In this guide, you’ll find common examples of how you can use the Store Module
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IStoreModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IStoreModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const storeModuleService: IStoreModuleService = request.scope.resolve(
-    ModuleRegistrationName.STORE
+    Modules.STORE
   )
 
   const store = await storeModuleService.createStores({
@@ -48,7 +48,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeStoreModule } from "@medusajs/store"
+import { initialize as initializeStoreModule } from "@medusajs/medusa/store"
 
 export async function POST(request: Request) {
   const storeModuleService = await initializeStoreModule()
@@ -80,16 +80,16 @@ export async function POST(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IStoreModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IStoreModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const storeModuleService: IStoreModuleService = request.scope.resolve(
-    ModuleRegistrationName.STORE
+    Modules.STORE
   )
 
   res.json({
@@ -104,7 +104,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeStoreModule } from "@medusajs/store"
+import { initialize as initializeStoreModule } from "@medusajs/medusa/store"
 
 export async function GET(request: Request) {
   const storeModuleService = await initializeStoreModule()
@@ -128,16 +128,16 @@ export async function GET(request: Request) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IStoreModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IStoreModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const storeModuleService: IStoreModuleService = request.scope.resolve(
-    ModuleRegistrationName.STORE
+    Modules.STORE
   )
 
   const store = await storeModuleService.retrieveStore("store_123")
@@ -154,7 +154,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeStoreModule } from "@medusajs/store"
+import { initialize as initializeStoreModule } from "@medusajs/medusa/store"
 
 export async function GET(request: Request, { params }: ContextType) {
   const storeModuleService = await initializeStoreModule()
@@ -176,16 +176,16 @@ export async function GET(request: Request, { params }: ContextType) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IStoreModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IStoreModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const storeModuleService: IStoreModuleService = request.scope.resolve(
-    ModuleRegistrationName.STORE
+    Modules.STORE
   )
 
   const store = await storeModuleService.updateStores("store_123", {
@@ -204,7 +204,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeStoreModule } from "@medusajs/store"
+import { initialize as initializeStoreModule } from "@medusajs/medusa/store"
 
 export async function POST(request: Request, { params }: ContextType) {
   const storeModuleService = await initializeStoreModule()
@@ -228,16 +228,16 @@ export async function POST(request: Request, { params }: ContextType) {
   <CodeTab label="Medusa API Router" value="medusa">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IStoreModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IStoreModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function DELETE(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const storeModuleService: IStoreModuleService = request.scope.resolve(
-    ModuleRegistrationName.STORE
+    Modules.STORE
   )
 
   await storeModuleService.deleteStores("store_123")
@@ -252,7 +252,7 @@ export async function DELETE(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializeStoreModule } from "@medusajs/store"
+import { initialize as initializeStoreModule } from "@medusajs/medusa/store"
 
 export async function DELETE(request: Request, { params }: ContextType) {
   const storeModuleService = await initializeStoreModule()

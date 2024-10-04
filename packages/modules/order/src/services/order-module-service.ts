@@ -2,68 +2,79 @@ import {
   BigNumberInput,
   Context,
   DAL,
+  FilterableOrderReturnReasonProps,
   FindConfig,
   InternalModuleDeclaration,
   IOrderModuleService,
+  ModuleJoinerConfig,
   ModulesSdkTypes,
   OrderDTO,
+  OrderReturnReasonDTO,
+  OrderShippingMethodDTO,
   OrderTypes,
   RestoreReturn,
   SoftDeleteReturn,
   UpdateOrderItemWithSelectorDTO,
   UpdateOrderReturnReasonDTO,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   BigNumber,
   createRawPropertiesFromBigNumber,
+  DecorateCartLikeInputDTO,
   decorateCartTotals,
   deduplicate,
   InjectManager,
   InjectTransactionManager,
+  isDefined,
   isObject,
   isString,
   MathBN,
   MedusaContext,
   MedusaError,
   ModulesSdkUtils,
+  OrderChangeStatus,
   OrderStatus,
   promiseAll,
   transformPropertiesToBigNumber,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
-  Address,
-  LineItem,
-  LineItemAdjustment,
-  LineItemTaxLine,
   Order,
+  OrderAddress,
   OrderChange,
   OrderChangeAction,
   OrderClaim,
+  OrderClaimItem,
+  OrderClaimItemImage,
   OrderExchange,
+  OrderExchangeItem,
   OrderItem,
+  OrderLineItem,
+  OrderLineItemAdjustment,
+  OrderLineItemTaxLine,
+  OrderShipping,
   OrderShippingMethod,
+  OrderShippingMethodAdjustment,
+  OrderShippingMethodTaxLine,
   OrderSummary,
+  OrderTransaction,
   Return,
   ReturnItem,
   ReturnReason,
-  ShippingMethod,
-  ShippingMethodAdjustment,
-  ShippingMethodTaxLine,
-  Transaction,
 } from "@models"
 import {
   CreateOrderChangeDTO,
   CreateOrderItemDTO,
+  UpdateReturnReasonDTO,
   CreateOrderLineItemDTO,
   CreateOrderLineItemTaxLineDTO,
   CreateOrderShippingMethodDTO,
   CreateOrderShippingMethodTaxLineDTO,
-  OrderChangeStatus,
   UpdateOrderItemDTO,
   UpdateOrderLineItemDTO,
   UpdateOrderLineItemTaxLineDTO,
   UpdateOrderShippingMethodTaxLineDTO,
 } from "@types"
+import { joinerConfig } from "../joiner-config"
 import {
   applyChangesToOrder,
   ApplyOrderChangeDTO,
@@ -71,25 +82,24 @@ import {
   formatOrder,
 } from "../utils"
 import * as BundledActions from "./actions"
-import OrderChangeService from "./order-change-service"
 import OrderService from "./order-service"
 
 type InjectedDependencies = {
   baseRepository: DAL.RepositoryService
   orderService: OrderService
-  addressService: ModulesSdkTypes.IMedusaInternalService<any>
-  lineItemService: ModulesSdkTypes.IMedusaInternalService<any>
-  shippingMethodAdjustmentService: ModulesSdkTypes.IMedusaInternalService<any>
-  shippingMethodService: ModulesSdkTypes.IMedusaInternalService<any>
-  lineItemAdjustmentService: ModulesSdkTypes.IMedusaInternalService<any>
-  lineItemTaxLineService: ModulesSdkTypes.IMedusaInternalService<any>
-  shippingMethodTaxLineService: ModulesSdkTypes.IMedusaInternalService<any>
-  transactionService: ModulesSdkTypes.IMedusaInternalService<any>
-  orderChangeService: OrderChangeService
+  orderAddressService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderLineItemService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderShippingMethodAdjustmentService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderShippingMethodService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderLineItemAdjustmentService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderLineItemTaxLineService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderShippingMethodTaxLineService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderTransactionService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderChangeService: ModulesSdkTypes.IMedusaInternalService<any>
   orderChangeActionService: ModulesSdkTypes.IMedusaInternalService<any>
   orderItemService: ModulesSdkTypes.IMedusaInternalService<any>
   orderSummaryService: ModulesSdkTypes.IMedusaInternalService<any>
-  orderShippingMethodService: ModulesSdkTypes.IMedusaInternalService<any>
+  orderShippingService: ModulesSdkTypes.IMedusaInternalService<any>
   returnReasonService: ModulesSdkTypes.IMedusaInternalService<any>
   returnService: ModulesSdkTypes.IMedusaInternalService<any>
   returnItemService: ModulesSdkTypes.IMedusaInternalService<any>
@@ -99,111 +109,125 @@ type InjectedDependencies = {
 
 const generateMethodForModels = {
   Order,
-  Address,
-  LineItem,
-  LineItemAdjustment,
-  LineItemTaxLine,
-  ShippingMethod,
-  ShippingMethodAdjustment,
-  ShippingMethodTaxLine,
-  Transaction,
+  OrderAddress,
+  OrderLineItem,
+  OrderLineItemAdjustment,
+  OrderLineItemTaxLine,
+  OrderShippingMethod,
+  OrderShippingMethodAdjustment,
+  OrderShippingMethodTaxLine,
+  OrderTransaction,
   OrderChange,
   OrderChangeAction,
   OrderItem,
   OrderSummary,
-  OrderShippingMethod,
+  OrderShipping,
   ReturnReason,
   Return,
   ReturnItem,
   OrderClaim,
+  OrderClaimItem,
+  OrderClaimItemImage,
   OrderExchange,
+  OrderExchangeItem,
 }
 
 // TODO: rm template args here, keep it for later to not collide with carlos work at least as little as possible
 export default class OrderModuleService<
     TOrder extends Order = Order,
-    TAddress extends Address = Address,
-    TLineItem extends LineItem = LineItem,
-    TLineItemAdjustment extends LineItemAdjustment = LineItemAdjustment,
-    TLineItemTaxLine extends LineItemTaxLine = LineItemTaxLine,
-    TShippingMethodAdjustment extends ShippingMethodAdjustment = ShippingMethodAdjustment,
-    TShippingMethodTaxLine extends ShippingMethodTaxLine = ShippingMethodTaxLine,
-    TShippingMethod extends ShippingMethod = ShippingMethod,
-    TTransaction extends Transaction = Transaction,
+    TAddress extends OrderAddress = OrderAddress,
+    TLineItem extends OrderLineItem = OrderLineItem,
+    TLineItemAdjustment extends OrderLineItemAdjustment = OrderLineItemAdjustment,
+    TLineItemTaxLine extends OrderLineItemTaxLine = OrderLineItemTaxLine,
+    TOrderShippingMethodAdjustment extends OrderShippingMethodAdjustment = OrderShippingMethodAdjustment,
+    TOrderShippingMethodTaxLine extends OrderShippingMethodTaxLine = OrderShippingMethodTaxLine,
+    TOrderShippingMethod extends OrderShippingMethod = OrderShippingMethod,
+    TOrderTransaction extends OrderTransaction = OrderTransaction,
     TOrderChange extends OrderChange = OrderChange,
     TOrderChangeAction extends OrderChangeAction = OrderChangeAction,
     TOrderItem extends OrderItem = OrderItem,
     TOrderSummary extends OrderSummary = OrderSummary,
-    TOrderShippingMethod extends OrderShippingMethod = OrderShippingMethod,
+    TOrderShipping extends OrderShipping = OrderShipping,
     TReturnReason extends ReturnReason = ReturnReason,
     TReturn extends Return = Return,
     TReturnItem extends ReturnItem = ReturnItem,
     TClaim extends OrderClaim = OrderClaim,
-    TExchange extends OrderExchange = OrderExchange
+    TClaimItem extends OrderClaimItem = OrderClaimItem,
+    TClaimItemImage extends OrderClaimItemImage = OrderClaimItemImage,
+    TExchange extends OrderExchange = OrderExchange,
+    TExchangeItem extends OrderExchangeItem = OrderExchangeItem
   >
   extends ModulesSdkUtils.MedusaService<{
     Order: { dto: OrderTypes.OrderDTO }
-    Address: { dto: OrderTypes.OrderAddressDTO }
-    LineItem: { dto: OrderTypes.OrderLineItemDTO }
-    LineItemAdjustment: { dto: OrderTypes.OrderLineItemAdjustmentDTO }
-    LineItemTaxLine: { dto: OrderTypes.OrderLineItemTaxLineDTO }
-    ShippingMethod: { dto: OrderTypes.OrderShippingMethodDTO }
-    ShippingMethodAdjustment: {
+    OrderAddress: { dto: OrderTypes.OrderAddressDTO }
+    OrderLineItem: { dto: OrderTypes.OrderLineItemDTO }
+    OrderLineItemAdjustment: { dto: OrderTypes.OrderLineItemAdjustmentDTO }
+    OrderLineItemTaxLine: { dto: OrderTypes.OrderLineItemTaxLineDTO }
+    OrderShippingMethod: { dto: OrderShippingMethodDTO }
+    OrderShippingMethodAdjustment: {
       dto: OrderTypes.OrderShippingMethodAdjustmentDTO
     }
-    ShippingMethodTaxLine: { dto: OrderTypes.OrderShippingMethodTaxLineDTO }
+    OrderShippingMethodTaxLine: {
+      dto: OrderTypes.OrderShippingMethodTaxLineDTO
+    }
+    OrderShipping: { dto: any }
     OrderChange: { dto: OrderTypes.OrderChangeDTO }
     OrderChangeAction: { dto: OrderTypes.OrderChangeActionDTO }
     OrderItem: { dto: OrderTypes.OrderItemDTO }
-    OrderShippingMethod: { dto: OrderShippingMethod }
     ReturnReason: { dto: OrderTypes.OrderReturnReasonDTO }
     OrderSummary: { dto: OrderTypes.OrderSummaryDTO }
-    Transaction: { dto: OrderTypes.OrderTransactionDTO }
-    Return: { dto: any } // TODO: Add return dto
-    ReturnItem: { dto: any } // TODO: Add return item dto
-    OrderClaim: { dto: any } // TODO: Add claim dto
-    OrderExchange: { dto: any } // TODO: Add exchange dto
+    OrderTransaction: { dto: OrderTypes.OrderTransactionDTO }
+    Return: { dto: OrderTypes.ReturnDTO }
+    ReturnItem: { dto: OrderTypes.OrderReturnItemDTO }
+    OrderClaim: { dto: OrderTypes.OrderClaimDTO }
+    OrderClaimItem: { dto: OrderTypes.OrderClaimItemDTO }
+    OrderClaimItemImage: { dto: OrderTypes.OrderClaimItemImageDTO }
+    OrderExchange: { dto: OrderTypes.OrderExchangeDTO }
+    OrderExchangeItem: { dto: OrderTypes.OrderExchangeItemDTO }
   }>(generateMethodForModels)
   implements IOrderModuleService
 {
   protected baseRepository_: DAL.RepositoryService
   protected orderService_: OrderService
-  protected addressService_: ModulesSdkTypes.IMedusaInternalService<TAddress>
-  protected lineItemService_: ModulesSdkTypes.IMedusaInternalService<TLineItem>
-  protected shippingMethodAdjustmentService_: ModulesSdkTypes.IMedusaInternalService<TShippingMethodAdjustment>
-  protected shippingMethodService_: ModulesSdkTypes.IMedusaInternalService<TShippingMethod>
-  protected lineItemAdjustmentService_: ModulesSdkTypes.IMedusaInternalService<TLineItemAdjustment>
-  protected lineItemTaxLineService_: ModulesSdkTypes.IMedusaInternalService<TLineItemTaxLine>
-  protected shippingMethodTaxLineService_: ModulesSdkTypes.IMedusaInternalService<TShippingMethodTaxLine>
-  protected transactionService_: ModulesSdkTypes.IMedusaInternalService<TTransaction>
-  protected orderChangeService_: OrderChangeService
+  protected orderAddressService_: ModulesSdkTypes.IMedusaInternalService<TAddress>
+  protected orderLineItemService_: ModulesSdkTypes.IMedusaInternalService<TLineItem>
+  protected orderShippingMethodAdjustmentService_: ModulesSdkTypes.IMedusaInternalService<TOrderShippingMethodAdjustment>
+  protected orderShippingMethodService_: ModulesSdkTypes.IMedusaInternalService<TOrderShippingMethod>
+  protected orderLineItemAdjustmentService_: ModulesSdkTypes.IMedusaInternalService<TLineItemAdjustment>
+  protected orderLineItemTaxLineService_: ModulesSdkTypes.IMedusaInternalService<TLineItemTaxLine>
+  protected orderShippingMethodTaxLineService_: ModulesSdkTypes.IMedusaInternalService<TOrderShippingMethodTaxLine>
+  protected orderTransactionService_: ModulesSdkTypes.IMedusaInternalService<TOrderTransaction>
+  protected orderChangeService_: ModulesSdkTypes.IMedusaInternalService<TOrderChange>
   protected orderChangeActionService_: ModulesSdkTypes.IMedusaInternalService<TOrderChangeAction>
   protected orderItemService_: ModulesSdkTypes.IMedusaInternalService<TOrderItem>
   protected orderSummaryService_: ModulesSdkTypes.IMedusaInternalService<TOrderSummary>
-  protected orderShippingMethodService_: ModulesSdkTypes.IMedusaInternalService<TOrderShippingMethod>
+  protected orderShippingService_: ModulesSdkTypes.IMedusaInternalService<TOrderShipping>
   protected returnReasonService_: ModulesSdkTypes.IMedusaInternalService<TReturnReason>
   protected returnService_: ModulesSdkTypes.IMedusaInternalService<TReturn>
   protected returnItemService_: ModulesSdkTypes.IMedusaInternalService<TReturnItem>
   protected orderClaimService_: ModulesSdkTypes.IMedusaInternalService<TClaim>
+  protected orderClaimItemService_: ModulesSdkTypes.IMedusaInternalService<TClaimItem>
+  protected orderClaimItemImageService_: ModulesSdkTypes.IMedusaInternalService<TClaimItemImage>
   protected orderExchangeService_: ModulesSdkTypes.IMedusaInternalService<TExchange>
+  protected orderExchangeItemService_: ModulesSdkTypes.IMedusaInternalService<TExchangeItem>
 
   constructor(
     {
       baseRepository,
       orderService,
-      addressService,
-      lineItemService,
-      shippingMethodAdjustmentService,
-      shippingMethodService,
-      lineItemAdjustmentService,
-      shippingMethodTaxLineService,
-      lineItemTaxLineService,
-      transactionService,
+      orderAddressService,
+      orderLineItemService,
+      orderShippingMethodAdjustmentService,
+      orderShippingMethodService,
+      orderLineItemAdjustmentService,
+      orderShippingMethodTaxLineService,
+      orderLineItemTaxLineService,
+      orderTransactionService,
       orderChangeService,
       orderChangeActionService,
       orderItemService,
       orderSummaryService,
-      orderShippingMethodService,
+      orderShippingService,
       returnReasonService,
       returnService,
       returnItemService,
@@ -217,24 +241,29 @@ export default class OrderModuleService<
 
     this.baseRepository_ = baseRepository
     this.orderService_ = orderService
-    this.addressService_ = addressService
-    this.lineItemService_ = lineItemService
-    this.shippingMethodAdjustmentService_ = shippingMethodAdjustmentService
-    this.shippingMethodService_ = shippingMethodService
-    this.lineItemAdjustmentService_ = lineItemAdjustmentService
-    this.shippingMethodTaxLineService_ = shippingMethodTaxLineService
-    this.lineItemTaxLineService_ = lineItemTaxLineService
-    this.transactionService_ = transactionService
+    this.orderAddressService_ = orderAddressService
+    this.orderLineItemService_ = orderLineItemService
+    this.orderShippingMethodAdjustmentService_ =
+      orderShippingMethodAdjustmentService
+    this.orderShippingMethodService_ = orderShippingMethodService
+    this.orderLineItemAdjustmentService_ = orderLineItemAdjustmentService
+    this.orderShippingMethodTaxLineService_ = orderShippingMethodTaxLineService
+    this.orderLineItemTaxLineService_ = orderLineItemTaxLineService
+    this.orderTransactionService_ = orderTransactionService
     this.orderChangeService_ = orderChangeService
     this.orderChangeActionService_ = orderChangeActionService
     this.orderItemService_ = orderItemService
     this.orderSummaryService_ = orderSummaryService
-    this.orderShippingMethodService_ = orderShippingMethodService
+    this.orderShippingService_ = orderShippingService
     this.returnReasonService_ = returnReasonService
     this.returnService_ = returnService
     this.returnItemService_ = returnItemService
     this.orderClaimService_ = orderClaimService
     this.orderExchangeService_ = orderExchangeService
+  }
+
+  __joinerConfig(): ModuleJoinerConfig {
+    return joinerConfig
   }
 
   private shouldIncludeTotals(config: FindConfig<any>): boolean {
@@ -256,7 +285,7 @@ export default class OrderModuleService<
       "shipping_subtotal",
       "shipping_tax_total",
       "original_shipping_tax_total",
-      "original_shipping_tax_subtotal",
+      "original_shipping_subtotal",
       "original_shipping_total",
     ]
 
@@ -275,7 +304,7 @@ export default class OrderModuleService<
     config.relations ??= []
     config.select ??= []
 
-    const requiredFieldsForTotals = [
+    const requiredRelationsForTotals = [
       "items",
       "items.tax_lines",
       "items.adjustments",
@@ -283,14 +312,15 @@ export default class OrderModuleService<
       "shipping_methods.tax_lines",
       "shipping_methods.adjustments",
     ]
+
     config.relations = deduplicate([
       ...config.relations,
-      ...requiredFieldsForTotals,
+      ...requiredRelationsForTotals,
     ])
 
     config.select = config.select.filter((field) => {
       return (
-        !requiredFieldsForTotals.some((val) =>
+        !requiredRelationsForTotals.some((val) =>
           val.startsWith(field as string)
         ) && !totalFields.includes(field)
       )
@@ -307,6 +337,14 @@ export default class OrderModuleService<
     const includeTotals = this.shouldIncludeTotals(config)
 
     const order = await super.retrieveOrder(id, config, sharedContext)
+
+    const orderChange = await this.getActiveOrderChange_(
+      order.id,
+      false,
+      sharedContext
+    )
+
+    order.order_change = orderChange
 
     return formatOrder(order, {
       entity: Order,
@@ -556,7 +594,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createOrders(
     data: OrderTypes.CreateOrderDTO[] | OrderTypes.CreateOrderDTO,
     @MedusaContext() sharedContext: Context = {}
@@ -591,7 +629,7 @@ export default class OrderModuleService<
       | OrderTypes.OrderDTO[]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async createOrders_(
     data: OrderTypes.CreateOrderDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -612,6 +650,7 @@ export default class OrderModuleService<
 
       const orderWithTotals = decorateCartTotals({
         ...ord,
+        shipping_methods,
         items,
       }) as any
       const calculated = calculateOrderChange({
@@ -642,7 +681,7 @@ export default class OrderModuleService<
     }
 
     if (lineItemsToCreate.length) {
-      await this.createLineItemsBulk_(lineItemsToCreate, sharedContext)
+      await this.createOrderLineItemsBulk_(lineItemsToCreate, sharedContext)
     }
 
     return createdOrders
@@ -663,7 +702,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateOrders(
     dataOrIdOrSelector:
       | OrderTypes.UpdateOrderDTO[]
@@ -687,7 +726,7 @@ export default class OrderModuleService<
     return isString(dataOrIdOrSelector) ? serializedResult[0] : serializedResult
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateOrders_(
     dataOrIdOrSelector:
       | OrderTypes.UpdateOrderDTO[]
@@ -726,20 +765,20 @@ export default class OrderModuleService<
   }
 
   // @ts-ignore
-  createLineItems(
+  createOrderLineItems(
     data: OrderTypes.CreateOrderLineItemForOrderDTO
   ): Promise<OrderTypes.OrderLineItemDTO[]>
-  createLineItems(
+  createOrderLineItems(
     data: OrderTypes.CreateOrderLineItemForOrderDTO[]
   ): Promise<OrderTypes.OrderLineItemDTO[]>
-  createLineItems(
+  createOrderLineItems(
     orderId: string,
     items: OrderTypes.CreateOrderLineItemDTO[],
     sharedContext?: Context
   ): Promise<OrderTypes.OrderLineItemDTO[]>
 
-  @InjectManager("baseRepository_")
-  async createLineItems(
+  @InjectManager()
+  async createOrderLineItems(
     orderIdOrData:
       | string
       | OrderTypes.CreateOrderLineItemForOrderDTO[]
@@ -749,9 +788,9 @@ export default class OrderModuleService<
       | OrderTypes.CreateOrderLineItemDTO,
     @MedusaContext() sharedContext: Context = {}
   ): Promise<OrderTypes.OrderLineItemDTO[]> {
-    let items: LineItem[] = []
+    let items: OrderLineItem[] = []
     if (isString(orderIdOrData)) {
-      items = await this.createLineItems_(
+      items = await this.createOrderLineItems_(
         orderIdOrData,
         data as OrderTypes.CreateOrderLineItemDTO[],
         sharedContext
@@ -779,7 +818,7 @@ export default class OrderModuleService<
         }
       })
 
-      items = await this.createLineItemsBulk_(lineItems, sharedContext)
+      items = await this.createOrderLineItemsBulk_(lineItems, sharedContext)
     }
 
     return await this.baseRepository_.serialize<OrderTypes.OrderLineItemDTO[]>(
@@ -790,12 +829,12 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
-  protected async createLineItems_(
+  @InjectTransactionManager()
+  protected async createOrderLineItems_(
     orderId: string,
     items: OrderTypes.CreateOrderLineItemDTO[],
     @MedusaContext() sharedContext: Context = {}
-  ): Promise<LineItem[]> {
+  ): Promise<OrderLineItem[]> {
     const order = await this.retrieveOrder(
       orderId,
       { select: ["id", "version"] },
@@ -810,17 +849,20 @@ export default class OrderModuleService<
       }
     })
 
-    return await this.createLineItemsBulk_(toUpdate, sharedContext)
+    return await this.createOrderLineItemsBulk_(toUpdate, sharedContext)
   }
 
-  @InjectTransactionManager("baseRepository_")
-  protected async createLineItemsBulk_(
+  @InjectTransactionManager()
+  protected async createOrderLineItemsBulk_(
     data: CreateOrderLineItemDTO[],
     @MedusaContext() sharedContext: Context = {}
-  ): Promise<LineItem[]> {
+  ): Promise<OrderLineItem[]> {
     const orderItemToCreate: CreateOrderItemDTO[] = []
 
-    const lineItems = await this.lineItemService_.create(data, sharedContext)
+    const lineItems = await this.orderLineItemService_.create(
+      data,
+      sharedContext
+    )
 
     for (let i = 0; i < lineItems.length; i++) {
       const item = lineItems[i]
@@ -844,22 +886,22 @@ export default class OrderModuleService<
   }
 
   // @ts-ignore
-  updateLineItems(
+  updateOrderLineItems(
     data: OrderTypes.UpdateOrderLineItemWithSelectorDTO[]
   ): Promise<OrderTypes.OrderLineItemDTO[]>
-  updateLineItems(
+  updateOrderLineItems(
     selector: Partial<OrderTypes.FilterableOrderLineItemProps>,
     data: OrderTypes.UpdateOrderLineItemDTO,
     sharedContext?: Context
   ): Promise<OrderTypes.OrderLineItemDTO[]>
-  updateLineItems(
+  updateOrderLineItems(
     lineItemId: string,
     data: Partial<OrderTypes.UpdateOrderLineItemDTO>,
     sharedContext?: Context
   ): Promise<OrderTypes.OrderLineItemDTO>
 
-  @InjectManager("baseRepository_")
-  async updateLineItems(
+  @InjectManager()
+  async updateOrderLineItems(
     lineItemIdOrDataOrSelector:
       | string
       | OrderTypes.UpdateOrderLineItemWithSelectorDTO[]
@@ -869,9 +911,9 @@ export default class OrderModuleService<
       | Partial<OrderTypes.UpdateOrderLineItemDTO>,
     @MedusaContext() sharedContext: Context = {}
   ): Promise<OrderTypes.OrderLineItemDTO[] | OrderTypes.OrderLineItemDTO> {
-    let items: LineItem[] = []
+    let items: OrderLineItem[] = []
     if (isString(lineItemIdOrDataOrSelector)) {
-      const item = await this.updateLineItem_(
+      const item = await this.updateOrderLineItem_(
         lineItemIdOrDataOrSelector,
         data as Partial<OrderTypes.UpdateOrderLineItemDTO>,
         sharedContext
@@ -894,7 +936,10 @@ export default class OrderModuleService<
           } as OrderTypes.UpdateOrderLineItemWithSelectorDTO,
         ]
 
-    items = await this.updateLineItemsWithSelector_(toUpdate, sharedContext)
+    items = await this.updateOrderLineItemsWithSelector_(
+      toUpdate,
+      sharedContext
+    )
 
     return await this.baseRepository_.serialize<OrderTypes.OrderLineItemDTO[]>(
       items,
@@ -904,13 +949,13 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
-  protected async updateLineItem_(
+  @InjectTransactionManager()
+  protected async updateOrderLineItem_(
     lineItemId: string,
     data: Partial<OrderTypes.UpdateOrderLineItemDTO>,
     @MedusaContext() sharedContext: Context = {}
-  ): Promise<LineItem> {
-    const [item] = await this.lineItemService_.update(
+  ): Promise<OrderLineItem> {
+    const [item] = await this.orderLineItemService_.update(
       [{ id: lineItemId, ...data }],
       sharedContext
     )
@@ -930,15 +975,19 @@ export default class OrderModuleService<
     return item
   }
 
-  @InjectTransactionManager("baseRepository_")
-  protected async updateLineItemsWithSelector_(
+  @InjectTransactionManager()
+  protected async updateOrderLineItemsWithSelector_(
     updates: OrderTypes.UpdateOrderLineItemWithSelectorDTO[],
     @MedusaContext() sharedContext: Context = {}
-  ): Promise<LineItem[]> {
+  ): Promise<OrderLineItem[]> {
     let toUpdate: UpdateOrderLineItemDTO[] = []
     const detailsToUpdate: UpdateOrderItemWithSelectorDTO[] = []
     for (const { selector, data } of updates) {
-      const items = await this.listLineItems({ ...selector }, {}, sharedContext)
+      const items = await this.listOrderLineItems(
+        { ...selector },
+        {},
+        sharedContext
+      )
 
       items.forEach((item) => {
         toUpdate.push({
@@ -959,7 +1008,7 @@ export default class OrderModuleService<
       await this.updateOrderItemWithSelector_(detailsToUpdate, sharedContext)
     }
 
-    return await this.lineItemService_.update(toUpdate, sharedContext)
+    return await this.orderLineItemService_.update(toUpdate, sharedContext)
   }
 
   updateOrderItem(
@@ -973,7 +1022,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderItemDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateOrderItem(
     orderItemIdOrDataOrSelector:
       | string
@@ -1019,7 +1068,7 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateOrderItem_(
     orderItemId: string,
     data: Partial<OrderTypes.UpdateOrderItemDTO>,
@@ -1033,7 +1082,7 @@ export default class OrderModuleService<
     return detail
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async updateOrderItemWithSelector_(
     updates: OrderTypes.UpdateOrderItemWithSelectorDTO[],
     @MedusaContext() sharedContext: Context = {}
@@ -1058,94 +1107,20 @@ export default class OrderModuleService<
   }
 
   // @ts-ignore
-  async createAddresses(
-    data: OrderTypes.CreateOrderAddressDTO,
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderAddressDTO>
-  async createAddresses(
-    data: OrderTypes.CreateOrderAddressDTO[],
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderAddressDTO[]>
-
-  @InjectManager("baseRepository_")
-  async createAddresses(
-    data: OrderTypes.CreateOrderAddressDTO[] | OrderTypes.CreateOrderAddressDTO,
-    @MedusaContext() sharedContext: Context = {}
-  ): Promise<OrderTypes.OrderAddressDTO | OrderTypes.OrderAddressDTO[]> {
-    const input = Array.isArray(data) ? data : [data]
-    const addresses = await this.createAddresses_(input, sharedContext)
-
-    const result = await this.listAddresses(
-      { id: addresses.map((p) => p.id) },
-      {},
-      sharedContext
-    )
-
-    return (Array.isArray(data) ? result : result[0]) as
-      | OrderTypes.OrderAddressDTO
-      | OrderTypes.OrderAddressDTO[]
-  }
-
-  @InjectTransactionManager("baseRepository_")
-  protected async createAddresses_(
-    data: OrderTypes.CreateOrderAddressDTO[],
-    @MedusaContext() sharedContext: Context = {}
-  ) {
-    return await this.addressService_.create(data, sharedContext)
-  }
-
-  // @ts-ignore
-  async updateAddresses(
-    data: OrderTypes.UpdateOrderAddressDTO,
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderAddressDTO>
-  async updateAddresses(
-    data: OrderTypes.UpdateOrderAddressDTO[],
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderAddressDTO[]>
-
-  @InjectManager("baseRepository_")
-  async updateAddresses(
-    data: OrderTypes.UpdateOrderAddressDTO[] | OrderTypes.UpdateOrderAddressDTO,
-    @MedusaContext() sharedContext: Context = {}
-  ): Promise<OrderTypes.OrderAddressDTO | OrderTypes.OrderAddressDTO[]> {
-    const input = Array.isArray(data) ? data : [data]
-    const addresses = await this.updateAddresses_(input, sharedContext)
-
-    const result = await this.listAddresses(
-      { id: addresses.map((p) => p.id) },
-      {},
-      sharedContext
-    )
-
-    return (Array.isArray(data) ? result : result[0]) as
-      | OrderTypes.OrderAddressDTO
-      | OrderTypes.OrderAddressDTO[]
-  }
-
-  @InjectTransactionManager("baseRepository_")
-  protected async updateAddresses_(
-    data: OrderTypes.UpdateOrderAddressDTO[],
-    @MedusaContext() sharedContext: Context = {}
-  ) {
-    return await this.addressService_.update(data, sharedContext)
-  }
-
-  // @ts-ignore
-  async createShippingMethods(
+  async createOrderShippingMethods(
     data: OrderTypes.CreateOrderShippingMethodDTO
   ): Promise<OrderTypes.OrderShippingMethodDTO>
-  async createShippingMethods(
+  async createOrderShippingMethods(
     data: OrderTypes.CreateOrderShippingMethodDTO[]
   ): Promise<OrderTypes.OrderShippingMethodDTO[]>
-  async createShippingMethods(
+  async createOrderShippingMethods(
     orderId: string,
     methods: OrderTypes.CreateOrderShippingMethodDTO[],
     sharedContext?: Context
   ): Promise<OrderTypes.OrderShippingMethodDTO[]>
 
-  @InjectManager("baseRepository_")
-  async createShippingMethods(
+  @InjectManager()
+  async createOrderShippingMethods(
     orderIdOrData:
       | string
       | OrderTypes.CreateOrderShippingMethodDTO[]
@@ -1155,9 +1130,9 @@ export default class OrderModuleService<
   ): Promise<
     OrderTypes.OrderShippingMethodDTO[] | OrderTypes.OrderShippingMethodDTO
   > {
-    let methods: ShippingMethod[]
+    let methods: OrderShippingMethod[]
     if (isString(orderIdOrData)) {
-      methods = await this.createShippingMethods_(
+      methods = await this.createOrderShippingMethods_(
         orderIdOrData,
         data!,
         sharedContext
@@ -1185,11 +1160,11 @@ export default class OrderModuleService<
           return_id: dt.return_id,
           claim_id: dt.claim_id,
           exchange_id: dt.exchange_id,
-          version: mapOrderVersion[dt.order_id],
+          version: dt.version ?? mapOrderVersion[dt.order_id],
         }
       })
 
-      methods = await this.createShippingMethodsBulk_(
+      methods = await this.createOrderShippingMethodsBulk_(
         orderShippingMethodData as any,
         sharedContext
       )
@@ -1200,12 +1175,12 @@ export default class OrderModuleService<
     >(methods, { populate: true })
   }
 
-  @InjectTransactionManager("baseRepository_")
-  protected async createShippingMethods_(
+  @InjectTransactionManager()
+  protected async createOrderShippingMethods_(
     orderId: string,
     data: CreateOrderShippingMethodDTO[],
     @MedusaContext() sharedContext: Context = {}
-  ): Promise<ShippingMethod[]> {
+  ): Promise<OrderShippingMethod[]> {
     const order = await this.retrieveOrder(
       orderId,
       { select: ["id", "version"] },
@@ -1223,19 +1198,19 @@ export default class OrderModuleService<
       }
     })
 
-    return await this.createShippingMethodsBulk_(methods, sharedContext)
+    return await this.createOrderShippingMethodsBulk_(methods, sharedContext)
   }
 
-  @InjectTransactionManager("baseRepository_")
-  protected async createShippingMethodsBulk_(
+  @InjectTransactionManager()
+  protected async createOrderShippingMethodsBulk_(
     data: {
       shipping_method: OrderTypes.CreateOrderShippingMethodDTO
       order_id: string
       version: number
     }[],
     @MedusaContext() sharedContext: Context = {}
-  ): Promise<ShippingMethod[]> {
-    const sm = await this.orderShippingMethodService_.create(
+  ): Promise<OrderShippingMethod[]> {
+    const sm = await this.orderShippingService_.create(
       data as unknown as CreateOrderShippingMethodDTO[],
       sharedContext
     )
@@ -1243,21 +1218,73 @@ export default class OrderModuleService<
     return sm.map((s) => s.shipping_method)
   }
 
+  @InjectManager()
   // @ts-ignore
-  async createLineItemAdjustments(
+  async softDeleteOrderShippingMethods<TReturnableLinkableKeys extends string>(
+    ids: string | object | string[] | object[],
+    config?: SoftDeleteReturn<TReturnableLinkableKeys>,
+    @MedusaContext() sharedContext?: Context
+  ): Promise<Record<string, string[]> | void> {
+    const rel = await super.listOrderShippings(
+      {
+        shipping_method_id: ids,
+      },
+      {
+        select: ["id"],
+      },
+      sharedContext
+    )
+    const orderShippingIds = rel.map((r) => r.id)
+
+    const [returned] = await promiseAll([
+      super.softDeleteOrderShippingMethods(ids, config, sharedContext),
+      super.softDeleteOrderShippings(orderShippingIds, config, sharedContext),
+    ])
+
+    return returned
+  }
+
+  @InjectManager()
+  // @ts-ignore
+  async restoreOrderShippingMethods<TReturnableLinkableKeys extends string>(
+    ids: string | object | string[] | object[],
+    config?: RestoreReturn<TReturnableLinkableKeys>,
+    @MedusaContext() sharedContext?: Context
+  ): Promise<Record<string, string[]> | void> {
+    const rel = await super.listOrderShippings(
+      {
+        shipping_method_id: ids,
+      },
+      {
+        select: ["id"],
+      },
+      sharedContext
+    )
+    const shippingIds = rel.map((r) => r.id)
+
+    const [returned] = await promiseAll([
+      super.restoreOrderShippingMethods(ids, config, sharedContext),
+      super.restoreOrderShippings(shippingIds, config, sharedContext),
+    ])
+
+    return returned
+  }
+
+  // @ts-ignore
+  async createOrderLineItemAdjustments(
     adjustments: OrderTypes.CreateOrderLineItemAdjustmentDTO[]
   ): Promise<OrderTypes.OrderLineItemAdjustmentDTO[]>
-  async createLineItemAdjustments(
+  async createOrderLineItemAdjustments(
     adjustment: OrderTypes.CreateOrderLineItemAdjustmentDTO
   ): Promise<OrderTypes.OrderLineItemAdjustmentDTO[]>
-  async createLineItemAdjustments(
+  async createOrderLineItemAdjustments(
     orderId: string,
     adjustments: OrderTypes.CreateOrderLineItemAdjustmentDTO[],
     sharedContext?: Context
   ): Promise<OrderTypes.OrderLineItemAdjustmentDTO[]>
 
-  @InjectTransactionManager("baseRepository_")
-  async createLineItemAdjustments(
+  @InjectTransactionManager()
+  async createOrderLineItemAdjustments(
     orderIdOrData:
       | string
       | OrderTypes.CreateOrderLineItemAdjustmentDTO[]
@@ -1265,7 +1292,7 @@ export default class OrderModuleService<
     adjustments?: OrderTypes.CreateOrderLineItemAdjustmentDTO[],
     @MedusaContext() sharedContext: Context = {}
   ): Promise<OrderTypes.OrderLineItemAdjustmentDTO[]> {
-    let addedAdjustments: LineItemAdjustment[] = []
+    let addedAdjustments: OrderLineItemAdjustment[] = []
     if (isString(orderIdOrData)) {
       const order = await this.retrieveOrder(
         orderIdOrData,
@@ -1284,7 +1311,7 @@ export default class OrderModuleService<
         }
       }
 
-      addedAdjustments = await this.lineItemAdjustmentService_.create(
+      addedAdjustments = await this.orderLineItemAdjustmentService_.create(
         adjustments as OrderTypes.CreateOrderLineItemAdjustmentDTO[],
         sharedContext
       )
@@ -1293,7 +1320,7 @@ export default class OrderModuleService<
         ? orderIdOrData
         : [orderIdOrData]
 
-      addedAdjustments = await this.lineItemAdjustmentService_.create(
+      addedAdjustments = await this.orderLineItemAdjustmentService_.create(
         data as OrderTypes.CreateOrderLineItemAdjustmentDTO[],
         sharedContext
       )
@@ -1306,8 +1333,8 @@ export default class OrderModuleService<
     })
   }
 
-  @InjectTransactionManager("baseRepository_")
-  async setLineItemAdjustments(
+  @InjectTransactionManager()
+  async setOrderLineItemAdjustments(
     orderId: string,
     adjustments: (
       | OrderTypes.CreateOrderLineItemAdjustmentDTO
@@ -1342,10 +1369,10 @@ export default class OrderModuleService<
     })
 
     if (toDelete.length) {
-      await this.lineItemAdjustmentService_.delete(toDelete, sharedContext)
+      await this.orderLineItemAdjustmentService_.delete(toDelete, sharedContext)
     }
 
-    let result = await this.lineItemAdjustmentService_.upsert(
+    let result = await this.orderLineItemAdjustmentService_.upsert(
       adjustments,
       sharedContext
     )
@@ -1357,8 +1384,8 @@ export default class OrderModuleService<
     })
   }
 
-  @InjectTransactionManager("baseRepository_")
-  async setShippingMethodAdjustments(
+  @InjectTransactionManager()
+  async setOrderShippingMethodAdjustments(
     orderId: string,
     adjustments: (
       | OrderTypes.CreateOrderShippingMethodAdjustmentDTO
@@ -1395,13 +1422,13 @@ export default class OrderModuleService<
     })
 
     if (toDelete.length) {
-      await this.shippingMethodAdjustmentService_.delete(
+      await this.orderShippingMethodAdjustmentService_.delete(
         toDelete,
         sharedContext
       )
     }
 
-    const result = await this.shippingMethodAdjustmentService_.upsert(
+    const result = await this.orderShippingMethodAdjustmentService_.upsert(
       adjustments,
       sharedContext
     )
@@ -1414,20 +1441,20 @@ export default class OrderModuleService<
   }
 
   // @ts-ignore
-  async createShippingMethodAdjustments(
+  async createOrderShippingMethodAdjustments(
     adjustments: OrderTypes.CreateOrderShippingMethodAdjustmentDTO[]
   ): Promise<OrderTypes.OrderShippingMethodAdjustmentDTO[]>
-  async createShippingMethodAdjustments(
+  async createOrderShippingMethodAdjustments(
     adjustment: OrderTypes.CreateOrderShippingMethodAdjustmentDTO
   ): Promise<OrderTypes.OrderShippingMethodAdjustmentDTO>
-  async createShippingMethodAdjustments(
+  async createOrderShippingMethodAdjustments(
     orderId: string,
     adjustments: OrderTypes.CreateOrderShippingMethodAdjustmentDTO[],
     sharedContext?: Context
   ): Promise<OrderTypes.OrderShippingMethodAdjustmentDTO[]>
 
-  @InjectTransactionManager("baseRepository_")
-  async createShippingMethodAdjustments(
+  @InjectTransactionManager()
+  async createOrderShippingMethodAdjustments(
     orderIdOrData:
       | string
       | OrderTypes.CreateOrderShippingMethodAdjustmentDTO[]
@@ -1438,7 +1465,7 @@ export default class OrderModuleService<
     | OrderTypes.OrderShippingMethodAdjustmentDTO[]
     | OrderTypes.OrderShippingMethodAdjustmentDTO
   > {
-    let addedAdjustments: ShippingMethodAdjustment[] = []
+    let addedAdjustments: OrderShippingMethodAdjustment[] = []
     if (isString(orderIdOrData)) {
       const order = await this.retrieveOrder(
         orderIdOrData,
@@ -1457,19 +1484,21 @@ export default class OrderModuleService<
         }
       }
 
-      addedAdjustments = await this.shippingMethodAdjustmentService_.create(
-        adjustments as OrderTypes.CreateOrderShippingMethodAdjustmentDTO[],
-        sharedContext
-      )
+      addedAdjustments =
+        await this.orderShippingMethodAdjustmentService_.create(
+          adjustments as OrderTypes.CreateOrderShippingMethodAdjustmentDTO[],
+          sharedContext
+        )
     } else {
       const data = Array.isArray(orderIdOrData)
         ? orderIdOrData
         : [orderIdOrData]
 
-      addedAdjustments = await this.shippingMethodAdjustmentService_.create(
-        data as OrderTypes.CreateOrderShippingMethodAdjustmentDTO[],
-        sharedContext
-      )
+      addedAdjustments =
+        await this.orderShippingMethodAdjustmentService_.create(
+          data as OrderTypes.CreateOrderShippingMethodAdjustmentDTO[],
+          sharedContext
+        )
     }
 
     if (isObject(orderIdOrData)) {
@@ -1489,13 +1518,13 @@ export default class OrderModuleService<
   }
 
   // @ts-ignore
-  createLineItemTaxLines(
+  createOrderLineItemTaxLines(
     taxLines: OrderTypes.CreateOrderLineItemTaxLineDTO[]
   ): Promise<OrderTypes.OrderLineItemTaxLineDTO[]>
-  createLineItemTaxLines(
+  createOrderLineItemTaxLines(
     taxLine: OrderTypes.CreateOrderLineItemTaxLineDTO
   ): Promise<OrderTypes.OrderLineItemTaxLineDTO>
-  createLineItemTaxLines(
+  createOrderLineItemTaxLines(
     orderId: string,
     taxLines:
       | OrderTypes.CreateOrderLineItemTaxLineDTO[]
@@ -1503,8 +1532,8 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderLineItemTaxLineDTO[]>
 
-  @InjectTransactionManager("baseRepository_")
-  async createLineItemTaxLines(
+  @InjectTransactionManager()
+  async createOrderLineItemTaxLines(
     orderIdOrData:
       | string
       | OrderTypes.CreateOrderLineItemTaxLineDTO[]
@@ -1516,11 +1545,11 @@ export default class OrderModuleService<
   ): Promise<
     OrderTypes.OrderLineItemTaxLineDTO[] | OrderTypes.OrderLineItemTaxLineDTO
   > {
-    let addedTaxLines: LineItemTaxLine[]
+    let addedTaxLines: OrderLineItemTaxLine[]
     if (isString(orderIdOrData)) {
       const lines = Array.isArray(taxLines) ? taxLines : [taxLines]
 
-      addedTaxLines = await this.lineItemTaxLineService_.create(
+      addedTaxLines = await this.orderLineItemTaxLineService_.create(
         lines as CreateOrderLineItemTaxLineDTO[],
         sharedContext
       )
@@ -1529,7 +1558,7 @@ export default class OrderModuleService<
         ? orderIdOrData
         : [orderIdOrData]
 
-      addedTaxLines = await this.lineItemTaxLineService_.create(
+      addedTaxLines = await this.orderLineItemTaxLineService_.create(
         data as CreateOrderLineItemTaxLineDTO[],
         sharedContext
       )
@@ -1548,8 +1577,8 @@ export default class OrderModuleService<
     return serialized
   }
 
-  @InjectTransactionManager("baseRepository_")
-  async setLineItemTaxLines(
+  @InjectTransactionManager()
+  async setOrderLineItemTaxLines(
     orderId: string,
     taxLines: (
       | OrderTypes.CreateOrderLineItemTaxLineDTO
@@ -1584,10 +1613,10 @@ export default class OrderModuleService<
     })
 
     if (toDelete.length) {
-      await this.lineItemTaxLineService_.delete(toDelete, sharedContext)
+      await this.orderLineItemTaxLineService_.delete(toDelete, sharedContext)
     }
 
-    const result = await this.lineItemTaxLineService_.upsert(
+    const result = await this.orderLineItemTaxLineService_.upsert(
       taxLines as UpdateOrderLineItemTaxLineDTO[],
       sharedContext
     )
@@ -1600,13 +1629,13 @@ export default class OrderModuleService<
   }
 
   // @ts-ignore
-  createShippingMethodTaxLines(
+  createOrderShippingMethodTaxLines(
     taxLines: OrderTypes.CreateOrderShippingMethodTaxLineDTO[]
   ): Promise<OrderTypes.OrderShippingMethodTaxLineDTO[]>
-  createShippingMethodTaxLines(
+  createOrderShippingMethodTaxLines(
     taxLine: OrderTypes.CreateOrderShippingMethodTaxLineDTO
   ): Promise<OrderTypes.OrderShippingMethodTaxLineDTO>
-  createShippingMethodTaxLines(
+  createOrderShippingMethodTaxLines(
     orderId: string,
     taxLines:
       | OrderTypes.CreateOrderShippingMethodTaxLineDTO[]
@@ -1614,8 +1643,8 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderShippingMethodTaxLineDTO[]>
 
-  @InjectTransactionManager("baseRepository_")
-  async createShippingMethodTaxLines(
+  @InjectTransactionManager()
+  async createOrderShippingMethodTaxLines(
     orderIdOrData:
       | string
       | OrderTypes.CreateOrderShippingMethodTaxLineDTO[]
@@ -1628,16 +1657,16 @@ export default class OrderModuleService<
     | OrderTypes.OrderShippingMethodTaxLineDTO[]
     | OrderTypes.OrderShippingMethodTaxLineDTO
   > {
-    let addedTaxLines: ShippingMethodTaxLine[]
+    let addedTaxLines: OrderShippingMethodTaxLine[]
     if (isString(orderIdOrData)) {
       const lines = Array.isArray(taxLines) ? taxLines : [taxLines]
 
-      addedTaxLines = await this.shippingMethodTaxLineService_.create(
+      addedTaxLines = await this.orderShippingMethodTaxLineService_.create(
         lines as CreateOrderShippingMethodTaxLineDTO[],
         sharedContext
       )
     } else {
-      addedTaxLines = await this.shippingMethodTaxLineService_.create(
+      addedTaxLines = await this.orderShippingMethodTaxLineService_.create(
         taxLines as CreateOrderShippingMethodTaxLineDTO[],
         sharedContext
       )
@@ -1658,8 +1687,8 @@ export default class OrderModuleService<
     return serialized
   }
 
-  @InjectTransactionManager("baseRepository_")
-  async setShippingMethodTaxLines(
+  @InjectTransactionManager()
+  async setOrderShippingMethodTaxLines(
     orderId: string,
     taxLines: (
       | OrderTypes.CreateOrderShippingMethodTaxLineDTO
@@ -1695,10 +1724,13 @@ export default class OrderModuleService<
     })
 
     if (toDelete.length) {
-      await this.shippingMethodTaxLineService_.delete(toDelete, sharedContext)
+      await this.orderShippingMethodTaxLineService_.delete(
+        toDelete,
+        sharedContext
+      )
     }
 
-    const result = await this.shippingMethodTaxLineService_.upsert(
+    const result = await this.orderShippingMethodTaxLineService_.upsert(
       taxLines as UpdateOrderShippingMethodTaxLineDTO[],
       sharedContext
     )
@@ -1708,6 +1740,134 @@ export default class OrderModuleService<
     >(result, {
       populate: true,
     })
+  }
+
+  // @ts-ignore
+  async createReturns(
+    data: OrderTypes.CreateOrderReturnDTO,
+    sharedContext?: Context
+  ): Promise<OrderTypes.ReturnDTO>
+
+  async createReturns(
+    data: OrderTypes.CreateOrderReturnDTO[],
+    sharedContext?: Context
+  ): Promise<OrderTypes.ReturnDTO[]>
+
+  @InjectTransactionManager()
+  async createReturns(
+    data: OrderTypes.CreateOrderReturnDTO | OrderTypes.CreateOrderReturnDTO[],
+    @MedusaContext() sharedContext?: Context
+  ): Promise<OrderTypes.ReturnDTO | OrderTypes.ReturnDTO[]> {
+    const created = await this.createOrderRelatedEntity_(
+      data,
+      this.returnService_,
+      sharedContext
+    )
+
+    return await this.baseRepository_.serialize<OrderTypes.ReturnDTO>(
+      !Array.isArray(data) ? created[0] : created,
+      {
+        populate: true,
+      }
+    )
+  }
+
+  // @ts-ignore
+  async createOrderClaims(
+    data: OrderTypes.CreateOrderClaimDTO,
+    sharedContext?: Context
+  ): Promise<OrderTypes.OrderClaimDTO>
+
+  async createOrderClaims(
+    data: OrderTypes.CreateOrderClaimDTO[],
+    sharedContext?: Context
+  ): Promise<OrderTypes.OrderClaimDTO[]>
+
+  @InjectTransactionManager()
+  async createOrderClaims(
+    data: OrderTypes.CreateOrderClaimDTO | OrderTypes.CreateOrderClaimDTO[],
+    @MedusaContext() sharedContext?: Context
+  ): Promise<OrderTypes.OrderClaimDTO | OrderTypes.OrderClaimDTO[]> {
+    const created = await this.createOrderRelatedEntity_(
+      data,
+      this.orderClaimService_,
+      sharedContext
+    )
+
+    return await this.baseRepository_.serialize<OrderTypes.OrderClaimDTO>(
+      !Array.isArray(data) ? created[0] : created,
+      {
+        populate: true,
+      }
+    )
+  }
+
+  // @ts-ignore
+  async createOrderExchanges(
+    data: OrderTypes.CreateOrderExchangeDTO,
+    sharedContext?: Context
+  ): Promise<OrderTypes.OrderExchangeDTO>
+
+  async createOrderExchanges(
+    data: OrderTypes.CreateOrderExchangeDTO[],
+    sharedContext?: Context
+  ): Promise<OrderTypes.OrderExchangeDTO[]>
+
+  @InjectTransactionManager()
+  async createOrderExchanges(
+    data:
+      | OrderTypes.CreateOrderExchangeDTO
+      | OrderTypes.CreateOrderExchangeDTO[],
+    @MedusaContext() sharedContext?: Context
+  ): Promise<OrderTypes.OrderExchangeDTO | OrderTypes.OrderExchangeDTO[]> {
+    const created = await this.createOrderRelatedEntity_(
+      data,
+      this.orderExchangeService_,
+      sharedContext
+    )
+
+    return await this.baseRepository_.serialize<OrderTypes.OrderExchangeDTO>(
+      !Array.isArray(data) ? created[0] : created,
+      {
+        populate: true,
+      }
+    )
+  }
+
+  @InjectTransactionManager()
+  private async createOrderRelatedEntity_(
+    data: any,
+    service: any,
+    sharedContext?: Context
+  ) {
+    const data_ = Array.isArray(data) ? data : [data]
+
+    const inputDataMap = data_.reduce((acc, curr) => {
+      acc[curr.order_id] = curr
+      return acc
+    }, {})
+
+    const orderIds = data_.map((d) => d.order_id)
+    const orders = await this.orderService_.list(
+      { id: orderIds },
+      { select: ["id", "version"] },
+      sharedContext
+    )
+
+    if (orders.length !== orderIds.length) {
+      const foundOrders = orders.map((o) => o.id)
+      const missing = orderIds.filter((id) => !foundOrders.includes(id))
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `Order could not be found: ${missing.join(", ")}`
+      )
+    }
+
+    for (const order of orders) {
+      inputDataMap[order.id].order_version = order.version
+    }
+
+    return await service.create(data_, sharedContext)
   }
 
   async createOrderChange(
@@ -1720,7 +1880,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderChangeDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createOrderChange(
     data: CreateOrderChangeDTO | CreateOrderChangeDTO[],
     @MedusaContext() sharedContext?: Context
@@ -1735,27 +1895,36 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async createOrderChange_(
     data: CreateOrderChangeDTO | CreateOrderChangeDTO[],
     @MedusaContext() sharedContext?: Context
   ): Promise<OrderChange[]> {
     const dataArr = Array.isArray(data) ? data : [data]
-
     const orderIds: string[] = []
     const dataMap: Record<string, object> = {}
+
+    const orderChanges = await this.listOrderChanges(
+      {
+        order_id: dataArr.map((data) => data.order_id),
+        status: [OrderChangeStatus.PENDING, OrderChangeStatus.REQUESTED],
+      },
+      {},
+      sharedContext
+    )
+
+    const orderChangesMap = new Map<string, OrderTypes.OrderChangeDTO>(
+      orderChanges.map((item) => [item.order_id, item])
+    )
+
     for (const change of dataArr) {
       orderIds.push(change.order_id)
       dataMap[change.order_id] = change
     }
 
-    const orders = await this.listOrders(
-      {
-        id: orderIds,
-      },
-      {
-        select: ["id", "version"],
-      },
+    const orders = await this.orderService_.list(
+      { id: orderIds },
+      { select: ["id", "version"] },
       sharedContext
     )
 
@@ -1769,6 +1938,15 @@ export default class OrderModuleService<
     }
 
     const input = orders.map((order) => {
+      const existingOrderChange = orderChangesMap.get(order.id)
+
+      if (existingOrderChange) {
+        throw new MedusaError(
+          MedusaError.Types.INVALID_DATA,
+          `Order (${order.id}) already has an existing active order change`
+        )
+      }
+
       return {
         ...dataMap[order.id],
         version: order.version + 1,
@@ -1776,6 +1954,131 @@ export default class OrderModuleService<
     })
 
     return await this.orderChangeService_.create(input, sharedContext)
+  }
+
+  @InjectManager()
+  async previewOrderChange(orderId: string, sharedContext?: Context) {
+    const order = await this.retrieveOrder(
+      orderId,
+      {
+        select: ["id", "version", "items.detail", "summary", "total"],
+        relations: ["transactions", "items", "shipping_methods"],
+      },
+      sharedContext
+    )
+
+    if (!order.order_change) {
+      return order
+    }
+
+    const orderChange = await super.retrieveOrderChange(
+      order.order_change.id,
+      { relations: ["actions"] },
+      sharedContext
+    )
+
+    const { itemsToUpsert, shippingMethodsToUpsert, calculatedOrders } =
+      applyChangesToOrder(
+        [order],
+        { [order.id]: orderChange.actions },
+        { addActionReferenceToObject: true }
+      )
+
+    const calculated = calculatedOrders[order.id]
+
+    const addedItems = {}
+    const addedShippingMethods = {}
+    for (const item of calculated.order.items) {
+      const isExistingItem = item.id === item.detail?.item_id
+      if (!isExistingItem) {
+        addedItems[item.id] = item
+      }
+    }
+
+    for (const sm of calculated.order.shipping_methods) {
+      if (!isDefined(sm.shipping_option_id)) {
+        addedShippingMethods[sm.id] = sm
+      }
+    }
+
+    if (Object.keys(addedItems).length > 0) {
+      const addedItemDetails = await this.listOrderLineItems(
+        { id: Object.keys(addedItems) },
+        {
+          relations: ["adjustments", "tax_lines"],
+        },
+        sharedContext
+      )
+
+      calculated.order.items.forEach((item, idx) => {
+        if (!addedItems[item.id]) {
+          return
+        }
+
+        const lineItem = addedItemDetails.find((d) => d.id === item.id) as any
+
+        const actions = item.actions
+        delete item.actions
+
+        const newItem = itemsToUpsert.find((d) => d.item_id === item.id)!
+
+        calculated.order.items[idx] = {
+          ...lineItem,
+          actions,
+          quantity: newItem.quantity,
+          detail: {
+            ...newItem,
+            ...item,
+          },
+        }
+      })
+    }
+
+    if (Object.keys(addedShippingMethods).length > 0) {
+      const addedShippingDetails = await this.listOrderShippingMethods(
+        { id: Object.keys(addedShippingMethods) },
+        {
+          relations: ["adjustments", "tax_lines"],
+        },
+        sharedContext
+      )
+
+      calculated.order.shipping_methods.forEach((sm, idx) => {
+        if (!addedShippingMethods[sm.id]) {
+          return
+        }
+
+        const shippingMethod = addedShippingDetails.find(
+          (d) => d.id === sm.id
+        ) as any
+
+        const actions = sm.actions
+        delete sm.actions
+
+        const newItem = shippingMethodsToUpsert.find((d) => d.id === sm.id)!
+
+        sm.shipping_method_id = sm.id
+        delete sm.id
+
+        calculated.order.shipping_methods[idx] = {
+          ...shippingMethod,
+          actions,
+          detail: {
+            ...sm,
+            ...newItem,
+          },
+        }
+      })
+    }
+
+    const calcOrder = calculated.order
+
+    decorateCartTotals(calcOrder as DecorateCartLikeInputDTO)
+    calcOrder.summary = calculated.summary
+
+    createRawPropertiesFromBigNumber(calcOrder)
+
+    return calcOrder
   }
 
   async cancelOrderChange(
@@ -1798,7 +2101,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<void>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async cancelOrderChange(
     orderChangeIdOrData:
       | string
@@ -1838,7 +2141,7 @@ export default class OrderModuleService<
     data: OrderTypes.ConfirmOrderChangeDTO[],
     sharedContext?: Context
   )
-  @InjectTransactionManager("baseRepository_")
+  @InjectManager()
   async confirmOrderChange(
     orderChangeIdOrData:
       | string
@@ -1872,16 +2175,6 @@ export default class OrderModuleService<
     await this.orderChangeService_.update(updates as any, sharedContext)
 
     const orderChanges = orderChange.map((change) => {
-      change.actions = change.actions.map((action) => {
-        return {
-          ...action,
-          version: change.version,
-          order_id: change.order_id,
-          return_id: change.return_id,
-          claim_id: change.claim_id,
-          exchange_id: change.exchange_id,
-        }
-      })
       return change.actions
     })
 
@@ -1898,7 +2191,7 @@ export default class OrderModuleService<
     data: OrderTypes.DeclineOrderChangeDTO[],
     sharedContext?: Context
   )
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async declineOrderChange(
     orderChangeIdOrData:
       | string
@@ -1928,14 +2221,14 @@ export default class OrderModuleService<
     await this.orderChangeService_.update(updates as any, sharedContext)
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async applyPendingOrderActions(
     orderId: string | string[],
     @MedusaContext() sharedContext?: Context
   ): Promise<OrderTypes.OrderChangeReturn> {
     const orderIds = Array.isArray(orderId) ? orderId : [orderId]
 
-    const orders = await this.listOrders(
+    const orders = await this.orderService_.list(
       { id: orderIds },
       {
         select: ["id", "version"],
@@ -1980,7 +2273,7 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async revertLastVersion(
     orderId: string,
     @MedusaContext() sharedContext?: Context
@@ -2003,7 +2296,7 @@ export default class OrderModuleService<
     return await this.revertLastChange_(order, sharedContext)
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   protected async revertLastChange_(
     order: OrderDTO,
     sharedContext?: Context
@@ -2065,8 +2358,8 @@ export default class OrderModuleService<
 
     await this.orderItemService_.softDelete(orderItemIds, sharedContext)
 
-    // Shipping Methods
-    const orderShippingMethods = await this.orderShippingMethodService_.list(
+    // Order Shipping
+    const orderShippings = await this.orderShippingService_.list(
       {
         order_id: order.id,
         version: currentVersion,
@@ -2074,14 +2367,9 @@ export default class OrderModuleService<
       { select: ["id", "version"] },
       sharedContext
     )
-    const orderShippingMethodIds = orderShippingMethods.map(
-      (summary) => summary.id
-    )
+    const orderShippingIds = orderShippings.map((sh) => sh.id)
 
-    await this.orderShippingMethodService_.softDelete(
-      orderShippingMethodIds,
-      sharedContext
-    )
+    await this.orderShippingService_.softDelete(orderShippingIds, sharedContext)
 
     // Order
     await this.orderService_.update(
@@ -2106,11 +2394,58 @@ export default class OrderModuleService<
     )
   }
 
+  private async getActiveOrderChange_(
+    orderId: string,
+    includeActions: boolean,
+    sharedContext?: Context
+  ): Promise<any> {
+    const options = {
+      select: [
+        "id",
+        "change_type",
+        "order_id",
+        "return_id",
+        "claim_id",
+        "exchange_id",
+        "version",
+        "requested_at",
+        "requested_by",
+        "status",
+        "description",
+        "internal_note",
+      ],
+      relations: [] as string[],
+      order: {},
+    }
+
+    if (includeActions) {
+      options.select.push("actions")
+      options.relations.push("actions")
+      options.order = {
+        actions: {
+          ordering: "ASC",
+        },
+      }
+    }
+
+    const [orderChange] = await this.listOrderChanges(
+      {
+        order_id: orderId,
+        status: [OrderChangeStatus.PENDING, OrderChangeStatus.REQUESTED],
+      },
+      options,
+      sharedContext
+    )
+
+    return orderChange
+  }
+
   private async getAndValidateOrderChange_(
     orderChangeIds: string[],
     includeActions: boolean,
     sharedContext?: Context
   ): Promise<any> {
+    orderChangeIds = deduplicate(orderChangeIds)
     const options = {
       select: [
         "id",
@@ -2182,7 +2517,7 @@ export default class OrderModuleService<
     data: OrderTypes.CreateOrderChangeActionDTO[],
     sharedContext?: Context
   ): Promise<OrderTypes.OrderChangeActionDTO[]>
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async addOrderAction(
     data:
       | OrderTypes.CreateOrderChangeActionDTO
@@ -2227,6 +2562,7 @@ export default class OrderModuleService<
     return Array.isArray(data) ? actions : actions[0]
   }
 
+  @InjectTransactionManager()
   private async applyOrderChanges_(
     changeActions: ApplyOrderChangeDTO[],
     sharedContext?: Context
@@ -2262,7 +2598,7 @@ export default class OrderModuleService<
       }
     }
 
-    let orders = await super.listOrders(
+    let orders = await this.listOrders(
       { id: deduplicate(ordersIds) },
       {
         select: ["id", "version", "items.detail", "summary", "total"],
@@ -2272,8 +2608,9 @@ export default class OrderModuleService<
           "items.detail",
           "shipping_methods",
         ],
-      },
-      sharedContext
+      }
+      // sharedContext
+      // TODO: investigate issue while using sharedContext in receive return action
     )
     orders = formatOrder(orders, {
       entity: Order,
@@ -2284,7 +2621,9 @@ export default class OrderModuleService<
       shippingMethodsToUpsert,
       summariesToUpsert,
       orderToUpdate,
-    } = applyChangesToOrder(orders, actionsMap)
+    } = applyChangesToOrder(orders, actionsMap, {
+      addActionReferenceToObject: true,
+    })
 
     await promiseAll([
       orderToUpdate.length
@@ -2300,7 +2639,7 @@ export default class OrderModuleService<
         ? this.orderSummaryService_.upsert(summariesToUpsert, sharedContext)
         : null,
       shippingMethodsToUpsert.length
-        ? this.orderShippingMethodService_.upsert(
+        ? this.orderShippingService_.upsert(
             shippingMethodsToUpsert,
             sharedContext
           )
@@ -2313,18 +2652,18 @@ export default class OrderModuleService<
     }
   }
 
-  async addTransactions(
+  async addOrderTransactions(
     transactionData: OrderTypes.CreateOrderTransactionDTO,
     sharedContext?: Context
   ): Promise<OrderTypes.OrderTransactionDTO>
 
-  async addTransactions(
+  async addOrderTransactions(
     transactionData: OrderTypes.CreateOrderTransactionDTO[],
     sharedContext?: Context
   ): Promise<OrderTypes.OrderTransactionDTO[]>
 
-  @InjectManager("baseRepository_")
-  async addTransactions(
+  @InjectManager()
+  async addOrderTransactions(
     transactionData:
       | OrderTypes.CreateOrderTransactionDTO
       | OrderTypes.CreateOrderTransactionDTO[],
@@ -2355,7 +2694,10 @@ export default class OrderModuleService<
       }
     }
 
-    const created = await this.transactionService_.create(data, sharedContext)
+    const created = await this.orderTransactionService_.create(
+      data,
+      sharedContext
+    )
 
     await this.updateOrderPaidRefundableAmount_(created, false, sharedContext)
 
@@ -2367,9 +2709,9 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   // @ts-ignore
-  async deleteTransactions(
+  async deleteOrderTransactions(
     transactionIds: string | object | string[] | object[],
     @MedusaContext() sharedContext?: Context
   ): Promise<void> {
@@ -2377,7 +2719,7 @@ export default class OrderModuleService<
       ? transactionIds
       : [transactionIds]
 
-    const transactions = await super.listTransactions(
+    const transactions = await super.listOrderTransactions(
       {
         id: data,
       },
@@ -2387,7 +2729,7 @@ export default class OrderModuleService<
       sharedContext
     )
 
-    await this.transactionService_.delete(data, sharedContext)
+    await this.orderTransactionService_.delete(data, sharedContext)
 
     await this.updateOrderPaidRefundableAmount_(
       transactions,
@@ -2396,14 +2738,14 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   // @ts-ignore
-  async softDeleteTransactions<TReturnableLinkableKeys extends string>(
+  async softDeleteOrderTransactions<TReturnableLinkableKeys extends string>(
     transactionIds: string | object | string[] | object[],
     config?: SoftDeleteReturn<TReturnableLinkableKeys>,
     @MedusaContext() sharedContext?: Context
   ): Promise<Record<string, string[]> | void> {
-    const transactions = await super.listTransactions(
+    const transactions = await super.listOrderTransactions(
       {
         id: transactionIds,
       },
@@ -2413,7 +2755,7 @@ export default class OrderModuleService<
       sharedContext
     )
 
-    const returned = await super.softDeleteTransactions(
+    const returned = await super.softDeleteOrderTransactions(
       transactionIds,
       config,
       sharedContext
@@ -2428,14 +2770,14 @@ export default class OrderModuleService<
     return returned
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   // @ts-ignore
-  async restoreTransactions<TReturnableLinkableKeys extends string>(
+  async restoreOrderTransactions<TReturnableLinkableKeys extends string>(
     transactionIds: string | object | string[] | object[],
     config?: RestoreReturn<TReturnableLinkableKeys>,
     @MedusaContext() sharedContext?: Context
   ): Promise<Record<string, string[]> | void> {
-    const transactions = await super.listTransactions(
+    const transactions = await super.listOrderTransactions(
       {
         id: transactionIds,
       },
@@ -2446,7 +2788,7 @@ export default class OrderModuleService<
       sharedContext
     )
 
-    const returned = await super.restoreTransactions(
+    const returned = await super.restoreOrderTransactions(
       transactionIds as string[],
       config,
       sharedContext
@@ -2461,7 +2803,7 @@ export default class OrderModuleService<
     return returned
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   private async updateOrderPaidRefundableAmount_(
     transactionData: {
       order_id: string
@@ -2499,152 +2841,23 @@ export default class OrderModuleService<
             op(summary.totals.refunded_total, MathBN.abs(trx.amount))
           )
         }
+
+        summary.totals.transaction_total = new BigNumber(
+          op(summary.totals.transaction_total, trx.amount)
+        )
       }
+
+      summary.totals.pending_difference = new BigNumber(
+        MathBN.sub(
+          summary.totals.current_order_total,
+          summary.totals.transaction_total
+        )
+      )
     })
 
     createRawPropertiesFromBigNumber(summaries)
 
     await this.orderSummaryService_.update(summaries, sharedContext)
-  }
-
-  // @ts-ignore
-  async createReturnReasons(
-    transactionData: OrderTypes.CreateOrderReturnReasonDTO,
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderReturnReasonDTO>
-
-  async createReturnReasons(
-    transactionData: OrderTypes.CreateOrderReturnReasonDTO[],
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderReturnReasonDTO[]>
-
-  @InjectTransactionManager("baseRepository_")
-  async createReturnReasons(
-    returnReasonData:
-      | OrderTypes.CreateOrderReturnReasonDTO
-      | OrderTypes.CreateOrderReturnReasonDTO[],
-    @MedusaContext() sharedContext?: Context
-  ): Promise<
-    OrderTypes.OrderReturnReasonDTO | OrderTypes.OrderReturnReasonDTO[]
-  > {
-    const data = Array.isArray(returnReasonData)
-      ? returnReasonData
-      : [returnReasonData]
-
-    const created = await this.returnReasonService_.create(data, sharedContext)
-
-    return await this.baseRepository_.serialize<OrderTypes.OrderReturnReasonDTO>(
-      !Array.isArray(returnReasonData) ? created[0] : created,
-      {
-        populate: true,
-      }
-    )
-  }
-
-  // @ts-ignore
-  updateReturnReasons(
-    data: OrderTypes.UpdateOrderReturnReasonWithSelectorDTO[]
-  ): Promise<OrderTypes.OrderReturnReasonDTO[]>
-
-  updateReturnReasons(
-    selector: Partial<OrderTypes.FilterableOrderReturnReasonProps>,
-    data: OrderTypes.UpdateOrderReturnReasonDTO,
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderReturnReasonDTO[]>
-
-  updateReturnReasons(
-    id: string,
-    data: Partial<OrderTypes.UpdateOrderReturnReasonDTO>,
-    sharedContext?: Context
-  ): Promise<OrderTypes.OrderReturnReasonDTO>
-
-  @InjectManager("baseRepository_")
-  async updateReturnReasons(
-    idOrDataOrSelector:
-      | string
-      | OrderTypes.UpdateOrderReturnReasonWithSelectorDTO[]
-      | Partial<OrderTypes.FilterableOrderReturnReasonProps>,
-    data?:
-      | OrderTypes.UpdateOrderReturnReasonDTO
-      | Partial<OrderTypes.UpdateOrderReturnReasonDTO>,
-    @MedusaContext() sharedContext: Context = {}
-  ): Promise<
-    OrderTypes.OrderReturnReasonDTO[] | OrderTypes.OrderReturnReasonDTO
-  > {
-    let reasons: ReturnReason[] = []
-    if (isString(idOrDataOrSelector)) {
-      const reason = await this.updateReturnReason_(
-        idOrDataOrSelector,
-        data as Partial<OrderTypes.UpdateOrderReturnReasonDTO>,
-        sharedContext
-      )
-
-      return await this.baseRepository_.serialize<OrderTypes.OrderReturnReasonDTO>(
-        reason,
-        {
-          populate: true,
-        }
-      )
-    }
-
-    const toUpdate = Array.isArray(idOrDataOrSelector)
-      ? idOrDataOrSelector
-      : [
-          {
-            selector: idOrDataOrSelector,
-            data: data,
-          } as OrderTypes.UpdateOrderReturnReasonWithSelectorDTO,
-        ]
-
-    reasons = await this.updateReturnReasonsWithSelector_(
-      toUpdate,
-      sharedContext
-    )
-
-    return await this.baseRepository_.serialize<
-      OrderTypes.OrderReturnReasonDTO[]
-    >(reasons, {
-      populate: true,
-    })
-  }
-
-  @InjectTransactionManager("baseRepository_")
-  protected async updateReturnReason_(
-    reasonId: string,
-    data: Partial<OrderTypes.UpdateOrderReturnReasonDTO>,
-    @MedusaContext() sharedContext: Context = {}
-  ): Promise<ReturnReason> {
-    const [reason] = await this.returnReasonService_.update(
-      [{ id: reasonId, ...data }],
-      sharedContext
-    )
-
-    return reason
-  }
-
-  @InjectTransactionManager("baseRepository_")
-  protected async updateReturnReasonsWithSelector_(
-    updates: OrderTypes.UpdateOrderReturnReasonWithSelectorDTO[],
-    @MedusaContext() sharedContext: Context = {}
-  ): Promise<ReturnReason[]> {
-    let toUpdate: UpdateOrderReturnReasonDTO[] = []
-
-    for (const { selector, data } of updates) {
-      const reasons = await super.listReturnReasons(
-        { ...selector },
-        {},
-        sharedContext
-      )
-
-      reasons.forEach((reason) => {
-        toUpdate.push({
-          ...data,
-          id: reason.id,
-        })
-      })
-    }
-
-    return await this.returnReasonService_.update(toUpdate, sharedContext)
   }
 
   async archive(
@@ -2657,7 +2870,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderDTO[]>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async archive(
     orderId: string | string[],
     @MedusaContext() sharedContext?: Context
@@ -2715,7 +2928,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderDTO[]>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async completeOrder(
     orderId: string | string[],
     @MedusaContext() sharedContext?: Context
@@ -2767,7 +2980,7 @@ export default class OrderModuleService<
     sharedContext?: Context
   ): Promise<OrderTypes.OrderDTO[]>
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async cancel(
     orderId: string | string[],
     @MedusaContext() sharedContext?: Context
@@ -2803,7 +3016,7 @@ export default class OrderModuleService<
 
   // ------------------- Bundled Order Actions
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async createReturn(
     data: OrderTypes.CreateOrderReturnDTO,
     @MedusaContext() sharedContext?: Context
@@ -2827,7 +3040,7 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async receiveReturn(
     data: OrderTypes.ReceiveOrderReturnDTO,
     @MedusaContext() sharedContext?: Context
@@ -2844,7 +3057,7 @@ export default class OrderModuleService<
     })
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   private async receiveReturn_(
     data: OrderTypes.ReceiveOrderReturnDTO,
     @MedusaContext() sharedContext?: Context
@@ -2852,7 +3065,7 @@ export default class OrderModuleService<
     return await BundledActions.receiveReturn.bind(this)(data, sharedContext)
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async cancelReturn(
     data: OrderTypes.CancelOrderReturnDTO,
     @MedusaContext() sharedContext?: Context
@@ -2869,7 +3082,7 @@ export default class OrderModuleService<
     })
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   private async cancelReturn_(
     data: OrderTypes.CancelOrderReturnDTO,
     @MedusaContext() sharedContext?: Context
@@ -2877,7 +3090,7 @@ export default class OrderModuleService<
     return await BundledActions.cancelReturn.bind(this)(data, sharedContext)
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createClaim(
     data: OrderTypes.CreateOrderClaimDTO,
     @MedusaContext() sharedContext?: Context
@@ -2911,7 +3124,7 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async createClaim_(
     data: OrderTypes.CreateOrderClaimDTO,
     @MedusaContext() sharedContext?: Context
@@ -2919,7 +3132,7 @@ export default class OrderModuleService<
     return await BundledActions.createClaim.bind(this)(data, sharedContext)
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async cancelClaim(
     data: OrderTypes.CancelOrderClaimDTO,
     @MedusaContext() sharedContext?: Context
@@ -2927,11 +3140,11 @@ export default class OrderModuleService<
     const ret = await this.cancelClaim_(data, sharedContext)
 
     return await this.retrieveOrderClaim(ret.id, {
-      relations: ["items"],
+      relations: ["additional_items", "claim_items", "return", "return.items"],
     })
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   private async cancelClaim_(
     data: OrderTypes.CancelOrderClaimDTO,
     @MedusaContext() sharedContext?: Context
@@ -2939,7 +3152,7 @@ export default class OrderModuleService<
     return await BundledActions.cancelClaim.bind(this)(data, sharedContext)
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createExchange(
     data: OrderTypes.CreateOrderExchangeDTO,
     @MedusaContext() sharedContext?: Context
@@ -2971,7 +3184,57 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  // @ts-ignore
+  updateReturnReasons(
+    id: string,
+    data: UpdateOrderReturnReasonDTO,
+    sharedContext?: Context
+  ): Promise<OrderReturnReasonDTO>
+  updateReturnReasons(
+    selector: FilterableOrderReturnReasonProps,
+    data: Partial<UpdateOrderReturnReasonDTO>,
+    sharedContext?: Context
+  ): Promise<OrderReturnReasonDTO[]>
+
+  @InjectManager()
+  async updateReturnReasons(
+    idOrSelector: string | FilterableOrderReturnReasonProps,
+    data: UpdateOrderReturnReasonDTO,
+    @MedusaContext() sharedContext: Context = {}
+  ): Promise<OrderReturnReasonDTO[] | OrderReturnReasonDTO> {
+    let normalizedInput: UpdateReturnReasonDTO[] = []
+    if (isString(idOrSelector)) {
+      // Check if the return reason exists in the first place
+      await this.returnReasonService_.retrieve(idOrSelector, {}, sharedContext)
+      normalizedInput = [{ id: idOrSelector, ...data }]
+    } else {
+      const reasons = await this.returnReasonService_.list(
+        idOrSelector,
+        {},
+        sharedContext
+      )
+
+      normalizedInput = reasons.map((reason) => ({
+        id: reason.id,
+        ...data,
+      }))
+    }
+
+    const reasons = await this.returnReasonService_.update(
+      normalizedInput,
+      sharedContext
+    )
+
+    const updatedReturnReasons = await this.baseRepository_.serialize<
+      OrderReturnReasonDTO[]
+    >(reasons)
+
+    return isString(idOrSelector)
+      ? updatedReturnReasons[0]
+      : updatedReturnReasons
+  }
+
+  @InjectTransactionManager()
   async createExchange_(
     data: OrderTypes.CreateOrderExchangeDTO,
     @MedusaContext() sharedContext?: Context
@@ -2979,7 +3242,7 @@ export default class OrderModuleService<
     return await BundledActions.createExchange.bind(this)(data, sharedContext)
   }
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async cancelExchange(
     data: OrderTypes.CancelOrderExchangeDTO,
     @MedusaContext() sharedContext?: Context
@@ -2987,11 +3250,11 @@ export default class OrderModuleService<
     const ret = await this.cancelExchange_(data, sharedContext)
 
     return await this.retrieveOrderExchange(ret.id, {
-      relations: ["items"],
+      relations: ["additional_items", "return", "return.items"],
     })
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   private async cancelExchange_(
     data: OrderTypes.CancelOrderExchangeDTO,
     @MedusaContext() sharedContext?: Context
@@ -2999,7 +3262,7 @@ export default class OrderModuleService<
     return await BundledActions.cancelExchange.bind(this)(data, sharedContext)
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async registerFulfillment(
     data: OrderTypes.RegisterOrderFulfillmentDTO,
     @MedusaContext() sharedContext?: Context
@@ -3010,7 +3273,7 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async cancelFulfillment(
     data: OrderTypes.CancelOrderFulfillmentDTO,
     @MedusaContext() sharedContext?: Context
@@ -3021,11 +3284,19 @@ export default class OrderModuleService<
     )
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async registerShipment(
     data: OrderTypes.RegisterOrderShipmentDTO,
     @MedusaContext() sharedContext?: Context
   ): Promise<void> {
     return await BundledActions.registerShipment.bind(this)(data, sharedContext)
+  }
+
+  @InjectTransactionManager()
+  async registerDelivery(
+    data: OrderTypes.RegisterOrderDeliveryDTO,
+    @MedusaContext() sharedContext?: Context
+  ): Promise<void> {
+    return await BundledActions.registerDelivery.bind(this)(data, sharedContext)
   }
 }

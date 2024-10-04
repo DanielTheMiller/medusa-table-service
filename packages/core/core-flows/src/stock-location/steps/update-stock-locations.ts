@@ -2,11 +2,11 @@ import {
   FilterableStockLocationProps,
   IStockLocationService,
   UpdateStockLocationInput,
-} from "@medusajs/types"
-import { getSelectsAndRelationsFromObjectArray } from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/types"
+import { getSelectsAndRelationsFromObjectArray } from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
-import { ModuleRegistrationName } from "@medusajs/utils"
+import { Modules } from "@medusajs/framework/utils"
 
 interface StepInput {
   selector: FilterableStockLocationProps
@@ -14,11 +14,14 @@ interface StepInput {
 }
 
 export const updateStockLocationsStepId = "update-stock-locations-step"
+/**
+ * This step updates stock locations matching the specified filters.
+ */
 export const updateStockLocationsStep = createStep(
   updateStockLocationsStepId,
   async (input: StepInput, { container }) => {
     const stockLocationService = container.resolve<IStockLocationService>(
-      ModuleRegistrationName.STOCK_LOCATION
+      Modules.STOCK_LOCATION
     )
     const { selects, relations } = getSelectsAndRelationsFromObjectArray([
       input.update,
@@ -46,7 +49,7 @@ export const updateStockLocationsStep = createStep(
     }
 
     const stockLocationService = container.resolve<IStockLocationService>(
-      ModuleRegistrationName.STOCK_LOCATION
+      Modules.STOCK_LOCATION
     )
 
     await stockLocationService.upsertStockLocations(

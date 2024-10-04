@@ -33,6 +33,8 @@ get:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
+        externalDocs:
+          url: '#select-fields-and-relations'
     - name: offset
       in: query
       description: The number of items to skip when retrieving a list.
@@ -41,6 +43,8 @@ get:
         type: number
         title: offset
         description: The number of items to skip when retrieving a list.
+        externalDocs:
+          url: '#pagination'
     - name: limit
       in: query
       description: Limit the number of items returned in the list.
@@ -49,6 +53,8 @@ get:
         type: number
         title: limit
         description: Limit the number of items returned in the list.
+        externalDocs:
+          url: '#pagination'
     - name: order
       in: query
       description: >-
@@ -69,29 +75,43 @@ get:
         oneOf:
           - type: string
             title: id
-            description: The fulfillment provider's ID.
+            description: Filter by a fulfillment provider's ID.
           - type: array
-            description: The fulfillment provider's ID.
+            description: Filter by fulfillment provider IDs.
             items:
               type: string
               title: id
-              description: The id's ID.
+              description: A fulfillment provider ID.
     - name: is_enabled
       in: query
-      description: The fulfillment provider's is enabled.
-      required: true
+      description: Filter by whether the fulfillment provider is enabled.
+      required: false
       schema:
         type: boolean
         title: is_enabled
-        description: The fulfillment provider's is enabled.
+        description: Filter by whether the fulfillment provider is enabled.
     - name: q
       in: query
-      description: The fulfillment provider's q.
+      description: Search term to filter a fulfillment provider's searchable properties.
       required: false
       schema:
         type: string
         title: q
-        description: The fulfillment provider's q.
+        description: Search term to filter a fulfillment provider's searchable properties.
+    - name: stock_location_id
+      in: query
+      required: false
+      schema:
+        oneOf:
+          - type: string
+            title: stock_location_id
+            description: Filter by associated stock location's ID.
+          - type: array
+            description: Filter by associated stock location IDs.
+            items:
+              type: string
+              title: stock_location_id
+              description: A stock location's ID.
   security:
     - api_token: []
     - cookie_auth: []
@@ -104,6 +124,12 @@ get:
   tags:
     - Fulfillment Providers
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminFulfillmentProviderListResponse.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':

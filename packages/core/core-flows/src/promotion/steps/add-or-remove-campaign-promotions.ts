@@ -1,9 +1,19 @@
-import { IPromotionModuleService, LinkWorkflowInput } from "@medusajs/types"
-import { ModuleRegistrationName } from "@medusajs/utils"
-import { StepResponse, WorkflowData, createStep } from "@medusajs/workflows-sdk"
+import {
+  IPromotionModuleService,
+  LinkWorkflowInput,
+} from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
+import {
+  StepResponse,
+  WorkflowData,
+  createStep,
+} from "@medusajs/framework/workflows-sdk"
 
 export const addOrRemoveCampaignPromotionsStepId =
   "add-or-remove-campaign-promotions"
+/**
+ * This step adds or removes promotions from a campaign.
+ */
 export const addOrRemoveCampaignPromotionsStep = createStep(
   addOrRemoveCampaignPromotionsStepId,
   async (input: WorkflowData<LinkWorkflowInput>, { container }) => {
@@ -13,7 +23,7 @@ export const addOrRemoveCampaignPromotionsStep = createStep(
       remove: promotionIdsToRemove = [],
     } = input
     const promotionModule = container.resolve<IPromotionModuleService>(
-      ModuleRegistrationName.PROMOTION
+      Modules.PROMOTION
     )
 
     if (promotionIdsToAdd.length) {
@@ -44,7 +54,7 @@ export const addOrRemoveCampaignPromotionsStep = createStep(
     } = data
 
     const promotionModule = container.resolve<IPromotionModuleService>(
-      ModuleRegistrationName.PROMOTION
+      Modules.PROMOTION
     )
 
     if (promotionIdsToAdd.length) {

@@ -1,10 +1,10 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   ClaimReason,
   MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -20,40 +20,41 @@ import {
   Rel,
 } from "@mikro-orm/core"
 import Claim from "./claim"
-import ClaimItemImage from "./claim-item-image"
-import LineItem from "./line-item"
+import OrderClaimItemImage from "./claim-item-image"
+import OrderLineItem from "./line-item"
 
-type OptionalLineItemProps = DAL.EntityDateColumns
+type OptionalLineItemProps = DAL.ModelDateColumns
 
+const tableName = "order_claim_item"
 const ClaimIdIndex = createPsqlIndexStatementHelper({
-  tableName: "order_claim_item",
+  tableName,
   columns: "claim_id",
   where: "deleted_at IS NOT NULL",
 })
 
 const ItemIdIndex = createPsqlIndexStatementHelper({
-  tableName: "order_claim_item",
+  tableName,
   columns: "item_id",
   where: "deleted_at IS NOT NULL",
 })
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
-  tableName: "order_claim_item_image",
+  tableName,
   columns: "deleted_at",
   where: "deleted_at IS NOT NULL",
 })
 
-@Entity({ tableName: "order_claim_item" })
+@Entity({ tableName })
 export default class OrderClaimItem {
   [OptionalProps]?: OptionalLineItemProps
 
   @PrimaryKey({ columnType: "text" })
   id: string
 
-  @OneToMany(() => ClaimItemImage, (ci) => ci.item, {
+  @OneToMany(() => OrderClaimItemImage, (ci) => ci.item, {
     cascade: [Cascade.PERSIST, Cascade.REMOVE],
   })
-  images = new Collection<Rel<ClaimItemImage>>(this)
+  images = new Collection<Rel<OrderClaimItemImage>>(this)
 
   @Enum({ items: () => ClaimReason, nullable: true })
   reason: Rel<ClaimReason> | null = null
@@ -79,7 +80,7 @@ export default class OrderClaimItem {
   claim: Rel<Claim>
 
   @ManyToOne({
-    entity: () => LineItem,
+    entity: () => OrderLineItem,
     fieldName: "item_id",
     mapToPk: true,
     columnType: "text",
@@ -87,10 +88,10 @@ export default class OrderClaimItem {
   @ItemIdIndex.MikroORMIndex()
   item_id: string
 
-  @ManyToOne(() => LineItem, {
+  @ManyToOne(() => OrderLineItem, {
     persist: false,
   })
-  item: Rel<LineItem>
+  item: Rel<OrderLineItem>
 
   @Property({ columnType: "boolean", default: false })
   is_additional_item: boolean = false
@@ -123,12 +124,12 @@ export default class OrderClaimItem {
   @BeforeCreate()
   onCreate() {
     this.id = generateEntityId(this.id, "claitem")
-    this.claim_id = this.claim?.id
+    this.claim_id ??= this.claim?.id
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "claitem")
-    this.claim_id = this.claim?.id
+    this.claim_id ??= this.claim?.id
   }
 }

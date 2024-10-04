@@ -1,12 +1,12 @@
 {
-	"id": 13476,
+	"id": 34580,
 	"name": "medusa-config",
 	"variant": "project",
 	"kind": 1,
 	"flags": {},
 	"children": [
 		{
-			"id": 13477,
+			"id": 34581,
 			"name": "AdminOptions",
 			"variant": "declaration",
 			"kind": 256,
@@ -21,7 +21,7 @@
 			},
 			"children": [
 				{
-					"id": 13478,
+					"id": 34582,
 					"name": "disable",
 					"variant": "declaration",
 					"kind": 1024,
@@ -50,6 +50,17 @@
 								"kind": "text",
 								"text": "."
 							}
+						],
+						"blockTags": [
+							{
+								"tag": "@example",
+								"content": [
+									{
+										"kind": "code",
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  admin: {\n    disable: process.env.ADMIN_DISABLED === \"true\" ||\n      false\n  },\n  // ...\n})\n```"
+									}
+								]
+							}
 						]
 					},
 					"type": {
@@ -58,7 +69,7 @@
 					}
 				},
 				{
-					"id": 13479,
+					"id": 34583,
 					"name": "path",
 					"variant": "declaration",
 					"kind": 1024,
@@ -106,6 +117,53 @@
 							{
 								"kind": "code",
 								"text": "`/`"
+							},
+							{
+								"kind": "text",
+								"text": "\n\n:::note\n\nWhen using Docker, make sure that the root path of the Docker image doesn't path the admin's "
+							},
+							{
+								"kind": "code",
+								"text": "`path`"
+							},
+							{
+								"kind": "text",
+								"text": ". For example, if the Docker image's root path is "
+							},
+							{
+								"kind": "code",
+								"text": "`/app`"
+							},
+							{
+								"kind": "text",
+								"text": ", change\nthe value of the "
+							},
+							{
+								"kind": "code",
+								"text": "`path`"
+							},
+							{
+								"kind": "text",
+								"text": " configuration, as it's "
+							},
+							{
+								"kind": "code",
+								"text": "`/app`"
+							},
+							{
+								"kind": "text",
+								"text": " by default.\n\n:::"
+							}
+						],
+						"blockTags": [
+							{
+								"tag": "@example",
+								"content": [
+									{
+										"kind": "code",
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  admin: {\n    path: process.env.ADMIN_PATH || `/app`,\n  },\n  // ...\n})\n```"
+									}
+								]
 							}
 						]
 					},
@@ -124,7 +182,7 @@
 					}
 				},
 				{
-					"id": 13480,
+					"id": 34584,
 					"name": "outDir",
 					"variant": "declaration",
 					"kind": 1024,
@@ -135,7 +193,15 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "The directory where the admin build is output. This is where the build process places the generated files.\nThe default value is "
+								"text": "The directory where the admin build is outputted when you run the "
+							},
+							{
+								"kind": "code",
+								"text": "`build`"
+							},
+							{
+								"kind": "text",
+								"text": " command.\nThe default value is "
 							},
 							{
 								"kind": "code",
@@ -145,6 +211,17 @@
 								"kind": "text",
 								"text": "."
 							}
+						],
+						"blockTags": [
+							{
+								"tag": "@example",
+								"content": [
+									{
+										"kind": "code",
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  admin: {\n    outDir: process.env.ADMIN_BUILD_DIR || `./build`,\n  },\n  // ...\n})\n```"
+									}
+								]
+							}
 						]
 					},
 					"type": {
@@ -153,7 +230,7 @@
 					}
 				},
 				{
-					"id": 13481,
+					"id": 34585,
 					"name": "backendUrl",
 					"variant": "declaration",
 					"kind": 1024,
@@ -164,7 +241,18 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "The URL of your Medusa backend. Defaults to an empty string, which means requests will hit the same server that serves the dashboard."
+								"text": "The URL of your Medusa application. This is useful to set when you deploy the Medusa application."
+							}
+						],
+						"blockTags": [
+							{
+								"tag": "@example",
+								"content": [
+									{
+										"kind": "code",
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  admin: {\n    backendUrl: process.env.MEDUSA_BACKEND_URL ||\n      \"http://localhost:9000\"\n  },\n  // ...\n})\n```"
+									}
+								]
 							}
 						]
 					},
@@ -174,7 +262,7 @@
 					}
 				},
 				{
-					"id": 13482,
+					"id": 34586,
 					"name": "vite",
 					"variant": "declaration",
 					"kind": 1024,
@@ -200,21 +288,21 @@
 					"type": {
 						"type": "reflection",
 						"declaration": {
-							"id": 13483,
+							"id": 34587,
 							"name": "__type",
 							"variant": "declaration",
 							"kind": 65536,
 							"flags": {},
 							"signatures": [
 								{
-									"id": 13484,
+									"id": 34588,
 									"name": "__type",
 									"variant": "signature",
 									"kind": 4096,
 									"flags": {},
 									"parameters": [
 										{
-											"id": 13485,
+											"id": 34589,
 											"name": "config",
 											"variant": "param",
 											"kind": 32768,
@@ -249,17 +337,17 @@
 				{
 					"title": "Properties",
 					"children": [
-						13478,
-						13479,
-						13480,
-						13481,
-						13482
+						34582,
+						34583,
+						34584,
+						34585,
+						34586
 					]
 				}
 			]
 		},
 		{
-			"id": 13486,
+			"id": 34590,
 			"name": "HttpCompressionOptions",
 			"variant": "declaration",
 			"kind": 256,
@@ -274,7 +362,7 @@
 			},
 			"children": [
 				{
-					"id": 13487,
+					"id": 34591,
 					"name": "enabled",
 					"variant": "declaration",
 					"kind": 1024,
@@ -303,7 +391,7 @@
 					}
 				},
 				{
-					"id": 13488,
+					"id": 34592,
 					"name": "level",
 					"variant": "declaration",
 					"kind": 1024,
@@ -332,7 +420,7 @@
 					}
 				},
 				{
-					"id": 13489,
+					"id": 34593,
 					"name": "memLevel",
 					"variant": "declaration",
 					"kind": 1024,
@@ -361,7 +449,7 @@
 					}
 				},
 				{
-					"id": 13490,
+					"id": 34594,
 					"name": "threshold",
 					"variant": "declaration",
 					"kind": 1024,
@@ -403,16 +491,16 @@
 				{
 					"title": "Properties",
 					"children": [
-						13487,
-						13488,
-						13489,
-						13490
+						34591,
+						34592,
+						34593,
+						34594
 					]
 				}
 			]
 		},
 		{
-			"id": 13491,
+			"id": 34595,
 			"name": "ProjectConfigOptions",
 			"variant": "declaration",
 			"kind": 256,
@@ -421,13 +509,13 @@
 				"summary": [
 					{
 						"kind": "text",
-						"text": "Essential configurations related to the Medusa backend, such as database and CORS configurations."
+						"text": "Essential configurations related to the Medusa application, such as database and CORS configurations."
 					}
 				]
 			},
 			"children": [
 				{
-					"id": 13492,
+					"id": 34596,
 					"name": "databaseName",
 					"variant": "declaration",
 					"kind": 1024,
@@ -438,7 +526,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "The name of the database to connect to. If specified in "
+								"text": "The name of the database to connect to. If the name is specified in "
 							},
 							{
 								"kind": "code",
@@ -446,7 +534,7 @@
 							},
 							{
 								"kind": "text",
-								"text": ", then it’s not required to include it.\n\nMake sure to create the PostgreSQL database before using it. You can check how to create a database in\n[PostgreSQL's documentation](https://www.postgresql.org/docs/current/sql-createdatabase.html)."
+								"text": ", then you don't have to use this configuration.\n\nMake sure to create the PostgreSQL database before using it. You can check how to create a database in\n[PostgreSQL's documentation](https://www.postgresql.org/docs/current/sql-createdatabase.html)."
 							}
 						],
 						"blockTags": [
@@ -455,7 +543,7 @@
 								"content": [
 									{
 										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    databaseName: process.env.DATABASE_NAME || \n      \"medusa-store\",\n    // ...\n  },\n  // ...\n})\n```"
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    databaseName: process.env.DATABASE_NAME ||\n      \"medusa-store\",\n    // ...\n  },\n  // ...\n})\n```"
 									}
 								]
 							}
@@ -467,7 +555,7 @@
 					}
 				},
 				{
-					"id": 13493,
+					"id": 34597,
 					"name": "databaseUrl",
 					"variant": "declaration",
 					"kind": 1024,
@@ -478,7 +566,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "The connection URL of the database. The format of the connection URL for PostgreSQL is:\n\n"
+								"text": "The PostgreSQL connection URL of the database, which is of the following format:\n\n"
 							},
 							{
 								"kind": "code",
@@ -607,7 +695,7 @@
 					}
 				},
 				{
-					"id": 13494,
+					"id": 34598,
 					"name": "databaseSchema",
 					"variant": "declaration",
 					"kind": 1024,
@@ -640,7 +728,7 @@
 					}
 				},
 				{
-					"id": 13495,
+					"id": 34599,
 					"name": "databaseLogging",
 					"variant": "declaration",
 					"kind": 1024,
@@ -651,79 +739,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "This configuration specifies what database messages to log. Its value can be one of the following:\n\n- (default) A boolean value that indicates whether any messages should be logged.\n- The string value "
-							},
-							{
-								"kind": "code",
-								"text": "`all`"
-							},
-							{
-								"kind": "text",
-								"text": " that indicates all types of messages should be logged.\n- An array of log-level strings to indicate which type of messages to show in the logs. The strings can be "
-							},
-							{
-								"kind": "code",
-								"text": "`query`"
-							},
-							{
-								"kind": "text",
-								"text": ", "
-							},
-							{
-								"kind": "code",
-								"text": "`schema`"
-							},
-							{
-								"kind": "text",
-								"text": ", "
-							},
-							{
-								"kind": "code",
-								"text": "`error`"
-							},
-							{
-								"kind": "text",
-								"text": ", "
-							},
-							{
-								"kind": "code",
-								"text": "`warn`"
-							},
-							{
-								"kind": "text",
-								"text": ", "
-							},
-							{
-								"kind": "code",
-								"text": "`info`"
-							},
-							{
-								"kind": "text",
-								"text": ", "
-							},
-							{
-								"kind": "code",
-								"text": "`log`"
-							},
-							{
-								"kind": "text",
-								"text": ", or "
-							},
-							{
-								"kind": "code",
-								"text": "`migration`"
-							},
-							{
-								"kind": "text",
-								"text": ". Refer to [Typeorm’s documentation](https://typeorm.io/logging#logging-options) for more details on what each of these values means.\n\nIf this configuration isn't set, its default value is "
-							},
-							{
-								"kind": "code",
-								"text": "`false`"
-							},
-							{
-								"kind": "text",
-								"text": ", meaning no database messages are logged."
+								"text": "This configuration specifies whether database messages should be logged."
 							}
 						],
 						"blockTags": [
@@ -732,182 +748,19 @@
 								"content": [
 									{
 										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    databaseLogging: [\"query\", \"error\"]\n    // ...\n  },\n  // ...\n})\n```"
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    databaseLogging: false\n    // ...\n  },\n  // ...\n})\n```"
 									}
 								]
 							}
 						]
 					},
 					"type": {
-						"type": "reference",
-						"target": {
-							"sourceFileName": "../../../../node_modules/typeorm/logger/LoggerOptions.d.ts",
-							"qualifiedName": "LoggerOptions"
-						},
-						"name": "LoggerOptions",
-						"package": "typeorm"
+						"type": "intrinsic",
+						"name": "boolean"
 					}
 				},
 				{
-					"id": 13497,
-					"name": "databaseExtra",
-					"variant": "declaration",
-					"kind": 1024,
-					"flags": {
-						"isOptional": true
-					},
-					"comment": {
-						"summary": [
-							{
-								"kind": "text",
-								"text": "An object that includes additional configurations to pass to the database connection. You can pass any configuration. One defined configuration to pass is\n"
-							},
-							{
-								"kind": "code",
-								"text": "`ssl`"
-							},
-							{
-								"kind": "text",
-								"text": " which enables support for TLS/SSL connections.\n\nThis is useful for production databases, which can be supported by setting the "
-							},
-							{
-								"kind": "code",
-								"text": "`rejectUnauthorized`"
-							},
-							{
-								"kind": "text",
-								"text": " attribute of "
-							},
-							{
-								"kind": "code",
-								"text": "`ssl`"
-							},
-							{
-								"kind": "text",
-								"text": " object to "
-							},
-							{
-								"kind": "code",
-								"text": "`false`"
-							},
-							{
-								"kind": "text",
-								"text": ".\nDuring development, it’s recommended not to pass this option."
-							}
-						],
-						"blockTags": [
-							{
-								"tag": "@example",
-								"content": [
-									{
-										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    databaseExtra: process.env.NODE_ENV !== \"development\" ?\n      { ssl: { rejectUnauthorized: false } } : {}\n    // ...\n  },\n  // ...\n})\n```"
-									}
-								]
-							}
-						]
-					},
-					"type": {
-						"type": "intersection",
-						"types": [
-							{
-								"type": "reference",
-								"target": {
-									"sourceFileName": "../../node_modules/typescript/lib/lib.es5.d.ts",
-									"qualifiedName": "Record"
-								},
-								"typeArguments": [
-									{
-										"type": "intrinsic",
-										"name": "string"
-									},
-									{
-										"type": "intrinsic",
-										"name": "unknown"
-									}
-								],
-								"name": "Record",
-								"package": "typescript"
-							},
-							{
-								"type": "reflection",
-								"declaration": {
-									"id": 13498,
-									"name": "__type",
-									"variant": "declaration",
-									"kind": 65536,
-									"flags": {},
-									"children": [
-										{
-											"id": 13499,
-											"name": "ssl",
-											"variant": "declaration",
-											"kind": 1024,
-											"flags": {},
-											"comment": {
-												"summary": [
-													{
-														"kind": "text",
-														"text": "Configure support for TLS/SSL connection"
-													}
-												]
-											},
-											"type": {
-												"type": "reflection",
-												"declaration": {
-													"id": 13500,
-													"name": "__type",
-													"variant": "declaration",
-													"kind": 65536,
-													"flags": {},
-													"children": [
-														{
-															"id": 13501,
-															"name": "rejectUnauthorized",
-															"variant": "declaration",
-															"kind": 1024,
-															"flags": {},
-															"comment": {
-																"summary": [
-																	{
-																		"kind": "text",
-																		"text": "Whether to fail connection if the server certificate is verified against the list of supplied CAs and the hostname and no match is found."
-																	}
-																]
-															},
-															"type": {
-																"type": "literal",
-																"value": false
-															}
-														}
-													],
-													"groups": [
-														{
-															"title": "Properties",
-															"children": [
-																13501
-															]
-														}
-													]
-												}
-											}
-										}
-									],
-									"groups": [
-										{
-											"title": "Properties",
-											"children": [
-												13499
-											]
-										}
-									]
-								}
-							}
-						]
-					}
-				},
-				{
-					"id": 13502,
+					"id": 34601,
 					"name": "databaseDriverOptions",
 					"variant": "declaration",
 					"kind": 1024,
@@ -918,7 +771,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "An object that includes additional configurations to pass to the database connection for v2. You can pass any configuration. One defined configuration to pass is\n"
+								"text": "This configuration is used to pass additional options to the database connection. You can pass any configuration. For example, pass the\n"
 							},
 							{
 								"kind": "code",
@@ -926,7 +779,7 @@
 							},
 							{
 								"kind": "text",
-								"text": " which enables support for TLS/SSL connections.\n\nThis is useful for production databases, which can be supported by setting the "
+								"text": " property that enables support for TLS/SSL connections.\n\nThis is useful for production databases, which can be supported by setting the "
 							},
 							{
 								"kind": "code",
@@ -950,7 +803,23 @@
 							},
 							{
 								"kind": "text",
-								"text": ".\nDuring development, it’s recommended not to pass this option."
+								"text": ".\nDuring development, it’s recommended not to pass this option.\n\n:::note\n\nMake sure to add to the end of the database URL "
+							},
+							{
+								"kind": "code",
+								"text": "`?ssl_mode=disable`"
+							},
+							{
+								"kind": "text",
+								"text": " as well when disabling "
+							},
+							{
+								"kind": "code",
+								"text": "`rejectUnauthorized`"
+							},
+							{
+								"kind": "text",
+								"text": ".\n\n:::"
 							}
 						],
 						"blockTags": [
@@ -990,14 +859,14 @@
 							{
 								"type": "reflection",
 								"declaration": {
-									"id": 13503,
+									"id": 34602,
 									"name": "__type",
 									"variant": "declaration",
 									"kind": 65536,
 									"flags": {},
 									"children": [
 										{
-											"id": 13504,
+											"id": 34603,
 											"name": "connection",
 											"variant": "declaration",
 											"kind": 1024,
@@ -1007,14 +876,14 @@
 											"type": {
 												"type": "reflection",
 												"declaration": {
-													"id": 13505,
+													"id": 34604,
 													"name": "__type",
 													"variant": "declaration",
 													"kind": 65536,
 													"flags": {},
 													"children": [
 														{
-															"id": 13506,
+															"id": 34605,
 															"name": "ssl",
 															"variant": "declaration",
 															"kind": 1024,
@@ -1032,14 +901,14 @@
 															"type": {
 																"type": "reflection",
 																"declaration": {
-																	"id": 13507,
+																	"id": 34606,
 																	"name": "__type",
 																	"variant": "declaration",
 																	"kind": 65536,
 																	"flags": {},
 																	"children": [
 																		{
-																			"id": 13508,
+																			"id": 34607,
 																			"name": "rejectUnauthorized",
 																			"variant": "declaration",
 																			"kind": 1024,
@@ -1064,7 +933,7 @@
 																		{
 																			"title": "Properties",
 																			"children": [
-																				13508
+																				34607
 																			]
 																		}
 																	]
@@ -1076,7 +945,7 @@
 														{
 															"title": "Properties",
 															"children": [
-																13506
+																34605
 															]
 														}
 													]
@@ -1088,7 +957,7 @@
 										{
 											"title": "Properties",
 											"children": [
-												13504
+												34603
 											]
 										}
 									]
@@ -1098,7 +967,7 @@
 					}
 				},
 				{
-					"id": 13509,
+					"id": 34608,
 					"name": "redisUrl",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1109,7 +978,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Used to specify the URL to connect to Redis. This is only used for scheduled jobs. If you omit this configuration, scheduled jobs won't work.\n\n:::note\n\nYou must first have Redis installed. You can refer to [Redis's installation guide](https://redis.io/docs/getting-started/installation/).\n\n:::\n\nThe Redis connection URL has the following format:\n\n"
+								"text": "This configuration specifies the connection URL to Redis to store the Medusa server's session.\n\n:::note\n\nYou must first have Redis installed. You can refer to [Redis's installation guide](https://redis.io/docs/getting-started/installation/).\n\n:::\n\nThe Redis connection URL has the following format:\n\n"
 							},
 							{
 								"kind": "code",
@@ -1134,7 +1003,7 @@
 								"content": [
 									{
 										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    redisUrl: process.env.REDIS_URL || \n      \"redis://localhost:6379\",\n    // ...\n  },\n  // ...\n})\n```"
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    redisUrl: process.env.REDIS_URL ||\n      \"redis://localhost:6379\",\n    // ...\n  },\n  // ...\n})\n```"
 									}
 								]
 							}
@@ -1146,7 +1015,7 @@
 					}
 				},
 				{
-					"id": 13510,
+					"id": 34609,
 					"name": "redisPrefix",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1157,7 +1026,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "The prefix set on all keys stored in Redis. The default value is "
+								"text": "This configuration defines a prefix on all keys stored in Redis for the Medusa server's session. The default value is "
 							},
 							{
 								"kind": "code",
@@ -1194,7 +1063,7 @@
 					}
 				},
 				{
-					"id": 13511,
+					"id": 34610,
 					"name": "redisOptions",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1205,7 +1074,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "An object of options to pass ioredis. You can refer to [ioredis’s RedisOptions documentation](https://redis.github.io/ioredis/index.html#RedisOptions)\nfor the list of available options."
+								"text": "This configuration defines options to pass ioredis for the Redis connection used to store the Medusa server's session. Refer to [ioredis’s RedisOptions documentation](https://redis.github.io/ioredis/index.html#RedisOptions)\nfor the list of available options."
 							}
 						],
 						"blockTags": [
@@ -1214,7 +1083,7 @@
 								"content": [
 									{
 										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    redisOptions: {\n      connectionName: process.env.REDIS_CONNECTION_NAME || \n        \"medusa\",\n    }\n    // ...\n  },\n  // ...\n})\n```"
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    redisOptions: {\n      connectionName: process.env.REDIS_CONNECTION_NAME ||\n        \"medusa\",\n    }\n    // ...\n  },\n  // ...\n})\n```"
 									}
 								]
 							}
@@ -1231,7 +1100,7 @@
 					}
 				},
 				{
-					"id": 13512,
+					"id": 34611,
 					"name": "sessionOptions",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1242,7 +1111,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "An object of options to pass to [express-session](https://www.npmjs.com/package/express-session)."
+								"text": "This configuration defines additional options to pass to [express-session](https://www.npmjs.com/package/express-session), which is used to store the Medusa server's session."
 							}
 						],
 						"blockTags": [
@@ -1260,55 +1129,15 @@
 					"type": {
 						"type": "reference",
 						"target": {
-							"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+							"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 							"qualifiedName": "SessionOptions"
 						},
 						"name": "SessionOptions",
-						"package": "@medusajs/types"
+						"package": "@medusajs/framework"
 					}
 				},
 				{
-					"id": 13514,
-					"name": "jobsBatchSize",
-					"variant": "declaration",
-					"kind": 1024,
-					"flags": {
-						"isOptional": true
-					},
-					"comment": {
-						"summary": [
-							{
-								"kind": "text",
-								"text": "Configure the number of staged jobs that are polled from the database. Default is "
-							},
-							{
-								"kind": "code",
-								"text": "`1000`"
-							},
-							{
-								"kind": "text",
-								"text": "."
-							}
-						],
-						"blockTags": [
-							{
-								"tag": "@example",
-								"content": [
-									{
-										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    jobsBatchSize: 100\n    // ...\n  },\n  // ...\n})\n```"
-									}
-								]
-							}
-						]
-					},
-					"type": {
-						"type": "intrinsic",
-						"name": "number"
-					}
-				},
-				{
-					"id": 13515,
+					"id": 34614,
 					"name": "workerMode",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1319,15 +1148,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Configure the application's worker mode. Default is "
-							},
-							{
-								"kind": "code",
-								"text": "`shared`"
-							},
-							{
-								"kind": "text",
-								"text": ".\n\n- Use "
+								"text": "Configure the application's worker mode.\n\nWorkers are processes running separately from the main application. They're useful for executing long-running or resource-heavy tasks in the background, such as importing products.\n\nWith a worker, these tasks are offloaded to a separate process. So, they won't affect the performance of the main application.\n\n![Diagram showcasing how the server and worker work together](https://res.cloudinary.com/dza7lstvk/image/upload/fl_lossy/f_auto/r_16/ar_16:9,c_pad/v1/Medusa%20Book/medusa-worker_klkbch.jpg?_a=BATFJtAA0)\n\nMedusa has three runtime modes:\n\n- Use "
 							},
 							{
 								"kind": "code",
@@ -1351,7 +1172,39 @@
 							},
 							{
 								"kind": "text",
-								"text": " to run the application server only.\n\nLearn more in [this guide](https://docs.medusajs.com/development/medusa-worker)."
+								"text": " to run the application server only.\n\nIn production, it's recommended to deploy two instances:\n\n1. One having the "
+							},
+							{
+								"kind": "code",
+								"text": "`workerMode`"
+							},
+							{
+								"kind": "text",
+								"text": " configuration set to "
+							},
+							{
+								"kind": "code",
+								"text": "`server`"
+							},
+							{
+								"kind": "text",
+								"text": ".\n2. Another having the "
+							},
+							{
+								"kind": "code",
+								"text": "`workerMode`"
+							},
+							{
+								"kind": "text",
+								"text": " configuration set to "
+							},
+							{
+								"kind": "code",
+								"text": "`worker`"
+							},
+							{
+								"kind": "text",
+								"text": "."
 							}
 						],
 						"blockTags": [
@@ -1360,7 +1213,7 @@
 								"content": [
 									{
 										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    workerMode: \"shared\"\n    // ...\n  },\n  // ...\n})\n```"
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    workerMode: process.env.WORKER_MODE || \"shared\"\n    // ...\n  },\n  // ...\n})\n```"
 									}
 								]
 							}
@@ -1385,7 +1238,7 @@
 					}
 				},
 				{
-					"id": 13516,
+					"id": 34615,
 					"name": "http",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1394,7 +1247,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Configure the application's http-specific settings"
+								"text": "This property configures the application's http-specific settings."
 							}
 						],
 						"blockTags": [
@@ -1412,14 +1265,14 @@
 					"type": {
 						"type": "reflection",
 						"declaration": {
-							"id": 13517,
+							"id": 34616,
 							"name": "__type",
 							"variant": "declaration",
 							"kind": 65536,
 							"flags": {},
 							"children": [
 								{
-									"id": 13518,
+									"id": 34617,
 									"name": "jwtSecret",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1438,7 +1291,7 @@
 											},
 											{
 												"kind": "text",
-												"text": " However, in production, if this configuration is not set an error, an\nerror is thrown and the backend crashes."
+												"text": ". However, in production, if this configuration is not set, an\nerror is thrown and the application crashes."
 											}
 										],
 										"blockTags": [
@@ -1459,7 +1312,7 @@
 									}
 								},
 								{
-									"id": 13519,
+									"id": 34618,
 									"name": "jwtExpiresIn",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1470,7 +1323,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "The expiration time for the JWT token. If not provided, the default value is "
+												"text": "The expiration time for the JWT token. Its format is based off the [ms package](https://github.com/vercel/ms).\n\nIf not provided, the default value is "
 											},
 											{
 												"kind": "code",
@@ -1499,7 +1352,7 @@
 									}
 								},
 								{
-									"id": 13520,
+									"id": 34619,
 									"name": "cookieSecret",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1518,7 +1371,7 @@
 											},
 											{
 												"kind": "text",
-												"text": " However, in production, if this configuration is not set, an error is thrown and\nthe backend crashes."
+												"text": ". However, in production, if this configuration is not set, an error is thrown and\nthe application crashes."
 											}
 										],
 										"blockTags": [
@@ -1539,7 +1392,7 @@
 									}
 								},
 								{
-									"id": 13521,
+									"id": 34620,
 									"name": "authCors",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1548,7 +1401,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "The Medusa backend’s API Routes are protected by Cross-Origin Resource Sharing (CORS). So, only allowed URLs or URLs matching a specified pattern can send requests to the backend’s API Routes.\n\n"
+												"text": "The Medusa application's API Routes are protected by Cross-Origin Resource Sharing (CORS). So, only allowed URLs or URLs matching a specified pattern can send requests to the backend’s API Routes.\n\n"
 											},
 											{
 												"kind": "code",
@@ -1580,7 +1433,7 @@
 											},
 											{
 												"kind": "text",
-												"text": ". The regex pattern that the backend tests for is "
+												"text": ". The regex pattern that Medusa tests for is "
 											},
 											{
 												"kind": "code",
@@ -1653,7 +1506,7 @@
 									}
 								},
 								{
-									"id": 13522,
+									"id": 34621,
 									"name": "compression",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1664,7 +1517,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "Configure HTTP compression from the application layer. If you have access to the HTTP server, the recommended approach would be to enable it there.\nHowever, some platforms don't offer access to the HTTP layer and in those cases, this is a good alternative.\n\nIts value is an object that has the following properties:\n\nIf you enable HTTP compression and you want to disable it for specific API Routes, you can pass in the request header "
+												"text": "Configure HTTP compression from the application layer. If you have access to the HTTP server, the recommended approach would be to enable it there.\nHowever, some platforms don't offer access to the HTTP layer and in those cases, this is a good alternative.\n\nIf you enable HTTP compression and you want to disable it for specific API Routes, you can pass in the request header "
 											},
 											{
 												"kind": "code",
@@ -1672,7 +1525,7 @@
 											},
 											{
 												"kind": "text",
-												"text": "."
+												"text": ".\nLearn more in the [API Reference](https://docs.medusajs.com/v2/api/store#http-compression)."
 											}
 										],
 										"blockTags": [
@@ -1689,13 +1542,13 @@
 									},
 									"type": {
 										"type": "reference",
-										"target": 13486,
+										"target": 34590,
 										"name": "HttpCompressionOptions",
-										"package": "@medusajs/types"
+										"package": "@medusajs/framework"
 									}
 								},
 								{
-									"id": 13523,
+									"id": 34622,
 									"name": "storeCors",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1704,7 +1557,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "The Medusa backend’s API Routes are protected by Cross-Origin Resource Sharing (CORS). So, only allowed URLs or URLs matching a specified pattern can send requests to the backend’s API Routes.\n\n"
+												"text": "The Medusa application's API Routes are protected by Cross-Origin Resource Sharing (CORS). So, only allowed URLs or URLs matching a specified pattern can send requests to the backend’s API Routes.\n\n"
 											},
 											{
 												"kind": "code",
@@ -1801,7 +1654,7 @@
 									}
 								},
 								{
-									"id": 13524,
+									"id": 34623,
 									"name": "adminCors",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1810,7 +1663,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "The Medusa backend’s API Routes are protected by Cross-Origin Resource Sharing (CORS). So, only allowed URLs or URLs matching a specified pattern can send requests to the backend’s API Routes.\n\n"
+												"text": "The Medusa application's API Routes are protected by Cross-Origin Resource Sharing (CORS). So, only allowed URLs or URLs matching a specified pattern can send requests to the backend’s API Routes.\n\n"
 											},
 											{
 												"kind": "code",
@@ -1907,7 +1760,7 @@
 									}
 								},
 								{
-									"id": 13525,
+									"id": 34624,
 									"name": "authMethodsPerActor",
 									"variant": "declaration",
 									"kind": 1024,
@@ -1918,7 +1771,23 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "Optionally you can specify the supported authentication providers per actor type (such as user, customer, or any custom actors).\nFor example, you only want to allow SSO logins for "
+												"text": "This configuration specifies the supported authentication providers per actor type (such as "
+											},
+											{
+												"kind": "code",
+												"text": "`user`"
+											},
+											{
+												"kind": "text",
+												"text": ", "
+											},
+											{
+												"kind": "code",
+												"text": "`customer`"
+											},
+											{
+												"kind": "text",
+												"text": ", or any custom actors).\nFor example, you only want to allow SSO logins for "
 											},
 											{
 												"kind": "code",
@@ -1926,7 +1795,7 @@
 											},
 											{
 												"kind": "text",
-												"text": " to the admin, while you want to allow email/password logins for "
+												"text": ", while you want to allow email/password logins for "
 											},
 											{
 												"kind": "code",
@@ -1942,7 +1811,7 @@
 											},
 											{
 												"kind": "text",
-												"text": " is a a map where the actor type (eg. 'user') is the key, and an array of supported auth providers as the value."
+												"text": " is a a map where the actor type (eg. 'user') is the key, and the value is an array of supported auth provider IDs."
 											}
 										],
 										"blockTags": [
@@ -1963,7 +1832,7 @@
 													},
 													{
 														"kind": "code",
-														"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    http: {\n      authMethodsPerActor: {\n        user: [\"email\"],\n        customer: [\"emailpas\", \"google\"]\n      }\n    }\n    // ...\n  },\n  // ...\n})\n```"
+														"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  projectConfig: {\n    http: {\n      authMethodsPerActor: {\n        user: [\"email\"],\n        customer: [\"emailpass\", \"google\"]\n      }\n    }\n    // ...\n  },\n  // ...\n})\n```"
 													}
 												]
 											}
@@ -1997,14 +1866,14 @@
 								{
 									"title": "Properties",
 									"children": [
-										13518,
-										13519,
-										13520,
-										13521,
-										13522,
-										13523,
-										13524,
-										13525
+										34617,
+										34618,
+										34619,
+										34620,
+										34621,
+										34622,
+										34623,
+										34624
 									]
 								}
 							]
@@ -2016,25 +1885,23 @@
 				{
 					"title": "Properties",
 					"children": [
-						13492,
-						13493,
-						13494,
-						13495,
-						13497,
-						13502,
-						13509,
-						13510,
-						13511,
-						13512,
-						13514,
-						13515,
-						13516
+						34596,
+						34597,
+						34598,
+						34599,
+						34601,
+						34608,
+						34609,
+						34610,
+						34611,
+						34614,
+						34615
 					]
 				}
 			]
 		},
 		{
-			"id": 13526,
+			"id": 34625,
 			"name": "ConfigModule",
 			"variant": "declaration",
 			"kind": 256,
@@ -2043,7 +1910,7 @@
 				"summary": [
 					{
 						"kind": "text",
-						"text": "The configurations for your Medusa backend are in "
+						"text": "The configurations for your Medusa application are in "
 					},
 					{
 						"kind": "code",
@@ -2051,7 +1918,7 @@
 					},
 					{
 						"kind": "text",
-						"text": " located in the root of your Medusa project. The configurations include database, modules, and plugin configurations, among other configurations.\n\n"
+						"text": " located in the root of your Medusa project. The configurations include configurations for database, modules, and more.\n\n"
 					},
 					{
 						"kind": "code",
@@ -2059,24 +1926,48 @@
 					},
 					{
 						"kind": "text",
-						"text": " exports an object having the following properties:\n\n- "
+						"text": " exports the value returned by the "
+					},
+					{
+						"kind": "code",
+						"text": "`defineConfig`"
+					},
+					{
+						"kind": "text",
+						"text": " utility function imported from "
+					},
+					{
+						"kind": "code",
+						"text": "`@medusajs/utils`"
+					},
+					{
+						"kind": "text",
+						"text": ".\n\n"
+					},
+					{
+						"kind": "code",
+						"text": "`defineConfig`"
+					},
+					{
+						"kind": "text",
+						"text": " accepts as a parameter an object with the following properties:\n\n- "
 					},
 					{
 						"kind": "inline-tag",
 						"tag": "@link",
 						"text": "projectConfig",
-						"target": 13527,
+						"target": 34626,
 						"tsLinkText": "projectConfig"
 					},
 					{
 						"kind": "text",
-						"text": " (required): An object that holds general configurations related to the Medusa backend, such as database or CORS configurations.\n- "
+						"text": " (required): An object that holds general configurations related to the Medusa application, such as database or CORS configurations.\n- "
 					},
 					{
 						"kind": "inline-tag",
 						"tag": "@link",
 						"text": "admin",
-						"target": 13528,
+						"target": 34627,
 						"tsLinkText": "admin"
 					},
 					{
@@ -2086,33 +1977,19 @@
 					{
 						"kind": "inline-tag",
 						"tag": "@link",
-						"text": "ConfigModule.plugins | plugins",
-						"target": {
-							"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
-							"qualifiedName": "__type.plugins"
-						},
-						"tsLinkText": "plugins"
-					},
-					{
-						"kind": "text",
-						"text": ": An array of plugin configurations that defines what plugins are installed and optionally specifies each of their configurations.\n- "
-					},
-					{
-						"kind": "inline-tag",
-						"tag": "@link",
 						"text": "modules",
-						"target": 13533,
+						"target": 34632,
 						"tsLinkText": "modules"
 					},
 					{
 						"kind": "text",
-						"text": ": An object that defines what modules are installed and optionally specifies each of their configurations.\n- "
+						"text": ": An object that configures the Medusa application's modules.\n- "
 					},
 					{
 						"kind": "inline-tag",
 						"tag": "@link",
 						"text": "featureFlags",
-						"target": 13534,
+						"target": 34633,
 						"tsLinkText": "featureFlags"
 					},
 					{
@@ -2141,13 +2018,13 @@
 					},
 					{
 						"kind": "text",
-						"text": " file at the root of your Medusa backend project. In production,\nsetting the environment variables depends on the hosting provider.\n\n---"
+						"text": " file at the root of your Medusa application project. In production,\nsetting the environment variables depends on the hosting provider.\n\n---"
 					}
 				]
 			},
 			"children": [
 				{
-					"id": 13527,
+					"id": 34626,
 					"name": "projectConfig",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2156,19 +2033,19 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "This property holds essential configurations related to the Medusa backend, such as database and CORS configurations."
+								"text": "This property holds essential configurations related to the Medusa application, such as database and CORS configurations."
 							}
 						]
 					},
 					"type": {
 						"type": "reference",
-						"target": 13491,
+						"target": 34595,
 						"name": "ProjectConfigOptions",
-						"package": "@medusajs/types"
+						"package": "@medusajs/framework"
 					}
 				},
 				{
-					"id": 13528,
+					"id": 34627,
 					"name": "admin",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2179,7 +2056,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Admin dashboard configurations."
+								"text": "This property holds configurations for the Medusa Admin dashboard."
 							}
 						],
 						"blockTags": [
@@ -2188,7 +2065,7 @@
 								"content": [
 									{
 										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  admin: {\n    backendUrl: process.env.MEDUSA_BACKEND_URL || \n      \"http://localhost:9000\"\n  },\n  // ...\n})\n```"
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  admin: {\n    backendUrl: process.env.MEDUSA_BACKEND_URL ||\n      \"http://localhost:9000\"\n  },\n  // ...\n})\n```"
 									}
 								]
 							}
@@ -2196,13 +2073,13 @@
 					},
 					"type": {
 						"type": "reference",
-						"target": 13477,
+						"target": 34581,
 						"name": "AdminOptions",
-						"package": "@medusajs/types"
+						"package": "@medusajs/framework"
 					}
 				},
 				{
-					"id": 13533,
+					"id": 34632,
 					"name": "modules",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2213,15 +2090,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "In Medusa, commerce and core logic are modularized to allow developers to extend or replace certain [modules](https://docs.medusajs.com/development/modules/overview)\nwith custom implementations.\n\nAside from installing the module with NPM, you must add it to the exported object in "
-							},
-							{
-								"kind": "code",
-								"text": "`medusa-config.js`"
-							},
-							{
-								"kind": "text",
-								"text": ".\n\nThe keys of the "
+								"text": "This property holds all custom modules installed in your Medusa application.\n\n:::note\n\nMedusa's commerce modules are configured by default, so only\nadd them to this property if you're changing their configurations or adding providers to a module.\n\n:::\n\nThe keys of the "
 							},
 							{
 								"kind": "code",
@@ -2245,7 +2114,15 @@
 							},
 							{
 								"kind": "text",
-								"text": ", or the module's NPM package name.\n    2. "
+								"text": ", or the module's NPM package name. For example, "
+							},
+							{
+								"kind": "code",
+								"text": "`./modules/my-module`"
+							},
+							{
+								"kind": "text",
+								"text": ".\n    2. "
 							},
 							{
 								"kind": "code",
@@ -2253,23 +2130,7 @@
 							},
 							{
 								"kind": "text",
-								"text": ": (optional) an object indicating the options to pass to the module.\n    3. "
-							},
-							{
-								"kind": "code",
-								"text": "`definition`"
-							},
-							{
-								"kind": "text",
-								"text": ": (optional) an object of extra configurations, such as "
-							},
-							{
-								"kind": "code",
-								"text": "`isQueryable`"
-							},
-							{
-								"kind": "text",
-								"text": " used when a module has relationships."
+								"text": ": (optional) an object indicating the options to pass to the module."
 							}
 						],
 						"blockTags": [
@@ -2344,7 +2205,7 @@
 					}
 				},
 				{
-					"id": 13534,
+					"id": 34633,
 					"name": "featureFlags",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2353,7 +2214,7 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Some features in the Medusa backend are guarded by a feature flag. This ensures constant shipping of new features while maintaining the engine’s stability.\n\nYou can specify whether a feature should or shouldn’t be used in your backend by enabling its feature flag. Feature flags can be enabled through either environment\nvariables or through this configuration exported in "
+								"text": "Some features in the Medusa application are guarded by a feature flag. This ensures constant shipping of new features while maintaining the engine’s stability.\n\nYou can enable a feature in your application by enabling its feature flag. Feature flags are enabled through either environment\nvariables or through this configuration property exported in "
 							},
 							{
 								"kind": "code",
@@ -2369,7 +2230,7 @@
 							},
 							{
 								"kind": "text",
-								"text": " configuration is an object. Its properties are the names of the feature flags. Each property’s value is a boolean indicating whether the feature flag is enabled.\n\nYou can find available feature flags and their key name [here](https://github.com/medusajs/medusa/tree/develop/packages/medusa/src/loaders/feature-flags)."
+								"text": "'s value is an object. Its properties are the names of the feature flags, and their value is a boolean indicating whether the feature flag is enabled.\n\nYou can find available feature flags and their key name [here](https://github.com/medusajs/medusa/tree/develop/packages/medusa/src/loaders/feature-flags)."
 							}
 						],
 						"blockTags": [
@@ -2378,7 +2239,7 @@
 								"content": [
 									{
 										"kind": "code",
-										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  featureFlags: {\n    product_categories: true,\n    // ...\n  }\n  // ...\n})\n```"
+										"text": "```js title=\"medusa-config.js\"\nmodule.exports = defineConfig({\n  featureFlags: {\n    analytics: true,\n    // ...\n  }\n  // ...\n})\n```"
 									},
 									{
 										"kind": "text",
@@ -2409,6 +2270,25 @@
 									{
 										"type": "intrinsic",
 										"name": "boolean"
+									},
+									{
+										"type": "reference",
+										"target": {
+											"sourceFileName": "../../node_modules/typescript/lib/lib.es5.d.ts",
+											"qualifiedName": "Record"
+										},
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "intrinsic",
+												"name": "boolean"
+											}
+										],
+										"name": "Record",
+										"package": "typescript"
 									}
 								]
 							}
@@ -2422,16 +2302,16 @@
 				{
 					"title": "Properties",
 					"children": [
-						13527,
-						13528,
-						13533,
-						13534
+						34626,
+						34627,
+						34632,
+						34633
 					]
 				}
 			]
 		},
 		{
-			"id": 13535,
+			"id": 34634,
 			"name": "PluginDetails",
 			"variant": "declaration",
 			"kind": 2097152,
@@ -2439,14 +2319,14 @@
 			"type": {
 				"type": "reflection",
 				"declaration": {
-					"id": 13536,
+					"id": 34635,
 					"name": "__type",
 					"variant": "declaration",
 					"kind": 65536,
 					"flags": {},
 					"children": [
 						{
-							"id": 13537,
+							"id": 34636,
 							"name": "resolve",
 							"variant": "declaration",
 							"kind": 1024,
@@ -2457,7 +2337,7 @@
 							}
 						},
 						{
-							"id": 13538,
+							"id": 34637,
 							"name": "name",
 							"variant": "declaration",
 							"kind": 1024,
@@ -2468,7 +2348,7 @@
 							}
 						},
 						{
-							"id": 13539,
+							"id": 34638,
 							"name": "id",
 							"variant": "declaration",
 							"kind": 1024,
@@ -2479,7 +2359,7 @@
 							}
 						},
 						{
-							"id": 13540,
+							"id": 34639,
 							"name": "options",
 							"variant": "declaration",
 							"kind": 1024,
@@ -2505,7 +2385,7 @@
 							}
 						},
 						{
-							"id": 13541,
+							"id": 34640,
 							"name": "version",
 							"variant": "declaration",
 							"kind": 1024,
@@ -2520,11 +2400,11 @@
 						{
 							"title": "Properties",
 							"children": [
-								13537,
-								13538,
-								13539,
-								13540,
-								13541
+								34636,
+								34637,
+								34638,
+								34639,
+								34640
 							]
 						}
 					]
@@ -2536,268 +2416,244 @@
 		{
 			"title": "Interfaces",
 			"children": [
-				13477,
-				13486,
-				13491,
-				13526
+				34581,
+				34590,
+				34595,
+				34625
 			]
 		},
 		{
 			"title": "Type Aliases",
 			"children": [
-				13535
+				34634
 			]
 		}
 	],
-	"packageName": "@medusajs/types",
+	"packageName": "@medusajs/framework",
 	"symbolIdMap": {
-		"13476": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34580": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": ""
 		},
-		"13477": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34581": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "AdminOptions"
 		},
-		"13478": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34582": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.disable"
 		},
-		"13479": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34583": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.path"
 		},
-		"13480": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34584": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.outDir"
 		},
-		"13481": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34585": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.backendUrl"
 		},
-		"13482": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34586": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.vite"
 		},
-		"13483": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34587": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type"
 		},
-		"13484": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34588": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type"
 		},
-		"13485": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34589": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "config"
 		},
-		"13486": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34590": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "HttpCompressionOptions"
 		},
-		"13487": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34591": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.enabled"
 		},
-		"13488": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34592": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.level"
 		},
-		"13489": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34593": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.memLevel"
 		},
-		"13490": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34594": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.threshold"
 		},
-		"13491": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34595": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "ProjectConfigOptions"
 		},
-		"13492": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34596": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.databaseName"
 		},
-		"13493": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34597": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.databaseUrl"
 		},
-		"13494": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34598": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.databaseSchema"
 		},
-		"13495": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34599": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.databaseLogging"
 		},
-		"13497": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
-			"qualifiedName": "__type.databaseExtra"
-		},
-		"13498": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
-			"qualifiedName": "__type"
-		},
-		"13499": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
-			"qualifiedName": "__type.ssl"
-		},
-		"13500": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
-			"qualifiedName": "__type"
-		},
-		"13501": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
-			"qualifiedName": "__type.rejectUnauthorized"
-		},
-		"13502": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34601": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.databaseDriverOptions"
 		},
-		"13503": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34602": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type"
 		},
-		"13504": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34603": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.connection"
 		},
-		"13505": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34604": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type"
 		},
-		"13506": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34605": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.ssl"
 		},
-		"13507": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34606": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type"
 		},
-		"13508": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34607": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.rejectUnauthorized"
 		},
-		"13509": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34608": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.redisUrl"
 		},
-		"13510": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34609": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.redisPrefix"
 		},
-		"13511": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34610": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.redisOptions"
 		},
-		"13512": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34611": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.sessionOptions"
 		},
-		"13514": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
-			"qualifiedName": "__type.jobsBatchSize"
-		},
-		"13515": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34614": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.workerMode"
 		},
-		"13516": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34615": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.http"
 		},
-		"13517": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34616": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type"
 		},
-		"13518": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34617": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.jwtSecret"
 		},
-		"13519": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34618": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.jwtExpiresIn"
 		},
-		"13520": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34619": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.cookieSecret"
 		},
-		"13521": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34620": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.authCors"
 		},
-		"13522": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34621": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.compression"
 		},
-		"13523": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34622": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.storeCors"
 		},
-		"13524": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34623": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.adminCors"
 		},
-		"13525": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34624": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.authMethodsPerActor"
 		},
-		"13526": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34625": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "ConfigModule"
 		},
-		"13527": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34626": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.projectConfig"
 		},
-		"13528": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34627": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.admin"
 		},
-		"13533": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34632": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.modules"
 		},
-		"13534": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34633": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.featureFlags"
 		},
-		"13535": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34634": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "PluginDetails"
 		},
-		"13536": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34635": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type"
 		},
-		"13537": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34636": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.resolve"
 		},
-		"13538": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34637": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.name"
 		},
-		"13539": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34638": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.id"
 		},
-		"13540": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34639": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.options"
 		},
-		"13541": {
-			"sourceFileName": "../../../../packages/core/types/src/common/config-module.ts",
+		"34640": {
+			"sourceFileName": "../../../../packages/framework/framework/src/config/types.ts",
 			"qualifiedName": "__type.version"
 		}
 	},
 	"files": {
 		"entries": {
-			"1": "../../../../packages/core/types/src/common/config-module.ts"
+			"1": "../../../../packages/framework/framework/src/config/types.ts"
 		},
 		"reflections": {
-			"1": 13476
+			"1": 34580
 		}
 	}
 }

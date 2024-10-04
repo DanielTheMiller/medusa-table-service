@@ -2,29 +2,28 @@ import {
   IPaymentModuleService,
   Logger,
   PaymentSessionDTO,
-} from "@medusajs/types"
-import {
-  ContainerRegistrationKeys,
-  ModuleRegistrationName,
-} from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/types"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
-interface StepInput {
+export interface DeletePaymentSessionStepInput {
   ids: string[]
 }
 
-// Note: This step should not be used alone as it doesn't consider a revert
-// Use deletePaymentSessionsWorkflow instead that uses this step
 export const deletePaymentSessionsStepId = "delete-payment-sessions"
+/**
+ * This step deletes one or more payment sessions.
+ *
+ * Note: This step should not be used alone as it doesn't consider a revert
+ * Use deletePaymentSessionsWorkflow instead that uses this step
+ */
 export const deletePaymentSessionsStep = createStep(
   deletePaymentSessionsStepId,
-  async (input: StepInput, { container }) => {
+  async (input: DeletePaymentSessionStepInput, { container }) => {
     const { ids = [] } = input
     const deleted: PaymentSessionDTO[] = []
     const logger = container.resolve<Logger>(ContainerRegistrationKeys.LOGGER)
-    const service = container.resolve<IPaymentModuleService>(
-      ModuleRegistrationName.PAYMENT
-    )
+    const service = container.resolve<IPaymentModuleService>(Modules.PAYMENT)
 
     if (!ids?.length) {
       return new StepResponse([], null)
@@ -63,9 +62,7 @@ export const deletePaymentSessionsStep = createStep(
   },
   async (deletedPaymentSessions, { container }) => {
     const logger = container.resolve<Logger>(ContainerRegistrationKeys.LOGGER)
-    const service = container.resolve<IPaymentModuleService>(
-      ModuleRegistrationName.PAYMENT
-    )
+    const service = container.resolve<IPaymentModuleService>(Modules.PAYMENT)
 
     if (!deletedPaymentSessions?.length) {
       return

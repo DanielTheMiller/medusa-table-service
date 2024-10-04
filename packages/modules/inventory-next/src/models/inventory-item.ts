@@ -3,7 +3,7 @@ import {
   DALUtils,
   generateEntityId,
   Searchable,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Collection,
@@ -18,7 +18,7 @@ import {
   Rel,
 } from "@mikro-orm/core"
 
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import { InventoryLevel } from "./inventory-level"
 import { ReservationItem } from "./reservation-item"
 
@@ -32,9 +32,10 @@ const InventoryItemSkuIndex = createPsqlIndexStatementHelper({
   tableName: "inventory_item",
   columns: "sku",
   unique: true,
+  where: "deleted_at IS NULL",
 })
 
-type InventoryItemOptionalProps = DAL.SoftDeletableEntityDateColumns
+type InventoryItemOptionalProps = DAL.SoftDeletableModelDateColumns
 
 @Entity()
 @Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
@@ -144,12 +145,12 @@ export class InventoryItem {
   stocked_quantity: number
 
   @BeforeCreate()
-  private beforeCreate(): void {
+  beforeCreate(): void {
     this.id = generateEntityId(this.id, "iitem")
   }
 
   @OnInit()
-  private onInit(): void {
+  onInit(): void {
     this.id = generateEntityId(this.id, "iitem")
   }
 }

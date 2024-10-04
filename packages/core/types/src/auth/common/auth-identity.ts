@@ -84,6 +84,11 @@ export type ProviderIdentityDTO = {
   entity_id: string
 
   /**
+   * The ID of the auth identity linked to the provider identity.
+   */
+  auth_identity_id?: string
+
+  /**
    * The auth identity linked to the provider identity.
    */
   auth_identity?: AuthIdentityDTO
@@ -152,7 +157,7 @@ export type UpdateProviderIdentityDTO = {
    * The user's identifier. For example, when using the `emailpass`
    * provider, the `entity_id` would be the user's email.
    */
-  entity_id: string
+  entity_id?: string
 
   /**
    * Holds custom data related to the provider in key-value pairs.
@@ -189,4 +194,39 @@ export interface FilterableAuthIdentityProps
      */
     provider?: string
   }
+
+  app_metadata?: Record<string, unknown>
+}
+
+export interface FilterableProviderIdentityProps
+  extends BaseFilterable<FilterableProviderIdentityProps> {
+  /**
+   * The IDs to filter the provider identity by.
+   */
+  id?: string[]
+
+  /**
+   * Filter the provider identities by the ID of the provider identity they are linked to.
+   */
+  entity_id?: string
+
+  /**
+   * Filter the provider identities by the ID of the auth identity they are linked to.
+   */
+  auth_identity_id?: string
+
+  /**
+   * The provider handle to filter the provider identity by.
+   */
+  provider?: string
+
+  /**
+   * Holds custom data related to the provider in key-value pairs.
+   */
+  provider_metadata?: Record<string, unknown>
+
+  /**
+   * Holds custom data related to the user in key-value pairs.
+   */
+  user_metadata?: Record<string, unknown>
 }

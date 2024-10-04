@@ -66,6 +66,14 @@ import shouldExpandDeclarationChildrenHelper from "./resources/helpers/should-ex
 import startSectionsHelper from "./resources/helpers/start-sections"
 import ifDmlEntityHelper from "./resources/helpers/if-dml-entity"
 import dmlPropertiesHelper from "./resources/helpers/dml-properties"
+import ifWorkflowStepHelper from "./resources/helpers/if-workflow-step"
+import stepInputHelper from "./resources/helpers/step-input"
+import stepOutputHelper from "./resources/helpers/step-output"
+import ifWorkflowHelper from "./resources/helpers/if-workflow"
+import workflowInputHelper from "./resources/helpers/workflow-input"
+import workflowOutputHelper from "./resources/helpers/workflow-output"
+import workflowDiagramHelper from "./resources/helpers/workflow-diagram"
+import workflowHooksHelper from "./resources/helpers/workflow-hooks"
 import { MarkdownTheme } from "./theme"
 
 const TEMPLATE_PATH = path.join(__dirname, "resources", "templates")
@@ -160,4 +168,12 @@ export function registerHelpers(theme: MarkdownTheme) {
   startSectionsHelper(theme)
   ifDmlEntityHelper()
   dmlPropertiesHelper()
+  ifWorkflowStepHelper()
+  stepInputHelper(theme)
+  stepOutputHelper(theme)
+  ifWorkflowHelper()
+  workflowInputHelper(theme)
+  workflowOutputHelper(theme)
+  workflowDiagramHelper(theme)
+  workflowHooksHelper(theme)
 }

@@ -1,5 +1,5 @@
-import { ModuleJoinerConfig } from "@medusajs/types"
-import { LINKS, Modules } from "@medusajs/utils"
+import { ModuleJoinerConfig } from "@medusajs/framework/types"
+import { LINKS, Modules } from "@medusajs/framework/utils"
 
 export const OrderPaymentCollection: ModuleJoinerConfig = {
   serviceName: LINKS.OrderPaymentCollection,
@@ -11,15 +11,14 @@ export const OrderPaymentCollection: ModuleJoinerConfig = {
   alias: [
     {
       name: ["order_payment_collection", "order_payment_collections"],
-      args: {
-        entity: "LinkOrderPaymentCollection",
-      },
+      entity: "LinkOrderPaymentCollection",
     },
   ],
   primaryKeys: ["id", "order_id", "payment_collection_id"],
   relationships: [
     {
       serviceName: Modules.ORDER,
+      entity: "Order",
       primaryKey: "id",
       foreignKey: "order_id",
       alias: "order",
@@ -29,12 +28,14 @@ export const OrderPaymentCollection: ModuleJoinerConfig = {
     },
     {
       serviceName: Modules.PAYMENT,
+      entity: "PaymentCollection",
       primaryKey: "id",
       foreignKey: "payment_collection_id",
       alias: "payment_collection",
       args: {
         methodSuffix: "PaymentCollections",
       },
+      deleteCascade: true,
     },
   ],
   extends: [

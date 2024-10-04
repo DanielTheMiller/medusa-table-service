@@ -33,6 +33,8 @@ get:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
+        externalDocs:
+          url: '#select-fields-and-relations'
     - name: offset
       in: query
       description: The number of items to skip when retrieving a list.
@@ -41,6 +43,8 @@ get:
         type: number
         title: offset
         description: The number of items to skip when retrieving a list.
+        externalDocs:
+          url: '#pagination'
     - name: limit
       in: query
       description: Limit the number of items returned in the list.
@@ -49,6 +53,8 @@ get:
         type: number
         title: limit
         description: Limit the number of items returned in the list.
+        externalDocs:
+          url: '#pagination'
     - name: order
       in: query
       description: >-
@@ -69,13 +75,13 @@ get:
         oneOf:
           - type: string
             title: transaction_id
-            description: The workflows execution's transaction id.
+            description: Filter by a transaction ID.
           - type: array
-            description: The workflows execution's transaction id.
+            description: Filter by transaction IDs.
             items:
               type: string
               title: transaction_id
-              description: The transaction id's details.
+              description: A transaction ID.
     - name: workflow_id
       in: query
       required: false
@@ -83,13 +89,13 @@ get:
         oneOf:
           - type: string
             title: workflow_id
-            description: The workflows execution's workflow id.
+            description: Filter by a workflow ID.
           - type: array
-            description: The workflows execution's workflow id.
+            description: Filter by workflow IDs.
             items:
               type: string
               title: workflow_id
-              description: The workflow id's details.
+              description: A workflow ID.
   security:
     - api_token: []
     - cookie_auth: []
@@ -102,6 +108,43 @@ get:
   tags:
     - Workflows Executions
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - type: object
+                description: The paginated list of workflow executions.
+                required:
+                  - limit
+                  - offset
+                  - count
+                properties:
+                  limit:
+                    type: number
+                    title: limit
+                    description: The maximum number of items returned.
+                  offset:
+                    type: number
+                    title: offset
+                    description: >-
+                      The number of items skipped before retrieving the returned
+                      items.
+                  count:
+                    type: number
+                    title: count
+                    description: The total number of items.
+              - type: object
+                description: The paginated list of workflow executions.
+                required:
+                  - workflow_executions
+                properties:
+                  workflow_executions:
+                    type: array
+                    description: The workflows execution's workflow executions.
+                    items:
+                      $ref: ../components/schemas/AdminWorkflowExecution.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':

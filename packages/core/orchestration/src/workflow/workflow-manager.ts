@@ -1,6 +1,6 @@
 import { Context, MedusaContainer } from "@medusajs/types"
 import {
-  DistributedTransaction,
+  DistributedTransactionType,
   OrchestratorBuilder,
   TransactionHandlerType,
   TransactionMetadata,
@@ -40,7 +40,7 @@ export type WorkflowStepHandlerArguments = {
   invoke: { [actions: string]: unknown }
   compensate: { [actions: string]: unknown }
   metadata: TransactionMetadata
-  transaction: DistributedTransaction
+  transaction: DistributedTransactionType
   step: TransactionStep
   orchestrator: TransactionOrchestrator
   context?: Context
@@ -122,11 +122,11 @@ class WorkflowManager {
     const workflow = {
       id: workflowId,
       flow_: finalFlow!,
-      orchestrator: new TransactionOrchestrator(
-        workflowId,
-        finalFlow ?? {},
-        options
-      ),
+      orchestrator: new TransactionOrchestrator({
+        id: workflowId,
+        definition: finalFlow ?? {},
+        options,
+      }),
       handler: WorkflowManager.buildHandlers(handlers),
       handlers_: handlers,
       options,
@@ -167,11 +167,11 @@ class WorkflowManager {
     WorkflowManager.workflows.set(workflowId, {
       id: workflowId,
       flow_: finalFlow,
-      orchestrator: new TransactionOrchestrator(
-        workflowId,
-        finalFlow,
-        updatedOptions
-      ),
+      orchestrator: new TransactionOrchestrator({
+        id: workflowId,
+        definition: finalFlow,
+        options,
+      }),
       handler: WorkflowManager.buildHandlers(workflow.handlers_),
       handlers_: workflow.handlers_,
       options: updatedOptions,
@@ -194,7 +194,7 @@ class WorkflowManager {
         actionId: string,
         handlerType: TransactionHandlerType,
         payload: any,
-        transaction: DistributedTransaction,
+        transaction: DistributedTransactionType,
         step: TransactionStep,
         orchestrator: TransactionOrchestrator
       ) => {
@@ -217,7 +217,7 @@ class WorkflowManager {
           invoke,
           compensate,
           metadata,
-          transaction: transaction as DistributedTransaction,
+          transaction: transaction as DistributedTransactionType,
           step,
           orchestrator,
           context,

@@ -1,21 +1,25 @@
 import {
   WorkflowData,
+  WorkflowResponse,
   createWorkflow,
   parallelize,
   transform,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 import {
   BatchWorkflowInput,
   BatchWorkflowOutput,
   ProductTypes,
   UpdateProductVariantWorkflowInputDTO,
   CreateProductVariantWorkflowInputDTO,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import { createProductVariantsWorkflow } from "./create-product-variants"
 import { updateProductVariantsWorkflow } from "./update-product-variants"
 import { deleteProductVariantsWorkflow } from "./delete-product-variants"
 
 export const batchProductVariantsWorkflowId = "batch-product-variants"
+/**
+ * This workflow creates, updates, and deletes product variants.
+ */
 export const batchProductVariantsWorkflow = createWorkflow(
   batchProductVariantsWorkflowId,
   (
@@ -25,7 +29,7 @@ export const batchProductVariantsWorkflow = createWorkflow(
         UpdateProductVariantWorkflowInputDTO
       >
     >
-  ): WorkflowData<BatchWorkflowOutput<ProductTypes.ProductVariantDTO>> => {
+  ): WorkflowResponse<BatchWorkflowOutput<ProductTypes.ProductVariantDTO>> => {
     const normalizedInput = transform({ input }, (data) => {
       return {
         create: data.input.create ?? [],
@@ -46,16 +50,14 @@ export const batchProductVariantsWorkflow = createWorkflow(
       })
     )
 
-    return transform({ res, input }, (data) => {
+    const response = transform({ res, input }, (data) => {
       return {
         created: data.res[0],
         updated: data.res[1],
-        deleted: {
-          ids: data.input.delete ?? [],
-          object: "product_variant",
-          deleted: true,
-        },
+        deleted: data.input.delete ?? [],
       }
     })
+
+    return new WorkflowResponse(response)
   }
 )

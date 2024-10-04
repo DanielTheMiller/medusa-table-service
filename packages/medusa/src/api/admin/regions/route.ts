@@ -1,18 +1,18 @@
-import {
-  AuthenticatedMedusaRequest,
-  MedusaResponse,
-} from "../../../types/routing"
 import { createRegionsWorkflow } from "@medusajs/core-flows"
+import { HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
-import { AdminCreateRegionType, AdminGetRegionsParamsType } from "./validators"
+} from "@medusajs/framework/utils"
+import {
+  AuthenticatedMedusaRequest,
+  MedusaResponse,
+} from "@medusajs/framework/http"
 import { refetchRegion } from "./helpers"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest<AdminGetRegionsParamsType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminRegionFilters>,
+  res: MedusaResponse<HttpTypes.AdminRegionListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -36,8 +36,8 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminCreateRegionType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminCreateRegion>,
+  res: MedusaResponse<HttpTypes.AdminRegionResponse>
 ) => {
   const input = [req.validatedBody]
 

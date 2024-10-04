@@ -1,14 +1,14 @@
 import {
-  DistributedTransaction,
+  DistributedTransactionType,
   IDistributedSchedulerStorage,
   IDistributedTransactionStorage,
   SchedulerOptions,
   TransactionCheckpoint,
   TransactionOptions,
   TransactionStep,
-} from "@medusajs/orchestration"
-import { Logger, ModulesSdkTypes } from "@medusajs/types"
-import { MedusaError, TransactionState } from "@medusajs/utils"
+} from "@medusajs/framework/orchestration"
+import { Logger, ModulesSdkTypes } from "@medusajs/framework/types"
+import { MedusaError, TransactionState } from "@medusajs/framework/utils"
 import { WorkflowOrchestratorService } from "@services"
 import { CronExpression, parseExpression } from "cron-parser"
 
@@ -155,7 +155,7 @@ export class InMemoryDistributedTransactionStorage
   }
 
   async scheduleRetry(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep,
     timestamp: number,
     interval: number
@@ -165,6 +165,7 @@ export class InMemoryDistributedTransactionStorage
     const inter = setTimeout(async () => {
       await this.workflowOrchestratorService_.run(workflowId, {
         transactionId,
+        logOnError: true,
         throwOnError: false,
       })
     }, interval * 1e3)
@@ -174,7 +175,7 @@ export class InMemoryDistributedTransactionStorage
   }
 
   async clearRetry(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep
   ): Promise<void> {
     const { modelId: workflowId, transactionId } = transaction
@@ -188,7 +189,7 @@ export class InMemoryDistributedTransactionStorage
   }
 
   async scheduleTransactionTimeout(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     timestamp: number,
     interval: number
   ): Promise<void> {
@@ -206,7 +207,7 @@ export class InMemoryDistributedTransactionStorage
   }
 
   async clearTransactionTimeout(
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
   ): Promise<void> {
     const { modelId: workflowId, transactionId } = transaction
 
@@ -219,7 +220,7 @@ export class InMemoryDistributedTransactionStorage
   }
 
   async scheduleStepTimeout(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep,
     timestamp: number,
     interval: number
@@ -238,7 +239,7 @@ export class InMemoryDistributedTransactionStorage
   }
 
   async clearStepTimeout(
-    transaction: DistributedTransaction,
+    transaction: DistributedTransactionType,
     step: TransactionStep
   ): Promise<void> {
     const { modelId: workflowId, transactionId } = transaction
@@ -288,7 +289,7 @@ export class InMemoryDistributedTransactionStorage
   }
 
   async removeAll(): Promise<void> {
-    for (const [key, job] of this.scheduled) {
+    for (const [key] of this.scheduled) {
       await this.remove(key)
     }
   }
@@ -322,6 +323,7 @@ export class InMemoryDistributedTransactionStorage
     try {
       // With running the job after setting a new timer we basically allow for concurrent runs, unless we add idempotency keys once they are supported.
       await this.workflowOrchestratorService_.run(jobId, {
+        logOnError: true,
         throwOnError: false,
       })
     } catch (e) {

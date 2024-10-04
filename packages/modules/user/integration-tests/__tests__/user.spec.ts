@@ -1,10 +1,10 @@
-import { IUserModuleService } from "@medusajs/types"
-import { Module, Modules, UserEvents } from "@medusajs/utils"
+import { IUserModuleService } from "@medusajs/framework/types"
+import { Module, Modules, UserEvents } from "@medusajs/framework/utils"
+import { UserModuleService } from "@services"
 import {
   MockEventBusService,
   moduleIntegrationTestRunner,
 } from "medusa-test-utils"
-import { UserModuleService } from "@services"
 
 jest.setTimeout(30000)
 
@@ -25,7 +25,7 @@ moduleIntegrationTestRunner<IUserModuleService>({
     jwt_secret: "test",
   },
   injectedDependencies: {
-    eventBusModuleService: new MockEventBusService(),
+    [Modules.EVENT_BUS]: new MockEventBusService(),
   },
   testSuite: ({ service }) => {
     it(`should export the appropriate linkable configuration`, () => {
@@ -33,27 +33,29 @@ moduleIntegrationTestRunner<IUserModuleService>({
         service: UserModuleService,
       }).linkable
 
-      expect(Object.keys(linkable)).toEqual(["invite", "user"])
+      expect(Object.keys(linkable)).toEqual(["user", "invite"])
 
       Object.keys(linkable).forEach((key) => {
         delete linkable[key].toJSON
       })
 
       expect(linkable).toEqual({
-        invite: {
-          id: {
-            linkable: "invite_id",
-            primaryKey: "id",
-            serviceName: "user",
-            field: "invite",
-          },
-        },
         user: {
           id: {
             linkable: "user_id",
+            entity: "User",
             primaryKey: "id",
-            serviceName: "user",
+            serviceName: "User",
             field: "user",
+          },
+        },
+        invite: {
+          id: {
+            linkable: "invite_id",
+            entity: "Invite",
+            primaryKey: "id",
+            serviceName: "User",
+            field: "invite",
           },
         },
       })
@@ -217,12 +219,17 @@ moduleIntegrationTestRunner<IUserModuleService>({
           ])
 
           expect(eventBusSpy).toHaveBeenCalledTimes(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            expect.objectContaining({
-              data: { id: "1" },
-              eventName: UserEvents.USER_UPDATED,
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              expect.objectContaining({
+                data: { id: "1" },
+                name: UserEvents.USER_UPDATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
       })
 
@@ -247,16 +254,21 @@ moduleIntegrationTestRunner<IUserModuleService>({
           await service.createUsers(defaultUserData)
 
           expect(eventBusSpy).toHaveBeenCalledTimes(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            expect.objectContaining({
-              data: { id: "1" },
-              eventName: UserEvents.USER_CREATED,
-            }),
-            expect.objectContaining({
-              data: { id: "2" },
-              eventName: UserEvents.USER_CREATED,
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              expect.objectContaining({
+                data: { id: "1" },
+                name: UserEvents.USER_CREATED,
+              }),
+              expect.objectContaining({
+                data: { id: "2" },
+                name: UserEvents.USER_CREATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
       })
     })

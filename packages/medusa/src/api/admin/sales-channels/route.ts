@@ -2,20 +2,17 @@ import { createSalesChannelsWorkflow } from "@medusajs/core-flows"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchSalesChannel } from "./helpers"
-import {
-  AdminCreateSalesChannelType,
-  AdminGetSalesChannelsParamsType,
-} from "./validators"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest<AdminGetSalesChannelsParamsType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminSalesChannelListParams>,
+  res: MedusaResponse<HttpTypes.AdminSalesChannelListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -39,8 +36,8 @@ export const GET = async (
 }
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminCreateSalesChannelType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminCreateSalesChannel>,
+  res: MedusaResponse<HttpTypes.AdminSalesChannelResponse>
 ) => {
   const salesChannelsData = [req.validatedBody]
 

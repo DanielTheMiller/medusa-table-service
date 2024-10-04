@@ -5,17 +5,19 @@ import {
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 
 import { refetchProductType } from "../helpers"
 import {
   AdminGetProductTypeParamsType,
   AdminUpdateProductTypeType,
 } from "../validators"
+import { HttpTypes } from "@medusajs/framework/types"
+import { MedusaError } from "@medusajs/framework/utils"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<AdminGetProductTypeParamsType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminProductTypeResponse>
 ) => {
   const productType = await refetchProductType(
     req.params.id,
@@ -28,8 +30,21 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminUpdateProductTypeType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminProductTypeResponse>
 ) => {
+  const existingProductType = await refetchProductType(
+    req.params.id,
+    req.scope,
+    ["id"]
+  )
+
+  if (!existingProductType) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      `Product type with id "${req.params.id}" not found`
+    )
+  }
+
   const { result } = await updateProductTypesWorkflow(req.scope).run({
     input: {
       selector: { id: req.params.id },
@@ -48,7 +63,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminProductTypeDeleteResponse>
 ) => {
   const id = req.params.id
 

@@ -3,7 +3,6 @@ import {
   HttpTypes,
   PaginatedResponse,
   SelectParams,
-  DeleteResponse,
 } from "@medusajs/types"
 import { Client } from "../client"
 import { ClientHeaders } from "../types"
@@ -205,12 +204,13 @@ export class Store {
       lineItemId: string,
       headers?: ClientHeaders
     ) => {
-      return this.client.fetch<
-        DeleteResponse<"line-item", HttpTypes.StoreCart>
-      >(`/store/carts/${cartId}/line-items/${lineItemId}`, {
-        method: "DELETE",
-        headers,
-      })
+      return this.client.fetch<HttpTypes.StoreLineItemDeleteResponse>(
+        `/store/carts/${cartId}/line-items/${lineItemId}`,
+        {
+          method: "DELETE",
+          headers,
+        }
+      )
     },
     addShippingMethod: async (
       cartId: string,
@@ -289,9 +289,6 @@ export class Store {
       if (!paymentCollectionId) {
         const collectionBody = {
           cart_id: cart.id,
-          region_id: cart.region_id,
-          currency_code: cart.currency_code,
-          amount: cart.total,
         }
         paymentCollectionId = (
           await this.client.fetch<{
@@ -436,12 +433,13 @@ export class Store {
       )
     },
     deleteAddress: async (addressId: string, headers?: ClientHeaders) => {
-      return this.client.fetch<
-        DeleteResponse<"address", HttpTypes.StoreCustomer>
-      >(`/store/customers/me/addresses/${addressId}`, {
-        method: "DELETE",
-        headers,
-      })
+      return this.client.fetch<HttpTypes.StoreCustomerAddressDeleteResponse>(
+        `/store/customers/me/addresses/${addressId}`,
+        {
+          method: "DELETE",
+          headers,
+        }
+      )
     },
   }
 }

@@ -1,10 +1,10 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
-  DALUtils,
-  Searchable,
   createPsqlIndexStatementHelper,
+  DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+  Searchable,
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -13,8 +13,8 @@ import {
   Entity,
   Filter,
   ManyToOne,
-  OnInit,
   OneToMany,
+  OnInit,
   OptionalProps,
   PrimaryKey,
   Property,
@@ -23,10 +23,12 @@ import {
 import TaxProvider from "./tax-provider"
 import TaxRate from "./tax-rate"
 
-type OptionalTaxRegionProps = DAL.SoftDeletableEntityDateColumns
+type OptionalTaxRegionProps = DAL.SoftDeletableModelDateColumns
 
 const TABLE_NAME = "tax_region"
 
+export const countryCodeNullProvinceIndexName =
+  "IDX_tax_region_unique_country_nullable_province"
 export const countryCodeProvinceIndexName =
   "IDX_tax_region_unique_country_province"
 const countryCodeProvinceIndexStatement = createPsqlIndexStatementHelper({
@@ -34,7 +36,22 @@ const countryCodeProvinceIndexStatement = createPsqlIndexStatementHelper({
   tableName: TABLE_NAME,
   columns: ["country_code", "province_code"],
   unique: true,
+  where: "deleted_at IS NULL",
 })
+const deletedAtIndexStatement = createPsqlIndexStatementHelper({
+  tableName: TABLE_NAME,
+  columns: "deleted_at",
+  where: "deleted_at IS NOT NULL",
+})
+
+const countryCodeNullableProvinceIndexStatement =
+  createPsqlIndexStatementHelper({
+    name: countryCodeNullProvinceIndexName,
+    tableName: TABLE_NAME,
+    columns: ["country_code"],
+    unique: true,
+    where: "province_code IS NULL AND deleted_at IS NULL",
+  })
 
 export const taxRegionProviderTopLevelCheckName =
   "CK_tax_region_provider_top_level"
@@ -49,6 +66,7 @@ export const taxRegionCountryTopLevelCheckName =
   name: taxRegionCountryTopLevelCheckName,
   expression: `parent_id IS NULL OR province_code IS NOT NULL`,
 })
+@countryCodeNullableProvinceIndexStatement.MikroORMIndex()
 @countryCodeProvinceIndexStatement.MikroORMIndex()
 @Entity({ tableName: TABLE_NAME })
 @Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
@@ -119,11 +137,7 @@ export default class TaxRegion {
   @Property({ columnType: "text", nullable: true })
   created_by: string | null = null
 
-  @createPsqlIndexStatementHelper({
-    tableName: TABLE_NAME,
-    columns: "deleted_at",
-    where: "deleted_at IS NOT NULL",
-  }).MikroORMIndex()
+  @deletedAtIndexStatement.MikroORMIndex()
   @Property({ columnType: "timestamptz", nullable: true })
   deleted_at: Date | null = null
 

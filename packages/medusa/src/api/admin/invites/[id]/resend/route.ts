@@ -1,9 +1,13 @@
-import { MedusaRequest, MedusaResponse } from "../../../../../types/routing"
+import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 
 import { refreshInviteTokensWorkflow } from "@medusajs/core-flows"
 import { refetchInvite } from "../../helpers"
+import { HttpTypes } from "@medusajs/framework/types"
 
-export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
+export const POST = async (
+  req: MedusaRequest,
+  res: MedusaResponse<HttpTypes.AdminInviteResponse>
+) => {
   const workflow = refreshInviteTokensWorkflow(req.scope)
 
   const input = {

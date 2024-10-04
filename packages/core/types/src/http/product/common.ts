@@ -1,7 +1,9 @@
 import { BaseFilterable, OperatorMap } from "../../dal"
 import { BaseCollection } from "../collection/common"
 import { FindParams } from "../common"
+import { BaseCalculatedPriceSet } from "../pricing/common"
 import { BaseProductCategory } from "../product-category/common"
+import { BaseProductTag } from "../product-tag/common"
 import { BaseProductType } from "../product-type/common"
 
 export type ProductStatus = "draft" | "proposed" | "published" | "rejected"
@@ -27,7 +29,7 @@ export interface BaseProduct {
   categories?: BaseProductCategory[] | null
   type?: BaseProductType | null
   type_id: string | null
-  tags: BaseProductTag[] | null
+  tags?: BaseProductTag[] | null
   variants: BaseProductVariant[] | null
   options: BaseProductOption[] | null
   images: BaseProductImage[] | null
@@ -48,6 +50,7 @@ export interface BaseProductVariant {
   upc: string | null
   allow_backorder: boolean | null
   manage_inventory: boolean | null
+  inventory_quantity?: number
   hs_code: string | null
   origin_country: string | null
   mid_code: string | null
@@ -56,20 +59,14 @@ export interface BaseProductVariant {
   length: number | null
   height: number | null
   width: number | null
+  variant_rank?: number | null
   options: BaseProductOptionValue[] | null
   product?: BaseProduct | null
   product_id?: string
-  variant_rank?: number | null
+  calculated_price?: BaseCalculatedPriceSet
   created_at: string
   updated_at: string
   deleted_at: string | null
-  metadata?: Record<string, unknown> | null
-}
-
-export interface BaseProductTag {
-  id: string
-  value: string
-  products?: BaseProduct[]
   metadata?: Record<string, unknown> | null
 }
 
@@ -115,24 +112,14 @@ export interface BaseProductListParams
   handle?: string | string[]
   id?: string | string[]
   is_giftcard?: boolean
-  tags?: {
-    value?: string[]
-  }
+  tags?: string | string[]
   type_id?: string | string[]
-  category_id?: string | string[] | OperatorMap<string>
-  categories?: { id: OperatorMap<string> } | { id: OperatorMap<string[]> }
-  collection_id?: string | string[] | OperatorMap<string>
+  category_id?: string | string[]
+  categories?: string | string[]
+  collection_id?: string | string[]
   created_at?: OperatorMap<string>
   updated_at?: OperatorMap<string>
   deleted_at?: OperatorMap<string>
-}
-
-export interface BaseProductTagParams
-  extends FindParams,
-    BaseFilterable<BaseProductTagParams> {
-  q?: string
-  id?: string | string[]
-  value?: string | string[]
 }
 
 export interface BaseProductOptionParams
@@ -149,7 +136,11 @@ export interface BaseProductVariantParams
     BaseFilterable<BaseProductVariantParams> {
   q?: string
   id?: string | string[]
-  sku?: string | string[]
-  product_id?: string | string[]
-  options?: Record<string, string>
+  options?: {
+    value: string
+    option_id: string
+  }
+  created_at?: OperatorMap<string>
+  updated_at?: OperatorMap<string>
+  deleted_at?: OperatorMap<string>
 }

@@ -1,17 +1,24 @@
-import { OrderDTO } from "@medusajs/types"
-import { WorkflowData, createWorkflow } from "@medusajs/workflows-sdk"
+import { OrderDTO } from "@medusajs/framework/types"
+import {
+  WorkflowData,
+  WorkflowResponse,
+  createWorkflow,
+} from "@medusajs/framework/workflows-sdk"
 import { archiveOrdersStep } from "../steps"
 
-type ArchiveOrdersStepInput = {
+export type ArchiveOrdersWorkflowInput = {
   orderIds: string[]
 }
 
 export const archiveOrderWorkflowId = "archive-order-workflow"
+/**
+ * This workflow archives an order.
+ */
 export const archiveOrderWorkflow = createWorkflow(
   archiveOrderWorkflowId,
-  (input: WorkflowData<ArchiveOrdersStepInput>): WorkflowData<OrderDTO[]> => {
-    const archivedOrders = archiveOrdersStep(input)
-
-    return archivedOrders
+  (
+    input: WorkflowData<ArchiveOrdersWorkflowInput>
+  ): WorkflowResponse<OrderDTO[]> => {
+    return new WorkflowResponse(archiveOrdersStep(input))
   }
 )

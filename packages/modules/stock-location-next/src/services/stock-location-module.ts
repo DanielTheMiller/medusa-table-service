@@ -1,10 +1,10 @@
-import { InternalModuleDeclaration } from "@medusajs/modules-sdk"
 import {
   Context,
   CreateStockLocationInput,
   DAL,
   FilterableStockLocationProps,
   IEventBusService,
+  InternalModuleDeclaration,
   IStockLocationService,
   ModuleJoinerConfig,
   ModulesSdkTypes,
@@ -12,20 +12,21 @@ import {
   StockLocationTypes,
   UpdateStockLocationInput,
   UpsertStockLocationInput,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   InjectManager,
   InjectTransactionManager,
   isString,
   MedusaContext,
   MedusaService,
+  Modules,
   promiseAll,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { joinerConfig } from "../joiner-config"
 import { StockLocation, StockLocationAddress } from "../models"
 
 type InjectedDependencies = {
-  eventBusModuleService: IEventBusService
+  [Modules.EVENT_BUS]: IEventBusService
   baseRepository: DAL.RepositoryService
   stockLocationService: ModulesSdkTypes.IMedusaInternalService<any>
   stockLocationAddressService: ModulesSdkTypes.IMedusaInternalService<any>
@@ -48,7 +49,7 @@ export default class StockLocationModuleService
 
   constructor(
     {
-      eventBusModuleService,
+      [Modules.EVENT_BUS]: eventBusModuleService,
       baseRepository,
       stockLocationService,
       stockLocationAddressService,
@@ -78,7 +79,7 @@ export default class StockLocationModuleService
     context: Context
   ): Promise<StockLocationTypes.StockLocationDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createStockLocations(
     data: CreateStockLocationInput | CreateStockLocationInput[],
     @MedusaContext() context: Context = {}
@@ -97,7 +98,7 @@ export default class StockLocationModuleService
     return Array.isArray(data) ? serialized : serialized[0]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async createStockLocations_(
     data: CreateStockLocationInput[],
     @MedusaContext() context: Context = {}
@@ -114,7 +115,7 @@ export default class StockLocationModuleService
     context?: Context
   ): Promise<StockLocationTypes.StockLocationDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async upsertStockLocations(
     data: UpsertStockLocationInput | UpsertStockLocationInput[],
     @MedusaContext() context: Context = {}
@@ -131,7 +132,7 @@ export default class StockLocationModuleService
     >(Array.isArray(data) ? result : result[0])
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async upsertStockLocations_(
     input: UpsertStockLocationInput[],
     @MedusaContext() context: Context = {}
@@ -173,7 +174,7 @@ export default class StockLocationModuleService
    * @param context
    * @returns The updated stock location.
    */
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateStockLocations(
     idOrSelector: string | FilterableStockLocationProps,
     data: UpdateStockLocationInput | UpdateStockLocationInput[],
@@ -199,7 +200,7 @@ export default class StockLocationModuleService
     return Array.isArray(data) ? serialized : serialized[0]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   async updateStockLocations_(
     data:
       | UpdateStockLocationInput[]
@@ -220,7 +221,7 @@ export default class StockLocationModuleService
     context?: Context
   ): Promise<StockLocationTypes.StockLocationAddressDTO[]>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async updateStockLocationAddresses(
     data:
       | (StockLocationAddressInput & { id: string })
@@ -239,7 +240,7 @@ export default class StockLocationModuleService
     return Array.isArray(data) ? serialized : serialized[0]
   }
 
-  @InjectTransactionManager("baseRepository_")
+  @InjectTransactionManager()
   private async updateStockLocationAddresses_(
     input: (StockLocationAddressInput & { id: string })[],
     @MedusaContext() context: Context

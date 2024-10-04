@@ -1,11 +1,11 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   BigNumber,
   DALUtils,
   MikroOrmBigNumberProperty,
   PaymentCollectionStatus,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -25,7 +25,7 @@ import Payment from "./payment"
 import PaymentProvider from "./payment-provider"
 import PaymentSession from "./payment-session"
 
-type OptionalPaymentCollectionProps = "status" | DAL.EntityDateColumns
+type OptionalPaymentCollectionProps = "status" | DAL.ModelDateColumns
 
 @Entity({ tableName: "payment_collection" })
 @Filter(DALUtils.mikroOrmSoftDeletableFilterOptions)
@@ -103,12 +103,12 @@ export default class PaymentCollection {
   payment_providers = new Collection<Rel<PaymentProvider>>(this)
 
   @OneToMany(() => PaymentSession, (ps) => ps.payment_collection, {
-    cascade: [Cascade.PERSIST, "soft-remove"] as any,
+    cascade: [Cascade.PERSIST] as any,
   })
   payment_sessions = new Collection<Rel<PaymentSession>>(this)
 
   @OneToMany(() => Payment, (payment) => payment.payment_collection, {
-    cascade: [Cascade.PERSIST, "soft-remove"] as any,
+    cascade: [Cascade.PERSIST] as any,
   })
   payments = new Collection<Rel<Payment>>(this)
 

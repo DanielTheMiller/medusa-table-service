@@ -1,10 +1,10 @@
-import { DAL, PromotionTypeValues } from "@medusajs/types"
+import { DAL, PromotionTypeValues } from "@medusajs/framework/types"
 import {
   DALUtils,
   PromotionUtils,
   Searchable,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Collection,
@@ -26,7 +26,7 @@ import ApplicationMethod from "./application-method"
 import Campaign from "./campaign"
 import PromotionRule from "./promotion-rule"
 
-type OptionalFields = "is_automatic" | DAL.SoftDeletableEntityDateColumns
+type OptionalFields = "is_automatic" | DAL.SoftDeletableModelDateColumns
 type OptionalRelations = "application_method" | "campaign"
 
 @Entity({ tableName: "promotion" })

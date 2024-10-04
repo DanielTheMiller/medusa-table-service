@@ -1,11 +1,11 @@
-import { IProductModuleService } from "@medusajs/types"
+import { IProductModuleService } from "@medusajs/framework/types"
 import {
   CommonEvents,
+  composeMessage,
   Modules,
   ProductEvents,
   ProductStatus,
-  composeMessage,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import { Product, ProductCategory } from "@models"
 import {
   MockEventBusService,
@@ -18,7 +18,7 @@ jest.setTimeout(30000)
 moduleIntegrationTestRunner<IProductModuleService>({
   moduleName: Modules.PRODUCT,
   injectedDependencies: {
-    eventBusModuleService: new MockEventBusService(),
+    [Modules.EVENT_BUS]: new MockEventBusService(),
   },
   testSuite: ({ MikroOrmWrapper, service }) => {
     describe("ProductModuleService product categories", () => {
@@ -410,14 +410,19 @@ moduleIntegrationTestRunner<IProductModuleService>({
           })
 
           expect(eventBusSpy.mock.calls[0][0]).toHaveLength(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            composeMessage(ProductEvents.PRODUCT_CATEGORY_CREATED, {
-              data: { id: category.id },
-              object: "product_category",
-              source: Modules.PRODUCT,
-              action: CommonEvents.CREATED,
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              composeMessage(ProductEvents.PRODUCT_CATEGORY_CREATED, {
+                data: { id: category.id },
+                object: "product_category",
+                source: Modules.PRODUCT,
+                action: CommonEvents.CREATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
 
         it("should append rank from an existing category depending on parent", async () => {
@@ -505,14 +510,19 @@ moduleIntegrationTestRunner<IProductModuleService>({
           })
 
           expect(eventBusSpy.mock.calls[0][0]).toHaveLength(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            composeMessage(ProductEvents.PRODUCT_CATEGORY_UPDATED, {
-              data: { id: productCategoryZero.id },
-              object: "product_category",
-              source: Modules.PRODUCT,
-              action: CommonEvents.UPDATED,
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              composeMessage(ProductEvents.PRODUCT_CATEGORY_UPDATED, {
+                data: { id: productCategoryZero.id },
+                object: "product_category",
+                source: Modules.PRODUCT,
+                action: CommonEvents.UPDATED,
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
 
         it("should update the name of the category successfully", async () => {
@@ -678,12 +688,22 @@ moduleIntegrationTestRunner<IProductModuleService>({
           await service.deleteProductCategories([productCategoryOne.id])
 
           expect(eventBusSpy).toHaveBeenCalledTimes(1)
-          expect(eventBusSpy).toHaveBeenCalledWith([
-            expect.objectContaining({
-              data: { id: productCategoryOne.id },
-              eventName: "product-category.deleted",
-            }),
-          ])
+          expect(eventBusSpy).toHaveBeenCalledWith(
+            [
+              expect.objectContaining({
+                data: { id: productCategoryOne.id },
+                name: "Product.product-category.deleted",
+                metadata: {
+                  action: CommonEvents.DELETED,
+                  object: "product_category",
+                  source: Modules.PRODUCT,
+                },
+              }),
+            ],
+            {
+              internal: true,
+            }
+          )
         })
 
         it("should throw an error when an id does not exist", async () => {

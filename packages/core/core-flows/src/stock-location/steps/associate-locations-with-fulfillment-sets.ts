@@ -1,7 +1,7 @@
-import { ContainerRegistrationKeys, Modules } from "@medusajs/utils"
-import { createStep, StepResponse } from "@medusajs/workflows-sdk"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 
-interface StepInput {
+export interface AssociateFulfillmentSetsWithLocationStepInput {
   input: {
     location_id: string
     fulfillment_set_ids: string[]
@@ -10,9 +10,15 @@ interface StepInput {
 
 export const associateFulfillmentSetsWithLocationStepId =
   "associate-fulfillment-sets-with-location-step"
+/**
+ * This step creates links between location and fulfillment set records.
+ */
 export const associateFulfillmentSetsWithLocationStep = createStep(
   associateFulfillmentSetsWithLocationStepId,
-  async (data: StepInput, { container }) => {
+  async (
+    data: AssociateFulfillmentSetsWithLocationStepInput,
+    { container }
+  ) => {
     if (!data.input.length) {
       return new StepResponse([], [])
     }

@@ -1,8 +1,10 @@
-import EmailPassProvider from "@medusajs/auth-emailpass"
-
-import { LoaderOptions, ModulesSdkTypes, ModuleProvider } from "@medusajs/types"
-import { Lifetime, asFunction, asValue } from "awilix"
-import { moduleProviderLoader } from "@medusajs/modules-sdk"
+import {
+  LoaderOptions,
+  ModuleProvider,
+  ModulesSdkTypes,
+} from "@medusajs/framework/types"
+import { asFunction, asValue, Lifetime } from "awilix"
+import { moduleProviderLoader } from "@medusajs/framework/modules-sdk"
 import {
   AuthIdentifiersRegistrationName,
   AuthProviderRegistrationPrefix,
@@ -33,18 +35,9 @@ export default async ({
     | ModulesSdkTypes.ModuleServiceInitializeCustomDataLayerOptions
   ) & { providers: ModuleProvider[] }
 >): Promise<void> => {
-  // Note: For now we want to inject some providers out of the box
-  const providerConfig = [
-    {
-      resolve: EmailPassProvider,
-      id: "emailpass",
-    },
-    ...(options?.providers ?? []),
-  ]
-
   await moduleProviderLoader({
     container,
-    providers: providerConfig,
+    providers: options?.providers || [],
     registerServiceFn: registrationFn,
   })
 }

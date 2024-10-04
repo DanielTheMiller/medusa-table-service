@@ -2,12 +2,13 @@ import { isDefined } from "@medusajs/utils"
 import { EventEmitter } from "events"
 import { IDistributedTransactionStorage } from "./datastore/abstract-storage"
 import { BaseInMemoryDistributedTransactionStorage } from "./datastore/base-in-memory-storage"
+import { TransactionOrchestrator } from "./transaction-orchestrator"
+import { TransactionStep, TransactionStepHandler } from "./transaction-step"
 import {
   TransactionFlow,
-  TransactionOrchestrator,
-} from "./transaction-orchestrator"
-import { TransactionStep, TransactionStepHandler } from "./transaction-step"
-import { TransactionHandlerType, TransactionState } from "./types"
+  TransactionHandlerType,
+  TransactionState,
+} from "./types"
 
 /**
  * @typedef TransactionMetadata
@@ -74,7 +75,7 @@ export class TransactionPayload {
  * DistributedTransaction represents a distributed transaction, which is a transaction that is composed of multiple steps that are executed in a specific order.
  */
 
-export class DistributedTransaction extends EventEmitter {
+class DistributedTransaction extends EventEmitter {
   public modelId: string
   public transactionId: string
 
@@ -302,3 +303,12 @@ export class DistributedTransaction extends EventEmitter {
 DistributedTransaction.setStorage(
   new BaseInMemoryDistributedTransactionStorage()
 )
+
+global.DistributedTransaction ??= DistributedTransaction
+const GlobalDistributedTransaction =
+  global.DistributedTransaction as typeof DistributedTransaction
+
+export {
+  GlobalDistributedTransaction as DistributedTransaction,
+  DistributedTransaction as DistributedTransactionType,
+}

@@ -4,16 +4,16 @@ import {
   InternalModuleDeclaration,
   ModulesSdkTypes,
   WorkflowsSdkTypes,
-} from "@medusajs/types"
+} from "@medusajs/framework/types"
 import {
   InjectSharedContext,
   MedusaContext,
   ModulesSdkUtils,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import type {
   ReturnWorkflow,
   UnwrapWorkflowInputDataType,
-} from "@medusajs/workflows-sdk"
+} from "@medusajs/framework/workflows-sdk"
 import { WorkflowExecution } from "@models"
 import { WorkflowOrchestratorService } from "@services"
 
@@ -59,6 +59,9 @@ export class WorkflowsModuleService<
     },
     onApplicationPrepareShutdown: async () => {
       await this.workflowOrchestratorService_.onApplicationPrepareShutdown()
+    },
+    onApplicationStart: async () => {
+      await this.workflowOrchestratorService_.onApplicationStart()
     },
   }
 

@@ -2,13 +2,13 @@ import { uploadFilesWorkflow } from "@medusajs/core-flows"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
-import { MedusaError } from "@medusajs/utils"
-import { AdminGetUploadParamsType } from "./validators"
+} from "@medusajs/framework/http"
+import { MedusaError } from "@medusajs/framework/utils"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<AdminGetUploadParamsType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminUploadFile>,
+  res: MedusaResponse<HttpTypes.AdminFileListResponse>
 ) => {
   const input = req.files as Express.Multer.File[]
 
@@ -25,6 +25,7 @@ export const POST = async (
         filename: f.originalname,
         mimeType: f.mimetype,
         content: f.buffer.toString("binary"),
+        access: "public",
       })),
     },
   })

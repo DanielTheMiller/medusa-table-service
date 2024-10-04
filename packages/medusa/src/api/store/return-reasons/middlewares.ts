@@ -1,12 +1,12 @@
-import { MiddlewareRoute } from "../../../loaders/helpers/routing/types"
-import { validateAndTransformQuery } from "../../utils/validate-query"
+import { MiddlewareRoute } from "@medusajs/framework/http"
+import { validateAndTransformQuery } from "@medusajs/framework"
 import * as QueryConfig from "./query-config"
 import { StoreReturnReasonParams } from "./validators"
 
 export const storeReturnReasonRoutesMiddlewares: MiddlewareRoute[] = [
   {
     method: ["GET"],
-    matcher: "/admin/return-reasons",
+    matcher: "/store/return-reasons",
     middlewares: [
       validateAndTransformQuery(
         StoreReturnReasonParams,
@@ -16,7 +16,7 @@ export const storeReturnReasonRoutesMiddlewares: MiddlewareRoute[] = [
   },
   {
     method: ["GET"],
-    matcher: "/admin/return-reasons/:id",
+    matcher: "/store/return-reasons/:id",
     middlewares: [
       validateAndTransformQuery(
         StoreReturnReasonParams,

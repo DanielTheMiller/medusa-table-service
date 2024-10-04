@@ -1,16 +1,16 @@
+import { HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
-import { AdminFulfillmentProvidersParamsType } from "./validators"
+} from "@medusajs/framework/http"
 
 export const GET = async (
-  req: AuthenticatedMedusaRequest<AdminFulfillmentProvidersParamsType>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.AdminGetFulfillmentProvidersParams>,
+  res: MedusaResponse<HttpTypes.AdminFulfillmentProviderListResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
   const queryObject = remoteQueryObjectFromString({

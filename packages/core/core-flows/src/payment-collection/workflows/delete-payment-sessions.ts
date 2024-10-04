@@ -1,17 +1,24 @@
-import { WorkflowData, createWorkflow } from "@medusajs/workflows-sdk"
+import {
+  WorkflowData,
+  WorkflowResponse,
+  createWorkflow,
+} from "@medusajs/framework/workflows-sdk"
 import {
   deletePaymentSessionsStep,
   validateDeletedPaymentSessionsStep,
 } from "../steps"
 
-interface WorkflowInput {
+export interface DeletePaymentSessionsWorkflowInput {
   ids: string[]
 }
 
 export const deletePaymentSessionsWorkflowId = "delete-payment-sessions"
+/**
+ * This workflow deletes one or more payment sessions.
+ */
 export const deletePaymentSessionsWorkflow = createWorkflow(
   deletePaymentSessionsWorkflowId,
-  (input: WorkflowData<WorkflowInput>) => {
+  (input: WorkflowData<DeletePaymentSessionsWorkflowInput>) => {
     const idsDeleted = deletePaymentSessionsStep({ ids: input.ids })
 
     validateDeletedPaymentSessionsStep({
@@ -19,6 +26,6 @@ export const deletePaymentSessionsWorkflow = createWorkflow(
       idsDeleted,
     })
 
-    return idsDeleted
+    return new WorkflowResponse(idsDeleted)
   }
 )

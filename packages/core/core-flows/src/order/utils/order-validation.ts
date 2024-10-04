@@ -1,5 +1,16 @@
-import { OrderDTO, OrderWorkflow, ReturnDTO } from "@medusajs/types"
-import { MedusaError, OrderStatus, arrayDifference } from "@medusajs/utils"
+import {
+  OrderChangeDTO,
+  OrderDTO,
+  OrderLineItemDTO,
+  OrderWorkflow,
+  ReturnDTO,
+} from "@medusajs/framework/types"
+import {
+  MedusaError,
+  OrderStatus,
+  arrayDifference,
+  isPresent,
+} from "@medusajs/framework/utils"
 
 export function throwIfOrderIsCancelled({ order }: { order: OrderDTO }) {
   if (order.status === OrderStatus.CANCELED) {
@@ -18,7 +29,7 @@ export function throwIfItemsDoesNotExistsInOrder({
   inputItems: OrderWorkflow.CreateOrderFulfillmentWorkflowInput["items"]
 }) {
   const orderItemIds = order.items?.map((i) => i.id) ?? []
-  const inputItemIds = inputItems.map((i) => i.id)
+  const inputItemIds = inputItems?.map((i) => i.id)
   const diff = arrayDifference(inputItemIds, orderItemIds)
 
   if (diff.length) {
@@ -31,15 +42,69 @@ export function throwIfItemsDoesNotExistsInOrder({
   }
 }
 
-export function throwIfReturnIsCancelled({
-  orderReturn,
+export function throwIfItemsAreNotGroupedByShippingRequirement({
+  order,
+  inputItems,
 }: {
-  orderReturn: ReturnDTO
+  order: Pick<OrderDTO, "id" | "items">
+  inputItems: OrderWorkflow.CreateOrderFulfillmentWorkflowInput["items"]
 }) {
-  if (orderReturn.canceled_at) {
+  const itemsWithShipping: string[] = []
+  const itemsWithoutShipping: string[] = []
+  const orderItemsMap = new Map<string, OrderLineItemDTO>(
+    (order.items || []).map((item) => [item.id, item])
+  )
+
+  for (const inputItem of inputItems) {
+    const orderItem = orderItemsMap.get(inputItem.id)!
+
+    if (orderItem.requires_shipping) {
+      itemsWithShipping.push(orderItem.id)
+    } else {
+      itemsWithoutShipping.push(orderItem.id)
+    }
+  }
+
+  if (itemsWithShipping.length && itemsWithoutShipping.length) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
-      `return with id ${orderReturn.id} has been canceled.`
+      `Fulfillment can only be created entirely with items with shipping or items without shipping. Split this request into 2 fulfillments.`
+    )
+  }
+}
+
+export function throwIfIsCancelled(
+  obj: unknown & { id: string; canceled_at?: any },
+  type: string
+) {
+  if (obj.canceled_at) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `${type} with id ${obj.id} has been canceled.`
+    )
+  }
+}
+
+export function throwIfOrderChangeIsNotActive({
+  orderChange,
+}: {
+  orderChange: OrderChangeDTO
+}) {
+  if (!isPresent(orderChange)) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `An active Order Change is required to proceed`
+    )
+  }
+
+  if (
+    orderChange.canceled_at ||
+    orderChange.confirmed_at ||
+    orderChange.declined_at
+  ) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `Order change ${orderChange?.id} is not active to be modified`
     )
   }
 }
@@ -51,7 +116,7 @@ export function throwIfItemsDoesNotExistsInReturn({
   orderReturn: Pick<ReturnDTO, "id" | "items">
   inputItems: OrderWorkflow.CreateOrderFulfillmentWorkflowInput["items"]
 }) {
-  const orderReturnItemIds = orderReturn.items?.map((i) => i.id) ?? []
+  const orderReturnItemIds = orderReturn.items?.map((i: any) => i.item_id) ?? []
   const inputItemIds = inputItems.map((i) => i.id)
   const diff = arrayDifference(inputItemIds, orderReturnItemIds)
 

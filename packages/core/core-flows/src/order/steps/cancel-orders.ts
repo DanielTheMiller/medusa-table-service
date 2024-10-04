@@ -1,18 +1,20 @@
-import { IOrderModuleService } from "@medusajs/types"
-import { ModuleRegistrationName } from "@medusajs/utils"
-import { createStep, StepResponse } from "@medusajs/workflows-sdk"
+import { IOrderModuleService } from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
+import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 
-type CompleteOrdersStepInput = {
+export type CancelOrdersStepInput = {
   orderIds: string[]
+  canceled_by?: string
 }
 
 export const cancelOrdersStepId = "cancel-orders"
+/**
+ * This step cancels one or more orders.
+ */
 export const cancelOrdersStep = createStep(
   cancelOrdersStepId,
-  async (data: CompleteOrdersStepInput, { container }) => {
-    const service = container.resolve<IOrderModuleService>(
-      ModuleRegistrationName.ORDER
-    )
+  async (data: CancelOrdersStepInput, { container }) => {
+    const service = container.resolve<IOrderModuleService>(Modules.ORDER)
 
     const orders = await service.listOrders(
       {
@@ -32,6 +34,7 @@ export const cancelOrdersStep = createStep(
           id: order.id,
           status: prevData.status,
           canceled_at: null,
+          canceled_by: null,
         }
       })
     )
@@ -41,9 +44,7 @@ export const cancelOrdersStep = createStep(
       return
     }
 
-    const service = container.resolve<IOrderModuleService>(
-      ModuleRegistrationName.ORDER
-    )
+    const service = container.resolve<IOrderModuleService>(Modules.ORDER)
 
     await service.updateOrders(canceled)
   }

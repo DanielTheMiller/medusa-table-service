@@ -8,18 +8,15 @@ import {
   InternalModuleDeclaration,
   ModuleJoinerConfig,
   ModulesSdkTypes,
-} from "@medusajs/types"
-
-import { AuthIdentity, ProviderIdentity } from "@models"
-
-import { joinerConfig } from "../joiner-config"
-
+} from "@medusajs/framework/types"
 import {
   InjectManager,
   MedusaContext,
   MedusaError,
   MedusaService,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
+import { AuthIdentity, ProviderIdentity } from "@models"
+import { joinerConfig } from "../joiner-config"
 import AuthProviderService from "./auth-provider"
 
 type InjectedDependencies = {
@@ -73,7 +70,7 @@ export default class AuthModuleService
     sharedContext?: Context
   ): Promise<AuthTypes.AuthIdentityDTO>
 
-  @InjectManager("baseRepository_")
+  @InjectManager()
   async createAuthIdentities(
     data: AuthTypes.CreateAuthIdentityDTO[] | AuthTypes.CreateAuthIdentityDTO,
     @MedusaContext() sharedContext: Context = {}
@@ -92,18 +89,19 @@ export default class AuthModuleService
   }
 
   // TODO: Update to follow convention
-  updateAuthIdentites(
+  // @ts-expect-error
+  updateAuthIdentities(
     data: AuthTypes.UpdateAuthIdentityDTO[],
     sharedContext?: Context
   ): Promise<AuthTypes.AuthIdentityDTO[]>
 
-  updateAuthIdentites(
+  updateAuthIdentities(
     data: AuthTypes.UpdateAuthIdentityDTO,
     sharedContext?: Context
   ): Promise<AuthTypes.AuthIdentityDTO>
 
-  @InjectManager("baseRepository_")
-  async updateAuthIdentites(
+  @InjectManager()
+  async updateAuthIdentities(
     data: AuthTypes.UpdateAuthIdentityDTO | AuthTypes.UpdateAuthIdentityDTO[],
     @MedusaContext() sharedContext: Context = {}
   ): Promise<AuthTypes.AuthIdentityDTO | AuthTypes.AuthIdentityDTO[]> {
@@ -119,6 +117,94 @@ export default class AuthModuleService
     })
 
     return Array.isArray(data) ? serializedUsers : serializedUsers[0]
+  }
+
+  async register(
+    provider: string,
+    authenticationData: AuthenticationInput
+  ): Promise<AuthenticationResponse> {
+    try {
+      return await this.authProviderService_.register(
+        provider,
+        authenticationData,
+        this.getAuthIdentityProviderService(provider)
+      )
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  // @ts-expect-error
+  createProviderIdentities(
+    data: AuthTypes.CreateProviderIdentityDTO[],
+    sharedContext?: Context
+  ): Promise<AuthTypes.ProviderIdentityDTO[]>
+
+  createProviderIdentities(
+    data: AuthTypes.CreateProviderIdentityDTO,
+    sharedContext?: Context
+  ): Promise<AuthTypes.ProviderIdentityDTO>
+
+  @InjectManager()
+  async createProviderIdentities(
+    data:
+      | AuthTypes.CreateProviderIdentityDTO[]
+      | AuthTypes.CreateProviderIdentityDTO,
+    @MedusaContext() sharedContext: Context = {}
+  ): Promise<AuthTypes.ProviderIdentityDTO | AuthTypes.ProviderIdentityDTO[]> {
+    const providerIdentities = await this.providerIdentityService_.create(
+      data,
+      sharedContext
+    )
+
+    return await this.baseRepository_.serialize<
+      AuthTypes.ProviderIdentityDTO | AuthTypes.ProviderIdentityDTO[]
+    >(providerIdentities)
+  }
+
+  // @ts-expect-error
+  updateProviderIdentities(
+    data: AuthTypes.UpdateProviderIdentityDTO[],
+    sharedContext?: Context
+  ): Promise<AuthTypes.ProviderIdentityDTO[]>
+
+  updateProviderIdentities(
+    data: AuthTypes.UpdateProviderIdentityDTO,
+    sharedContext?: Context
+  ): Promise<AuthTypes.ProviderIdentityDTO>
+
+  @InjectManager()
+  async updateProviderIdentities(
+    data:
+      | AuthTypes.UpdateProviderIdentityDTO
+      | AuthTypes.UpdateProviderIdentityDTO[],
+    @MedusaContext() sharedContext: Context = {}
+  ): Promise<AuthTypes.ProviderIdentityDTO | AuthTypes.ProviderIdentityDTO[]> {
+    const updatedProviders = await this.providerIdentityService_.update(
+      data,
+      sharedContext
+    )
+
+    const serializedProviders = await this.baseRepository_.serialize<
+      AuthTypes.ProviderIdentityDTO[]
+    >(updatedProviders)
+
+    return Array.isArray(data) ? serializedProviders : serializedProviders[0]
+  }
+
+  async updateProvider(
+    provider: string,
+    data: Record<string, unknown>
+  ): Promise<AuthenticationResponse> {
+    try {
+      return await this.authProviderService_.update(
+        provider,
+        data,
+        this.getAuthIdentityProviderService(provider)
+      )
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
   }
 
   async authenticate(
@@ -210,6 +296,74 @@ export default class AuthModuleService
         return await this.baseRepository_.serialize<AuthTypes.AuthIdentityDTO>(
           createdAuthIdentity
         )
+      },
+      update: async (
+        entity_id: string,
+        data: {
+          provider_metadata?: Record<string, unknown>
+          user_metadata?: Record<string, unknown>
+        }
+      ) => {
+        const authIdentities = await this.authIdentityService_.list(
+          {
+            provider_identities: {
+              entity_id,
+              provider,
+            },
+          },
+          {
+            relations: ["provider_identities"],
+          }
+        )
+
+        if (!authIdentities.length) {
+          throw new MedusaError(
+            MedusaError.Types.NOT_FOUND,
+            `AuthIdentity with entity_id "${entity_id}" not found`
+          )
+        }
+
+        if (authIdentities.length > 1) {
+          throw new MedusaError(
+            MedusaError.Types.INVALID_DATA,
+            `Multiple authIdentities found for entity_id "${entity_id}"`
+          )
+        }
+
+        const providerIdentityData = authIdentities[0].provider_identities.find(
+          (pi) => pi.provider === provider
+        )
+
+        if (!providerIdentityData) {
+          throw new MedusaError(
+            MedusaError.Types.NOT_FOUND,
+            `ProviderIdentity with entity_id "${entity_id}" not found`
+          )
+        }
+
+        const updatedProviderIdentity =
+          await this.providerIdentityService_.update({
+            id: providerIdentityData.id,
+            ...data,
+          })
+
+        const serializedResponse =
+          await this.baseRepository_.serialize<AuthTypes.AuthIdentityDTO>(
+            authIdentities[0]
+          )
+        const serializedProviderIdentity =
+          await this.baseRepository_.serialize<AuthTypes.ProviderIdentityDTO>(
+            updatedProviderIdentity
+          )
+
+        serializedResponse.provider_identities = [
+          ...(serializedResponse.provider_identities?.filter(
+            (p) => p.provider !== provider
+          ) ?? []),
+          serializedProviderIdentity,
+        ]
+
+        return serializedResponse
       },
     }
   }

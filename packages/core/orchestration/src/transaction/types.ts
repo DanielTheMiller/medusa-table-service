@@ -1,4 +1,5 @@
-import { DistributedTransaction } from "./distributed-transaction"
+import { TransactionState } from "@medusajs/utils"
+import { DistributedTransactionType } from "./distributed-transaction"
 import { TransactionStep } from "./transaction-step"
 export {
   TransactionHandlerType,
@@ -24,7 +25,7 @@ export type TransactionStepsDefinition = {
 
   /**
    * Indicates whether the workflow should continue even if there is a permanent failure in this step.
-   * In case it is set to true, the children steps of this step will not be executed and their status will be marked as TransactionStepState.SKIPPED.
+   * In case it is set to true, the children steps of this step will not be executed and their status will be marked as TransactionStepState.SKIPPED_FAILURE.
    */
   continueOnPermanentFailure?: boolean
 
@@ -63,6 +64,11 @@ export type TransactionStepsDefinition = {
    * If combined with a timeout, and any response is not set within that interval, the step will be marked as "TransactionStepStatus.TIMEOUT" and the workflow will be reverted immediately.
    */
   async?: boolean
+
+  /**
+   * It flags where the step contains a sub transaction inside itself.
+   */
+  nested?: boolean
 
   /**
    * It applies to "async" steps only, allowing them to run in the background and automatically complete without external intervention.
@@ -164,6 +170,7 @@ export enum DistributedTransactionEvent {
   TIMEOUT = "timeout",
   STEP_BEGIN = "stepBegin",
   STEP_SUCCESS = "stepSuccess",
+  STEP_SKIPPED = "stepSkipped",
   STEP_FAILURE = "stepFailure",
   STEP_AWAITING = "stepAwaiting",
   COMPENSATE_STEP_SUCCESS = "compensateStepSuccess",
@@ -171,45 +178,52 @@ export enum DistributedTransactionEvent {
 }
 
 export type DistributedTransactionEvents = {
-  onBegin?: (args: { transaction: DistributedTransaction }) => void
-  onResume?: (args: { transaction: DistributedTransaction }) => void
+  onBegin?: (args: { transaction: DistributedTransactionType }) => void
+  onResume?: (args: { transaction: DistributedTransactionType }) => void
   onFinish?: (args: {
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
     result?: unknown
     errors?: unknown[]
   }) => void
-  onTimeout?: (args: { transaction: DistributedTransaction }) => void
+  onTimeout?: (args: { transaction: DistributedTransactionType }) => void
 
   onStepBegin?: (args: {
     step: TransactionStep
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
   }) => void
 
   onStepSuccess?: (args: {
     step: TransactionStep
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
   }) => void
 
   onStepFailure?: (args: {
     step: TransactionStep
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
   }) => void
 
   onStepAwaiting?: (args: {
     step: TransactionStep
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
   }) => void
 
-  onCompensateBegin?: (args: { transaction: DistributedTransaction }) => void
+  onCompensateBegin?: (args: {
+    transaction: DistributedTransactionType
+  }) => void
 
   onCompensateStepSuccess?: (args: {
     step: TransactionStep
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
   }) => void
 
   onCompensateStepFailure?: (args: {
     step: TransactionStep
-    transaction: DistributedTransaction
+    transaction: DistributedTransactionType
+  }) => void
+
+  onStepSkipped?: (args: {
+    step: TransactionStep
+    transaction: DistributedTransactionType
   }) => void
 }
 
@@ -220,3 +234,28 @@ export type StepFeatures = {
 }
 
 export type TransactionOptions = TransactionModelOptions & StepFeatures
+
+export type TransactionFlow = {
+  modelId: string
+  options?: TransactionModelOptions
+  definition: TransactionStepsDefinition
+  transactionId: string
+  metadata?: {
+    eventGroupId?: string
+    parentIdempotencyKey?: string
+    sourcePath?: string
+    [key: string]: unknown
+  }
+  hasAsyncSteps: boolean
+  hasFailedSteps: boolean
+  hasSkippedOnFailureSteps: boolean
+  hasWaitingSteps: boolean
+  hasSkippedSteps: boolean
+  hasRevertedSteps: boolean
+  timedOutAt: number | null
+  startedAt?: number
+  state: TransactionState
+  steps: {
+    [key: string]: TransactionStep
+  }
+}

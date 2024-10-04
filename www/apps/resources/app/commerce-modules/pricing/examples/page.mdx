@@ -14,16 +14,16 @@ In this document, you’ll find common examples of how you can use the Pricing M
   <CodeTab value="medusa" label="Medusa API Router">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IPricingModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IPricingModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const pricingModuleService: IPricingModuleService = request.scope.resolve(
-    ModuleRegistrationName.PRICING
+    Modules.PRICING
   )
 
   const priceSet = await pricingModuleService.createPriceSets([
@@ -50,7 +50,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializePricingModule } from "@medusajs/pricing"
+import { initialize as initializePricingModule } from "@medusajs/medusa/pricing"
 
 export async function POST(request: Request) {
   const pricingModuleService = await initializePricingModule()
@@ -85,16 +85,16 @@ export async function POST(request: Request) {
   <CodeTab value="medusa" label="Medusa API Router">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IPricingModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IPricingModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const pricingModuleService: IPricingModuleService = request.scope.resolve(
-    ModuleRegistrationName.PRICING
+    Modules.PRICING
   )
 
   const priceSets = await pricingModuleService.listPriceSets()
@@ -109,7 +109,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializePricingModule } from "@medusajs/pricing"
+import { initialize as initializePricingModule } from "@medusajs/medusa/pricing"
 
 export async function GET(request: Request) {
   const pricingModuleService = await initializePricingModule()
@@ -131,16 +131,16 @@ export async function GET(request: Request) {
   <CodeTab value="medusa" label="Medusa API Router">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IPricingModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IPricingModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function GET(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const pricingModuleService: IPricingModuleService = request.scope.resolve(
-    ModuleRegistrationName.PRICING
+    Modules.PRICING
   )
 
   const priceSet = await pricingModuleService.retrievePriceSet("pset_123")
@@ -155,7 +155,7 @@ export async function GET(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializePricingModule } from "@medusajs/pricing"
+import { initialize as initializePricingModule } from "@medusajs/medusa/pricing"
 
 export async function GET(request: Request) {
   const pricingModuleService = await initializePricingModule()
@@ -177,16 +177,16 @@ export async function GET(request: Request) {
   <CodeTab value="medusa" label="Medusa API Router">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IPricingModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IPricingModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const pricingModuleService: IPricingModuleService = request.scope.resolve(
-    ModuleRegistrationName.PRICING
+    Modules.PRICING
   )
 
   const priceSet = await pricingModuleService.addPrices({
@@ -212,7 +212,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializePricingModule } from "@medusajs/pricing"
+import { initialize as initializePricingModule } from "@medusajs/medusa/pricing"
 
 export async function POST(request: Request) {
   const pricingModuleService = await initializePricingModule()
@@ -246,17 +246,17 @@ export async function POST(request: Request) {
   <CodeTab value="medusa" label="Medusa API Router">
 
   ```ts collapsibleLines="1-8" expandButtonLabel="Show Imports"
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IPricingModuleService } from "@medusajs/types"
-  import { PriceListType } from "@medusajs/utils"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IPricingModuleService } from "@medusajs/framework/types"
+  import { PriceListType } from "@medusajs/framework/utils"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const pricingModuleService: IPricingModuleService = request.scope.resolve(
-    ModuleRegistrationName.PRICING
+    Modules.PRICING
   )
 
   const priceLists = await pricingModuleService.createPriceLists([
@@ -290,8 +290,8 @@ export async function POST(
 import { NextResponse } from "next/server"
 import { PriceListType } from "@medusajs/medusa"
 
-import { initialize as initializePricingModule } from "@medusajs/pricing"
-import { PriceListType } from "@medusajs/utils"
+import { initialize as initializePricingModule } from "@medusajs/medusa/pricing"
+import { PriceListType } from "@medusajs/framework/utils"
 
 export async function POST(request: Request) {
   const pricingModuleService = await initializePricingModule()
@@ -331,16 +331,16 @@ export async function POST(request: Request) {
   <CodeTab value="medusa" label="Medusa API Router">
 
   ```ts
-  import { MedusaRequest, MedusaResponse } from "@medusajs/medusa"
-  import { IPricingModuleService } from "@medusajs/types"
-  import { ModuleRegistrationName } from "@medusajs/utils"
+  import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+  import { IPricingModuleService } from "@medusajs/framework/types"
+  import { Modules } from "@medusajs/framework/utils"
 
 export async function POST(
   request: MedusaRequest,
   res: MedusaResponse
 ): Promise<void> {
   const pricingModuleService: IPricingModuleService = request.scope.resolve(
-    ModuleRegistrationName.PRICING
+    Modules.PRICING
   )
 
   const price = await pricingModuleService.calculatePrices(
@@ -364,7 +364,7 @@ export async function POST(
 ```ts
 import { NextResponse } from "next/server"
 
-import { initialize as initializePricingModule } from "@medusajs/pricing"
+import { initialize as initializePricingModule } from "@medusajs/medusa/pricing"
 
 export async function GET(request: Request) {
   const pricingModuleService = await initializePricingModule()

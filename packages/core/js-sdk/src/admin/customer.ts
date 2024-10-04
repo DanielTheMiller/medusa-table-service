@@ -1,5 +1,4 @@
 import {
-  DeleteResponse,
   FindParams,
   HttpTypes,
   PaginatedResponse,
@@ -47,7 +46,7 @@ export class Customer {
   }
 
   async list(
-    queryParams?: FindParams & HttpTypes.AdminCollectionFilters,
+    queryParams?: FindParams & HttpTypes.AdminCustomerFilters,
     headers?: ClientHeaders
   ) {
     return this.client.fetch<
@@ -69,7 +68,7 @@ export class Customer {
   }
 
   async delete(id: string, headers?: ClientHeaders) {
-    return this.client.fetch<DeleteResponse<"customer">>(
+    return this.client.fetch<HttpTypes.AdminCustomerDeleteResponse>(
       `/admin/customers/${id}`,
       {
         method: "DELETE",

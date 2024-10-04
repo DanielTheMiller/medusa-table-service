@@ -1,19 +1,22 @@
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../types/routing"
+} from "@medusajs/framework/http"
 import {
   AdminGetReservationParamsType,
   AdminUpdateReservationType,
 } from "../validators"
-import { MedusaError } from "@medusajs/utils"
-import { deleteReservationsWorkflow } from "@medusajs/core-flows"
-import { updateReservationsWorkflow } from "@medusajs/core-flows"
+import { MedusaError } from "@medusajs/framework/utils"
+import {
+  deleteReservationsWorkflow,
+  updateReservationsWorkflow,
+} from "@medusajs/core-flows"
 import { refetchReservation } from "../helpers"
+import { HttpTypes } from "@medusajs/framework/types"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest<AdminGetReservationParamsType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminReservationResponse>
 ) => {
   const { id } = req.params
 
@@ -35,7 +38,7 @@ export const GET = async (
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<AdminUpdateReservationType>,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminReservationResponse>
 ) => {
   const { id } = req.params
   await updateReservationsWorkflow(req.scope).run({
@@ -54,7 +57,7 @@ export const POST = async (
 
 export const DELETE = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminReservationDeleteResponse>
 ) => {
   const id = req.params.id
 

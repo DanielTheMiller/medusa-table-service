@@ -1,7 +1,10 @@
 post:
   operationId: PostOrdersIdFulfillments
-  summary: Add Fulfillments to Order
-  description: Add a list of fulfillments to a order.
+  summary: Create an Order Fulfillment
+  x-sidebar-summary: Create Fulfillment
+  description: >-
+    Create a fulfillment for an order. The creation fails if the order is
+    canceled.
   x-authenticated: true
   parameters:
     - name: id
@@ -36,35 +39,8 @@ post:
           if a field is prefixed with `+` it will be added to the default
           fields, using `-` will remove it from the default fields. without
           prefix it will replace the entire default fields.
-    - name: offset
-      in: query
-      description: The number of items to skip when retrieving a list.
-      required: false
-      schema:
-        type: number
-        title: offset
-        description: The number of items to skip when retrieving a list.
-    - name: limit
-      in: query
-      description: Limit the number of items returned in the list.
-      required: false
-      schema:
-        type: number
-        title: limit
-        description: Limit the number of items returned in the list.
-    - name: order
-      in: query
-      description: >-
-        The field to sort the data by. By default, the sort order is ascending.
-        To change the order to descending, prefix the field name with `-`.
-      required: false
-      schema:
-        type: string
-        title: order
-        description: >-
-          The field to sort the data by. By default, the sort order is
-          ascending. To change the order to descending, prefix the field name
-          with `-`.
+        externalDocs:
+          url: '#select-fields-and-relations'
   security:
     - api_token: []
     - cookie_auth: []
@@ -73,7 +49,58 @@ post:
     content:
       application/json:
         schema:
-          $ref: ../components/schemas/AdminOrderCreateFulfillment.yaml
+          allOf:
+            - type: object
+              description: The fulfillment's details.
+              required:
+                - items
+                - location_id
+                - metadata
+              properties:
+                items:
+                  type: array
+                  description: The items to fulfill.
+                  items:
+                    type: object
+                    description: An item's details.
+                    required:
+                      - id
+                      - quantity
+                    properties:
+                      id:
+                        type: string
+                        title: id
+                        description: The item's ID.
+                      quantity:
+                        type: number
+                        title: quantity
+                        description: The item's quantity to fulfill.
+                location_id:
+                  type: string
+                  title: location_id
+                  description: >-
+                    The ID of the location to fulfill the items from. If not
+                    provided, the location associated with the shipping option
+                    of the order's shipping method is used.
+                no_notification:
+                  type: boolean
+                  title: no_notification
+                  description: >-
+                    Whether to send the customer a notification about the
+                    created fulfillment.
+                metadata:
+                  type: object
+                  description: The order's metadata. Can hold custom key-value pairs.
+            - type: object
+              description: The fulfillment's details.
+              properties:
+                additional_data:
+                  type: object
+                  description: >-
+                    Pass additional custom data to the API route. This data is
+                    passed to the underlying workflow under the
+                    `additional_data` parameter.
+          description: The fulfillment's details.
   x-codeSamples:
     - lang: Shell
       label: cURL
@@ -82,6 +109,12 @@ post:
   tags:
     - Orders
   responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminOrderResponse.yaml
     '400':
       $ref: ../components/responses/400_error.yaml
     '401':
@@ -94,3 +127,4 @@ post:
       $ref: ../components/responses/invalid_request_error.yaml
     '500':
       $ref: ../components/responses/500_error.yaml
+  x-workflow: createOrderFulfillmentWorkflow

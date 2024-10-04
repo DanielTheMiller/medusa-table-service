@@ -1,19 +1,18 @@
 import {
   IOrderModuleService,
   RegisterOrderFulfillmentDTO,
-} from "@medusajs/types"
-import { ModuleRegistrationName } from "@medusajs/utils"
-import { StepResponse, createStep } from "@medusajs/workflows-sdk"
-
-type RegisterOrderFulfillmentStepInput = RegisterOrderFulfillmentDTO
+} from "@medusajs/framework/types"
+import { Modules } from "@medusajs/framework/utils"
+import { StepResponse, createStep } from "@medusajs/framework/workflows-sdk"
 
 export const registerOrderFulfillmentStepId = "register-order-fullfillment"
+/**
+ * This step registers a fulfillment for an order.
+ */
 export const registerOrderFulfillmentStep = createStep(
   registerOrderFulfillmentStepId,
-  async (data: RegisterOrderFulfillmentStepInput, { container }) => {
-    const service = container.resolve<IOrderModuleService>(
-      ModuleRegistrationName.ORDER
-    )
+  async (data: RegisterOrderFulfillmentDTO, { container }) => {
+    const service = container.resolve<IOrderModuleService>(Modules.ORDER)
 
     await service.registerFulfillment(data)
     return new StepResponse(void 0, data.order_id)
@@ -23,9 +22,7 @@ export const registerOrderFulfillmentStep = createStep(
       return
     }
 
-    const service = container.resolve<IOrderModuleService>(
-      ModuleRegistrationName.ORDER
-    )
+    const service = container.resolve<IOrderModuleService>(Modules.ORDER)
 
     await service.revertLastVersion(orderId)
   }

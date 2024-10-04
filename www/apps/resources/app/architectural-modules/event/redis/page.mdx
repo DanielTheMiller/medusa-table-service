@@ -1,4 +1,4 @@
-import { Table } from "docs-ui"
+import { Table, Prerequisites } from "docs-ui"
 
 export const metadata = {
   title: `Redis Event Bus Module`,
@@ -14,28 +14,23 @@ In production, it's recommended to use this module.
 
 ---
 
-## Install the Redis Events Bus Module
+## Register the Redis Events Bus Module
 
-<Note type="check">
+<Prerequisites items={[
+  {
+    text: "Redis installed and Redis server running",
+    link: "https://redis.io/docs/getting-started/installation/"
+  }
+]} />
 
-- [Redis installed and Redis server running](https://redis.io/docs/getting-started/installation/).
-
-</Note>
-
-To install Redis Event Bus Module, run the following command in the directory of your Medusa application:
-
-```bash npm2yarn
-npm install @medusajs/event-redis
-```
-
-Next, add the module into the `modules` property of the exported object in `medusa-config.js`:
+Add the module into the `modules` property of the exported object in `medusa-config.js`:
 
 export const highlights = [
   ["11", "redisUrl", "The Redis connection URL."]
 ]
 
 ```js title="medusa-config.js"
-import { Modules } from "@medusajs/utils"
+const { Modules } = require("@medusajs/framework/utils")
 
 // ...
 
@@ -43,7 +38,7 @@ module.exports = defineConfig({
   // ...
   modules: {
     [Modules.EVENT_BUS]: {
-      resolve: "@medusajs/event-redis",
+      resolve: "@medusajs/medusa/event-bus-redis",
       options: { 
         redisUrl: process.env.EVENTS_REDIS_URL,
       },
@@ -206,8 +201,6 @@ EVENTS_REDIS_URL=<YOUR_REDIS_URL>
     </Table.Row>
   </Table.Body>
 </Table>
-
----
 
 ## Test the Module
 

@@ -1,14 +1,19 @@
-import { WorkflowData, createWorkflow } from "@medusajs/workflows-sdk"
+import { WorkflowData, createWorkflow } from "@medusajs/framework/workflows-sdk"
 
 import { deleteReservationsByLineItemsStep } from "../steps"
 
-type WorkflowInput = { ids: string[] }
+export type DeleteReservationByLineItemsWorkflowInput = { ids: string[] }
 
 export const deleteReservationsByLineItemsWorkflowId =
   "delete-reservations-by-line-items"
+/**
+ * This workflow deletes reservations by their associated line items.
+ */
 export const deleteReservationsByLineItemsWorkflow = createWorkflow(
   deleteReservationsByLineItemsWorkflowId,
-  (input: WorkflowData<WorkflowInput>): WorkflowData<void> => {
+  (
+    input: WorkflowData<DeleteReservationByLineItemsWorkflowInput>
+  ): WorkflowData<void> => {
     return deleteReservationsByLineItemsStep(input.ids)
   }
 )

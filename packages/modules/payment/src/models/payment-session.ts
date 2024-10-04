@@ -1,10 +1,10 @@
-import { BigNumberRawValue } from "@medusajs/types"
+import { BigNumberRawValue } from "@medusajs/framework/types"
 import {
   BigNumber,
   generateEntityId,
   MikroOrmBigNumberProperty,
   PaymentSessionStatus,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
@@ -79,6 +79,9 @@ export default class PaymentSession {
   })
   payment?: Rel<Payment> | null
 
+  @Property({ columnType: "jsonb", nullable: true })
+  metadata: Record<string, unknown> | null = null
+
   @Property({
     onCreate: () => new Date(),
     columnType: "timestamptz",
@@ -104,10 +107,14 @@ export default class PaymentSession {
   @BeforeCreate()
   onCreate() {
     this.id = generateEntityId(this.id, "payses")
+    this.payment_collection_id ??=
+      this.payment_collection_id ?? this.payment_collection?.id
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "payses")
+    this.payment_collection_id ??=
+      this.payment_collection_id ?? this.payment_collection?.id
   }
 }

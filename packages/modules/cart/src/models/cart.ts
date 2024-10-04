@@ -1,9 +1,9 @@
-import { DAL } from "@medusajs/types"
+import { DAL } from "@medusajs/framework/types"
 import {
-  DALUtils,
   createPsqlIndexStatementHelper,
+  DALUtils,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Cascade,
@@ -11,8 +11,8 @@ import {
   Entity,
   Filter,
   ManyToOne,
-  OnInit,
   OneToMany,
+  OnInit,
   OptionalProps,
   PrimaryKey,
   Property,
@@ -25,7 +25,7 @@ import ShippingMethod from "./shipping-method"
 type OptionalCartProps =
   | "shipping_address"
   | "billing_address"
-  | DAL.SoftDeletableEntityDateColumns
+  | DAL.SoftDeletableModelDateColumns
 
 const RegionIdIndex = createPsqlIndexStatementHelper({
   name: "IDX_cart_region_id",
@@ -146,6 +146,9 @@ export default class Cart {
     cascade: [Cascade.PERSIST, "soft-remove"] as any,
   })
   shipping_methods = new Collection<Rel<ShippingMethod>>(this)
+
+  @Property({ columnType: "timestamptz", nullable: true })
+  completed_at: Date | null = null
 
   @Property({
     onCreate: () => new Date(),

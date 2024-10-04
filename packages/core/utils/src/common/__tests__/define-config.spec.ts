@@ -10,14 +10,24 @@ describe("defineConfig", function () {
         },
         "featureFlags": {},
         "modules": {
-          "apiKey": true,
-          "auth": true,
-          "cacheService": true,
-          "cart": true,
-          "currency": true,
-          "customer": true,
-          "eventBus": true,
-          "file": {
+          "ApiKey": true,
+          "Auth": {
+            "options": {
+              "providers": [
+                {
+                  "id": "emailpass",
+                  "resolve": "@medusajs/auth-emailpass",
+                },
+              ],
+            },
+            "resolve": "@medusajs/auth",
+          },
+          "Cache": true,
+          "Cart": true,
+          "Currency": true,
+          "Customer": true,
+          "EventBus": true,
+          "File": {
             "options": {
               "providers": [
                 {
@@ -28,7 +38,7 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/file",
           },
-          "fulfillment": {
+          "Fulfillment": {
             "options": {
               "providers": [
                 {
@@ -39,35 +49,41 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/fulfillment",
           },
-          "inventoryService": true,
-          "notification": {
+          "Inventory": true,
+          "Notification": {
             "options": {
               "providers": [
                 {
                   "id": "local",
+                  "options": {
+                    "channels": [
+                      "feed",
+                    ],
+                    "name": "Local Notification Provider",
+                  },
                   "resolve": "@medusajs/notification-local",
                 },
               ],
             },
             "resolve": "@medusajs/notification",
           },
-          "order": true,
-          "payment": true,
-          "pricingService": true,
-          "productService": true,
-          "promotion": true,
-          "region": true,
-          "salesChannel": true,
-          "stockLocationService": true,
-          "store": true,
-          "tax": true,
-          "user": {
+          "Order": true,
+          "Payment": true,
+          "Pricing": true,
+          "Product": true,
+          "Promotion": true,
+          "Region": true,
+          "SalesChannel": true,
+          "StockLocation": true,
+          "Store": true,
+          "Tax": true,
+          "User": {
             "options": {
               "jwt_secret": "supersecret",
             },
             "resolve": "@medusajs/user",
           },
-          "workflows": true,
+          "Workflows": true,
         },
         "plugins": [],
         "projectConfig": {
@@ -88,7 +104,7 @@ describe("defineConfig", function () {
     expect(
       defineConfig({
         modules: {
-          githubModuleService: {
+          GithubModuleService: {
             resolve: "./modules/github",
           },
         },
@@ -100,14 +116,24 @@ describe("defineConfig", function () {
         },
         "featureFlags": {},
         "modules": {
-          "apiKey": true,
-          "auth": true,
-          "cacheService": true,
-          "cart": true,
-          "currency": true,
-          "customer": true,
-          "eventBus": true,
-          "file": {
+          "ApiKey": true,
+          "Auth": {
+            "options": {
+              "providers": [
+                {
+                  "id": "emailpass",
+                  "resolve": "@medusajs/auth-emailpass",
+                },
+              ],
+            },
+            "resolve": "@medusajs/auth",
+          },
+          "Cache": true,
+          "Cart": true,
+          "Currency": true,
+          "Customer": true,
+          "EventBus": true,
+          "File": {
             "options": {
               "providers": [
                 {
@@ -118,7 +144,7 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/file",
           },
-          "fulfillment": {
+          "Fulfillment": {
             "options": {
               "providers": [
                 {
@@ -129,38 +155,44 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/fulfillment",
           },
-          "githubModuleService": {
+          "GithubModuleService": {
             "resolve": "./modules/github",
           },
-          "inventoryService": true,
-          "notification": {
+          "Inventory": true,
+          "Notification": {
             "options": {
               "providers": [
                 {
                   "id": "local",
+                  "options": {
+                    "channels": [
+                      "feed",
+                    ],
+                    "name": "Local Notification Provider",
+                  },
                   "resolve": "@medusajs/notification-local",
                 },
               ],
             },
             "resolve": "@medusajs/notification",
           },
-          "order": true,
-          "payment": true,
-          "pricingService": true,
-          "productService": true,
-          "promotion": true,
-          "region": true,
-          "salesChannel": true,
-          "stockLocationService": true,
-          "store": true,
-          "tax": true,
-          "user": {
+          "Order": true,
+          "Payment": true,
+          "Pricing": true,
+          "Product": true,
+          "Promotion": true,
+          "Region": true,
+          "SalesChannel": true,
+          "StockLocation": true,
+          "Store": true,
+          "Tax": true,
+          "User": {
             "options": {
               "jwt_secret": "supersecret",
             },
             "resolve": "@medusajs/user",
           },
-          "workflows": true,
+          "Workflows": true,
         },
         "plugins": [],
         "projectConfig": {
@@ -193,14 +225,24 @@ describe("defineConfig", function () {
         },
         "featureFlags": {},
         "modules": {
-          "apiKey": true,
-          "auth": true,
-          "cacheService": true,
-          "cart": true,
-          "currency": true,
-          "customer": true,
-          "eventBus": true,
-          "file": {
+          "ApiKey": true,
+          "Auth": {
+            "options": {
+              "providers": [
+                {
+                  "id": "emailpass",
+                  "resolve": "@medusajs/auth-emailpass",
+                },
+              ],
+            },
+            "resolve": "@medusajs/auth",
+          },
+          "Cache": true,
+          "Cart": true,
+          "Currency": true,
+          "Customer": true,
+          "EventBus": true,
+          "File": {
             "options": {
               "providers": [
                 {
@@ -211,7 +253,7 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/file",
           },
-          "fulfillment": {
+          "Fulfillment": {
             "options": {
               "providers": [
                 {
@@ -222,35 +264,41 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/fulfillment",
           },
-          "inventoryService": true,
-          "notification": {
+          "Inventory": true,
+          "Notification": {
             "options": {
               "providers": [
                 {
                   "id": "local",
+                  "options": {
+                    "channels": [
+                      "feed",
+                    ],
+                    "name": "Local Notification Provider",
+                  },
                   "resolve": "@medusajs/notification-local",
                 },
               ],
             },
             "resolve": "@medusajs/notification",
           },
-          "order": true,
-          "payment": true,
-          "pricingService": true,
-          "productService": true,
-          "promotion": true,
-          "region": true,
-          "salesChannel": true,
-          "stockLocationService": true,
-          "store": true,
-          "tax": true,
-          "user": {
+          "Order": true,
+          "Payment": true,
+          "Pricing": true,
+          "Product": true,
+          "Promotion": true,
+          "Region": true,
+          "SalesChannel": true,
+          "StockLocation": true,
+          "Store": true,
+          "Tax": true,
+          "User": {
             "options": {
               "jwt_secret": "supersecret",
             },
             "resolve": "@medusajs/user",
           },
-          "workflows": true,
+          "Workflows": true,
         },
         "plugins": [],
         "projectConfig": {
@@ -286,13 +334,23 @@ describe("defineConfig", function () {
         },
         "featureFlags": {},
         "modules": {
-          "apiKey": true,
-          "auth": true,
-          "cacheService": true,
-          "currency": true,
-          "customer": true,
-          "eventBus": true,
-          "file": {
+          "ApiKey": true,
+          "Auth": {
+            "options": {
+              "providers": [
+                {
+                  "id": "emailpass",
+                  "resolve": "@medusajs/auth-emailpass",
+                },
+              ],
+            },
+            "resolve": "@medusajs/auth",
+          },
+          "Cache": true,
+          "Currency": true,
+          "Customer": true,
+          "EventBus": true,
+          "File": {
             "options": {
               "providers": [
                 {
@@ -303,7 +361,7 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/file",
           },
-          "fulfillment": {
+          "Fulfillment": {
             "options": {
               "providers": [
                 {
@@ -314,35 +372,41 @@ describe("defineConfig", function () {
             },
             "resolve": "@medusajs/fulfillment",
           },
-          "inventoryService": true,
-          "notification": {
+          "Inventory": true,
+          "Notification": {
             "options": {
               "providers": [
                 {
                   "id": "local",
+                  "options": {
+                    "channels": [
+                      "feed",
+                    ],
+                    "name": "Local Notification Provider",
+                  },
                   "resolve": "@medusajs/notification-local",
                 },
               ],
             },
             "resolve": "@medusajs/notification",
           },
-          "order": true,
-          "payment": true,
-          "pricingService": true,
-          "productService": true,
-          "promotion": true,
-          "region": true,
-          "salesChannel": true,
-          "stockLocationService": true,
-          "store": true,
-          "tax": true,
-          "user": {
+          "Order": true,
+          "Payment": true,
+          "Pricing": true,
+          "Product": true,
+          "Promotion": true,
+          "Region": true,
+          "SalesChannel": true,
+          "StockLocation": true,
+          "Store": true,
+          "Tax": true,
+          "User": {
             "options": {
               "jwt_secret": "supersecret",
             },
             "resolve": "@medusajs/user",
           },
-          "workflows": true,
+          "Workflows": true,
         },
         "plugins": [],
         "projectConfig": {

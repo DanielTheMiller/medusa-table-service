@@ -1,5 +1,5 @@
-import { ModuleJoinerConfig } from "@medusajs/types"
-import { LINKS, Modules } from "@medusajs/utils"
+import { ModuleJoinerConfig } from "@medusajs/framework/types"
+import { LINKS, Modules } from "@medusajs/framework/utils"
 
 export const CartPromotion: ModuleJoinerConfig = {
   serviceName: LINKS.CartPromotion,
@@ -11,15 +11,14 @@ export const CartPromotion: ModuleJoinerConfig = {
   alias: [
     {
       name: ["cart_promotion", "cart_promotions"],
-      args: {
-        entity: "LinkCartPromotion",
-      },
+      entity: "LinkCartPromotion",
     },
   ],
   primaryKeys: ["id", "cart_id", "promotion_id"],
   relationships: [
     {
       serviceName: Modules.CART,
+      entity: "Cart",
       primaryKey: "id",
       foreignKey: "cart_id",
       alias: "cart",
@@ -29,6 +28,7 @@ export const CartPromotion: ModuleJoinerConfig = {
     },
     {
       serviceName: Modules.PROMOTION,
+      entity: "Promotion",
       primaryKey: "id",
       foreignKey: "promotion_id",
       alias: "promotions",
@@ -41,7 +41,10 @@ export const CartPromotion: ModuleJoinerConfig = {
     {
       serviceName: Modules.CART,
       fieldAlias: {
-        promotions: "cart_link.promotions",
+        promotions: {
+          path: "cart_link.promotions",
+          isList: true,
+        },
       },
       relationship: {
         serviceName: LINKS.CartPromotion,

@@ -1,18 +1,13 @@
 import { AcademicCapSolid, UsersSolid } from "@medusajs/icons"
+import { BetaBadge } from "docs-ui"
 
 export const metadata = {
   title: `B2B Recipe`,
 }
 
-# {metadata.title}
+# {metadata.title} <BetaBadge text="Soon" tooltipText="This recipe is a work in progress, as some features are not ready yet in Medusa V2." />
 
 This recipe provides the general steps to implement a B2B store with Medusa.
-
-<Note type="soon" title="In Development">
-
-This recipe is a work in progress, as some features are not ready yet in Medusa V2.
-
-</Note>
 
 ## Overview
 
@@ -41,19 +36,17 @@ You can create a sales channel through the Medusa Admin or Admin REST APIs.
     href: "#",
     title: "Option 1: Use Medusa Admin",
     text: "Create the sales channel using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
     }
   },
   {
-    href: "!api!/api/admin#sales-channels_postsaleschannels",
+    href: "!api!/admin#sales-channels_postsaleschannels",
     title: "Option 2: Using the REST APIs",
     text: "Create the sales channel using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -79,19 +72,17 @@ You can create a publishable API key through the Medusa Admin or the Admin REST 
     href: "#",
     title: "Option 1: Use Medusa Admin",
     text: "Create the publishable API key using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
     }
   },
   {
-    href: "!api!/api/admin#api-keys_postapikeys",
+    href: "!api!/admin#api-keys_postapikeys",
     title: "Option 2: Using the REST APIs",
     text: "Create the publishable API key using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -104,8 +95,7 @@ You can create a publishable API key through the Medusa Admin or the Admin REST 
     href: "#",
     title: "Option 1: Use Medusa Admin",
     text: "Associate the publishable API key with the B2B sales channel using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
@@ -115,8 +105,7 @@ You can create a publishable API key through the Medusa Admin or the Admin REST 
     href: "#",
     title: "Option 2: Using the REST APIs",
     text: "Associate the publishable API key with the B2B sales channel using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -135,19 +124,17 @@ You can create new products or add existing ones to the B2B sales channel using 
     href: "#",
     title: "Using Medusa Admin",
     text: "Create products using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
     }
   },
   {
-    href: "!api!/api/admin#products_postproducts",
+    href: "!api!/admin#products_postproducts",
     title: "Using REST APIs",
     text: "Create products using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -160,19 +147,17 @@ You can create new products or add existing ones to the B2B sales channel using 
     href: "#",
     title: "Using Medusa Admin",
     text: "Add the products to the B2B sales channel using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
     }
   },
   {
-    href: "!api!/api/admin#sales-channels_postsaleschannelsidproductsbatchadd",
+    href: "!api!/admin#sales-channels_postsaleschannelsidproductsbatchadd",
     title: "Using REST APIs",
     text: "Add the products to the B2B sales channel using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -186,26 +171,18 @@ This is useful in B2B sales, as you often negotiate special prices with each cus
 
 You can create a B2B module that adds necessary data models to represent a B2B company. Then, you link that company to a customer group. Any customer belonging to that group also belongs to the company, meaning they're a B2B customer.
 
-<Note type="soon">
-
-Module Relationships is coming soon.
-
-</Note>
-
 <CardList items={[
   {
-    href: "!docs!/basics/modules-and-services",
+    href: "!docs!/basics/modules",
     title: "Create Module",
     text: "Learn how to create a module in Medusa.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
   {
-    href: "!docs!/basics/data-models",
+    href: "!docs!/basics/modules#1-create-data-model",
     title: "Create Data Models",
     text: "Learn how to create data models.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -213,8 +190,7 @@ Module Relationships is coming soon.
   href="!docs!/advanced-development/modules/module-relationships"
   title="Create Module Relationships"
   text="Learn how to create a relationship between modules."
-  startIcon={<AcademicCapSolid />}
-  showLinkIcon={false}
+  icon={AcademicCapSolid}
   className="mt-1"
 /> */}
 
@@ -226,7 +202,7 @@ Module Relationships is coming soon.
   Then, create the file `src/modules/b2b/models/company.ts` with the following content:
 
   ```ts title="src/modules/b2b/models/company.ts" highlights={[["8", "", "The property will be used to create a relationship to customer groups."]]}
-  import { model } from "@medusajs/utils"
+  import { model } from "@medusajs/framework/utils"
 
   const Company = model.define("company", {
     id: model.id().primaryKey(),
@@ -263,7 +239,7 @@ Module Relationships is coming soon.
   Then, create the module's main service at `src/modules/b2b/service.ts` with the following content:
   
   ```ts title="src/modules/b2b/service.ts"
-  import { MedusaService } from "@medusajs/utils"
+  import { MedusaService } from "@medusajs/framework/utils"
   import Company from "./models/company"
 
   class B2bModuleService extends MedusaService({
@@ -281,7 +257,7 @@ Module Relationships is coming soon.
 
   ```ts title="src/modules/b2b/index.ts"
   import B2bModuleService from "./service"
-  import { Module } from "@medusajs/utils"
+  import { Module } from "@medusajs/framework/utils"
 
   export default Module("b2b", {
     service: B2bModuleService,
@@ -307,7 +283,7 @@ Module Relationships is coming soon.
   You can now run migrations with the following commands:
 
   ```bash npm2yarn
-  npx medusa migrations run
+  npx medusa db:migrate
   ```
 
   ### Add Create Company API Route
@@ -317,7 +293,7 @@ Module Relationships is coming soon.
   Start by creating the file `src/types/b2b/index.ts` with some helper types:
 
   ```ts title="src/types/b2b/index.ts"
-  import { CustomerGroupDTO } from "@medusajs/types"
+  import { CustomerGroupDTO } from "@medusajs/framework/types"
 
   export type CompanyDTO = {
     id: string
@@ -351,11 +327,11 @@ export const workflowHighlights = [
     StepResponse, 
     createStep, 
     createWorkflow,
-  } from "@medusajs/workflows-sdk"
+  } from "@medusajs/framework/workflows-sdk"
   import { 
     createCustomerGroupsWorkflow,
-  } from "@medusajs/core-flows"
-  import { CreateCustomerGroupDTO } from "@medusajs/types"
+  } from "@medusajs/medusa/core-flows"
+  import { CreateCustomerGroupDTO } from "@medusajs/framework/types"
   import { CompanyDTO, CreateCompanyDTO } from "../types/b2b"
   import B2bModuleService from "../modules/b2b/service"
 
@@ -479,7 +455,7 @@ export const workflowHighlights = [
   npm run dev
   ```
   
-  Next, make sure you authenticate as an admin user as explained in [this Authentication guide](!api!/api/admin#authentication).
+  Next, make sure you authenticate as an admin user as explained in [this Authentication guide](!api!/admin#authentication).
 
   Then, send a `POST` request to the `/admin/b2b/company` API route:
 
@@ -522,19 +498,17 @@ You can do that through the Medusa Admin or Admin REST APIs.
     href: "#",
     title: "Option 1: Use Medusa Admin",
     text: "Create the customers using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
     }
   },
   {
-    href: "!api!/api/admin#customers_postcustomers",
+    href: "!api!/admin#customers_postcustomers",
     title: "Option 2: Using the REST APIs",
     text: "Create the customers using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -547,19 +521,17 @@ You can do that through the Medusa Admin or Admin REST APIs.
     href: "#",
     title: "Option 1: Use Medusa Admin",
     text: "Assign the customers to the B2B customer group using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
     }
   },
   {
-    href: "!api!/api/admin#customer-groups_postcustomergroupsidcustomersbatch",
+    href: "!api!/admin#customer-groups_postcustomergroupsidcustomersbatch",
     title: "Option 2: Using the REST APIs",
     text: "Assign the customers to the B2B customer group using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -578,19 +550,17 @@ You can create a price list using the Medusa Admin or the Admin REST APIs. Make 
     href: "#",
     title: "Using Medusa Admin",
     text: "Create the price list using the Medusa Admin.",
-    startIcon: <UsersSolid />,
-    showLinkIcon: false,
+    icon: UsersSolid,
     badge: {
       variant: "blue",
       children: "Guide Soon"
     }
   },
   {
-    href: "!api!/api/admin#price-lists_postpricelists",
+    href: "!api!/admin#price-lists_postpricelists",
     title: "Using REST APIs",
     text: "Create the price list using the REST APIs.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -603,11 +573,10 @@ To implement a more advanced B2B sales flow, add custom data models such as `Com
 This provides more granular control of your B2B sales and allows you to build features like privileges, limits, and more. 
 
 <Card
-  href="!docs!/basics/data-models"
+  href="!docs!/basics/modules#1-create-data-model"
   title="Create a Data Model"
   text="Learn how to create a custom data model in a module."
-  startIcon={<AcademicCapSolid />}
-  showLinkIcon={false}
+  icon={AcademicCapSolid}
 />
 
 ---
@@ -622,8 +591,7 @@ The API route can check if the customer has any group with an associated company
   href="!docs!/basics/api-routes"
   title="Create an API Route"
   text="Learn how to create an API Route in Medusa."
-  startIcon={<AcademicCapSolid />}
-  showLinkIcon={false}
+  icon={AcademicCapSolid}
 />
 
 {/* <Details summaryContent="Example">
@@ -641,8 +609,8 @@ export const checkCustomerHighlights = [
     AuthenticatedMedusaRequest, 
     MedusaResponse,
   } from "@medusajs/medusa"
-  import { ModuleRegistrationName } from "@medusajs/utils"
-  import { ICustomerModuleService } from "@medusajs/types"
+  import { Modules } from "@medusajs/framework/utils"
+  import { ICustomerModuleService } from "@medusajs/framework/types"
   import B2bModuleService from "../../../../modules/b2b/service"
   
   export async function GET(
@@ -650,7 +618,7 @@ export const checkCustomerHighlights = [
     res: MedusaResponse
   ) {
     const customerModuleService: ICustomerModuleService = req
-      .scope.resolve(ModuleRegistrationName.CUSTOMER)
+      .scope.resolve(Modules.CUSTOMER)
     const b2bModuleService: B2bModuleService = req.scope.resolve(
       "b2bModuleService"
     )
@@ -759,22 +727,19 @@ The Medusa Admin plugin can be extended to add widgets, new pages, and setting p
     href: "!docs!/advanced-development/admin/widgets",
     title: "Create Admin Widget",
     text: "Learn how to add widgets into existing admin pages.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
   {
     href: "!docs!/advanced-development/admin/ui-routes",
     title: "Create Admin UI Routes",
     text: "Learn how to add new pages to your Medusa Admin.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
   {
     href: "!docs!/advanced-development/admin/setting-pages",
     title: "Create Admin Setting Page",
     text: "Learn how to add new page to the Medusa Admin settings.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
@@ -791,23 +756,20 @@ Use the publishable API key you associated with your B2B sales channel in the st
     href: "/nextjs-starter",
     title: "Next.js Storefront",
     text: "Learn how to install and customize the Next.js storefront.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
   {
     href: "/storefront-development",
     title: "Storefront Development",
     text: "Find guides for your storefront development.",
-    startIcon: <AcademicCapSolid />,
-    showLinkIcon: false
+    icon: AcademicCapSolid,
   },
 ]} />
 
 <Card
-  href="!api!/api/store#publishable-api-key"
+  href="!api!/store#publishable-api-key"
   title="Use Publishable API Keys"
   text="Learn how to use the publishable API key in client requests."
-  startIcon={<AcademicCapSolid />}
-  showLinkIcon={false}
+  icon={AcademicCapSolid}
   className="mt-1"
 />

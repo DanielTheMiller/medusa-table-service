@@ -1,14 +1,18 @@
 import { createCartWorkflow } from "@medusajs/core-flows"
-import { CreateCartWorkflowInputDTO } from "@medusajs/types"
+import {
+  AdditionalData,
+  CreateCartWorkflowInputDTO,
+  HttpTypes,
+} from "@medusajs/framework/types"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../types/routing"
+} from "@medusajs/framework/http"
 import { refetchCart } from "./helpers"
 
 export const POST = async (
-  req: AuthenticatedMedusaRequest<CreateCartWorkflowInputDTO>,
-  res: MedusaResponse
+  req: AuthenticatedMedusaRequest<HttpTypes.StoreCreateCart & AdditionalData>,
+  res: MedusaResponse<HttpTypes.StoreCartResponse>
 ) => {
   const workflowInput = {
     ...req.validatedBody,
@@ -16,7 +20,7 @@ export const POST = async (
   }
 
   const { result } = await createCartWorkflow(req.scope).run({
-    input: workflowInput,
+    input: workflowInput as CreateCartWorkflowInputDTO,
   })
 
   const cart = await refetchCart(

@@ -1,9 +1,9 @@
-import { BigNumberRawValue, DAL } from "@medusajs/types"
+import { BigNumberRawValue, DAL } from "@medusajs/framework/types"
 import {
   MikroOrmBigNumberProperty,
   createPsqlIndexStatementHelper,
   generateEntityId,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   BeforeCreate,
   Entity,
@@ -13,37 +13,38 @@ import {
   PrimaryKey,
   Property,
 } from "@mikro-orm/core"
-import LineItem from "./line-item"
+import OrderLineItem from "./line-item"
 import Return from "./return"
 import ReturnReason from "./return-reason"
 
-type OptionalLineItemProps = DAL.EntityDateColumns
+type OptionalLineItemProps = DAL.ModelDateColumns
 
+const tableName = "return_item"
 const ReturnIdIndex = createPsqlIndexStatementHelper({
-  tableName: "return_item",
+  tableName,
   columns: "return_id",
   where: "deleted_at IS NOT NULL",
 })
 
 const ReturnReasonIdIndex = createPsqlIndexStatementHelper({
-  tableName: "return_item",
+  tableName,
   columns: "reason_id",
   where: "deleted_at IS NOT NULL",
 })
 
 const ItemIdIndex = createPsqlIndexStatementHelper({
-  tableName: "return_item",
+  tableName,
   columns: "item_id",
   where: "deleted_at IS NOT NULL",
 })
 
 const DeletedAtIndex = createPsqlIndexStatementHelper({
-  tableName: "order_claim_item_image",
+  tableName,
   columns: "deleted_at",
   where: "deleted_at IS NOT NULL",
 })
 
-@Entity({ tableName: "return_item" })
+@Entity({ tableName })
 export default class ReturnItem {
   [OptionalProps]?: OptionalLineItemProps
 
@@ -76,6 +77,12 @@ export default class ReturnItem {
   @Property({ columnType: "jsonb" })
   raw_received_quantity: BigNumberRawValue
 
+  @MikroOrmBigNumberProperty()
+  damaged_quantity: Number | number = 0
+
+  @Property({ columnType: "jsonb" })
+  raw_damaged_quantity: BigNumberRawValue
+
   @ManyToOne(() => Return, {
     columnType: "text",
     fieldName: "return_id",
@@ -91,7 +98,7 @@ export default class ReturnItem {
   return: Return
 
   @ManyToOne({
-    entity: () => LineItem,
+    entity: () => OrderLineItem,
     fieldName: "item_id",
     mapToPk: true,
     columnType: "text",
@@ -99,10 +106,10 @@ export default class ReturnItem {
   @ItemIdIndex.MikroORMIndex()
   item_id: string
 
-  @ManyToOne(() => LineItem, {
+  @ManyToOne(() => OrderLineItem, {
     persist: false,
   })
-  item: LineItem
+  item: OrderLineItem
 
   @Property({ columnType: "text", nullable: true })
   note: string
@@ -132,12 +139,12 @@ export default class ReturnItem {
   @BeforeCreate()
   onCreate() {
     this.id = generateEntityId(this.id, "retitem")
-    this.return_id = this.return?.id
+    this.return_id ??= this.return?.id
   }
 
   @OnInit()
   onInit() {
     this.id = generateEntityId(this.id, "retitem")
-    this.return_id = this.return?.id
+    this.return_id ??= this.return?.id
   }
 }

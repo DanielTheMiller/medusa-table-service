@@ -1,16 +1,17 @@
 import { cancelOrderWorkflow } from "@medusajs/core-flows"
+import { HttpTypes } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
   remoteQueryObjectFromString,
-} from "@medusajs/utils"
+} from "@medusajs/framework/utils"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
-} from "../../../../../types/routing"
+} from "@medusajs/framework/http"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest,
-  res: MedusaResponse
+  res: MedusaResponse<HttpTypes.AdminOrderResponse>
 ) => {
   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
@@ -18,6 +19,7 @@ export const POST = async (
 
   const input = {
     order_id: req.params.id,
+    canceled_by: req.auth_context.actor_id,
   }
 
   await cancelOrderWorkflow(req.scope).run({
